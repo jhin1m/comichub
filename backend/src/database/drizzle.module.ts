@@ -1,5 +1,9 @@
 import { Global, Module, OnModuleDestroy, Inject } from '@nestjs/common';
-import { drizzleProvider, postgresClientProvider, POSTGRES_CLIENT } from './drizzle.provider.js';
+import {
+  drizzleProvider,
+  postgresClientProvider,
+  POSTGRES_CLIENT,
+} from './drizzle.provider.js';
 import type { Sql } from 'postgres';
 
 @Global()

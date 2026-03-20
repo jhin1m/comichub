@@ -27,7 +27,10 @@ export const users = pgTable('users', {
   googleId: varchar('google_id', { length: 255 }).unique(),
   role: userRoleEnum('role').default('user').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdateFn(() => new Date()),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .notNull()
+    .$onUpdateFn(() => new Date()),
   deletedAt: timestamp('deleted_at'),
 });
 

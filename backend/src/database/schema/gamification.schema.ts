@@ -12,7 +12,12 @@ import {
 import { users } from './user.schema.js';
 
 // P2 feature — schema defined now, implemented later
-export const petRarityEnum = pgEnum('pet_rarity', ['common', 'rare', 'epic', 'legendary']);
+export const petRarityEnum = pgEnum('pet_rarity', [
+  'common',
+  'rare',
+  'epic',
+  'legendary',
+]);
 
 // achievements — unlockable via criteria stored as JSON rules
 export const achievements = pgTable('achievements', {
@@ -25,14 +30,25 @@ export const achievements = pgTable('achievements', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const userAchievements = pgTable('user_achievements', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  achievementId: integer('achievement_id').notNull().references(() => achievements.id, { onDelete: 'cascade' }),
-  unlockedAt: timestamp('unlocked_at').defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex('user_achievements_unique_idx').on(table.userId, table.achievementId),
-]);
+export const userAchievements = pgTable(
+  'user_achievements',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    achievementId: integer('achievement_id')
+      .notNull()
+      .references(() => achievements.id, { onDelete: 'cascade' }),
+    unlockedAt: timestamp('unlocked_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_achievements_unique_idx').on(
+      table.userId,
+      table.achievementId,
+    ),
+  ],
+);
 
 // pets — collectible companions with rarity tiers
 export const pets = pgTable('pets', {
@@ -45,19 +61,30 @@ export const pets = pgTable('pets', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const userPets = pgTable('user_pets', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  petId: integer('pet_id').notNull().references(() => pets.id, { onDelete: 'cascade' }),
-  acquiredAt: timestamp('acquired_at').defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex('user_pets_unique_idx').on(table.userId, table.petId),
-]);
+export const userPets = pgTable(
+  'user_pets',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    petId: integer('pet_id')
+      .notNull()
+      .references(() => pets.id, { onDelete: 'cascade' }),
+    acquiredAt: timestamp('acquired_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_pets_unique_idx').on(table.userId, table.petId),
+  ],
+);
 
 // reading_streaks — daily reading streak tracking per user
 export const readingStreaks = pgTable('reading_streaks', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
   currentStreak: integer('current_streak').default(0).notNull(),
   longestStreak: integer('longest_streak').default(0).notNull(),
   lastReadAt: timestamp('last_read_at'),

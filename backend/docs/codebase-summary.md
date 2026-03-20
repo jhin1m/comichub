@@ -1,11 +1,11 @@
 # ComicHub Codebase Summary
 
-**Last Updated:** Phase 1 Complete (2026-03-20)
-**Status:** Project Setup & Scaffolding Complete
+**Last Updated:** Phase 2 Complete (2026-03-20)
+**Status:** Database Schema & Migrations Complete
 
 ## Overview
 
-ComicHub Backend is a NestJS-based REST API for a manga/comic platform. Phase 1 establishes the foundation with configuration, middleware, database setup, and common utilities.
+ComicHub Backend is a NestJS-based REST API for a manga/comic platform. Phase 1 established foundation; Phase 2 completes database schema with 29 tables, relations, and seed data.
 
 ## Directory Structure
 
@@ -20,13 +20,23 @@ src/
 │   ├── redis.config.ts     # Redis connection
 │   ├── s3.config.ts        # AWS S3 credentials
 │   └── config.module.ts    # ConfigModule exports
-├── database/               # Drizzle ORM setup
-│   ├── drizzle.provider.ts # Postgres & Drizzle DI
-│   ├── drizzle.module.ts   # Global DrizzleModule
+├── database/                # Drizzle ORM setup
+│   ├── drizzle.provider.ts  # Postgres & Drizzle DI — exports DrizzleDB<schema> type
+│   ├── drizzle.module.ts    # Global DrizzleModule
 │   ├── schema/
-│   │   └── index.ts        # Schema barrel (Phase 2)
+│   │   ├── user.schema.ts           # 2 tables: users, user_profiles
+│   │   ├── manga.schema.ts          # 11 tables: manga + lookup + pivots + chapters
+│   │   ├── community.schema.ts      # 7 tables: comments, ratings, follows, reports, stickers
+│   │   ├── gamification.schema.ts   # 4 tables: achievements, pets, reading_streaks
+│   │   ├── notification.schema.ts   # 2 tables: notifications, preferences
+│   │   ├── site.schema.ts           # 3 tables: site_settings, advertisements, sticker_sets
+│   │   ├── relations.ts             # Drizzle relations for type-safe eager loading
+│   │   └── index.ts                 # Barrel export — all 29 tables + relations
+│   ├── migrations/
+│   │   ├── 0000_nasty_switch.sql    # Initial schema
+│   │   └── 0001_absent_microchip.sql # Refinements
 │   └── seed/
-│       └── seed.ts         # Seed runner stub (Phase 2)
+│       └── seed.ts          # Genre (22), site_settings (5), sticker_sets (1)
 └── common/                 # Shared utilities & middleware
     ├── decorators/         # @CurrentUser, @Public, @Roles
     ├── guards/             # RolesGuard
@@ -65,8 +75,12 @@ Config Files:
 ### Database (src/database/)
 - Drizzle ORM with postgres-js client
 - Global DrizzleModule handles connection lifecycle
-- Injected as `DRIZZLE` token
-- Seed stub ready for Phase 2 table creation
+- Injected as `DRIZZLE` token with **full schema typing** (DrizzleDB<typeof schema>)
+- 29 tables organized across 6 domain-specific schema files
+- All tables support Drizzle relations for eager loading
+- Auto-timestamps: createdAt (default), updatedAt (auto-updated)
+- Enums: user_role, manga_status, manga_type, report types, pet_rarity
+- Seed runner populates: 22 genres, 5 site_settings, 1 sticker_set
 
 ### Common Utilities
 - **Decorators:** `@CurrentUser()` extracts user from request
@@ -122,7 +136,18 @@ HttpExceptionFilter catches all exceptions:
 - **Logging:** nestjs-pino
 - **Quality:** ESLint, Prettier, Vitest
 
-## Phase 1 Completion Status
+## Phase 2 Completion Status
+
+✅ 29-table database schema (6 domains)
+✅ Type-safe DrizzleDB export with full schema
+✅ Drizzle relations for eager loading across all domains
+✅ Enums, indexes, unique constraints, foreign keys
+✅ Auto-timestamps with $onUpdateFn on all updateable tables
+✅ Seed data: 22 genres, 5 site_settings, 1 sticker_set
+✅ Migrations: 0000 (initial), 0001 (refinements)
+✅ No circular FK constraints — app-managed references documented
+
+## Phase 1 Completion Status (Carried Forward)
 
 ✅ NestJS bootstrap with middleware
 ✅ Configuration management system
@@ -132,10 +157,26 @@ HttpExceptionFilter catches all exceptions:
 ✅ Swagger documentation scaffold
 ✅ Test infrastructure (Vitest)
 
-## Next Steps (Phase 2+)
+## Database Schema Quick Reference
 
-- User & Auth module
-- Manga/Comic entities & schema
-- API endpoints for CRUD operations
-- Authentication & authorization
-- Integration tests
+**User Domain:** 2 tables (users, user_profiles)
+**Manga Domain:** 11 tables (manga + 4 lookup + 4 pivots + chapters + chapter_images)
+**Community Domain:** 7 tables (comments, ratings, follows, reading_history, reports, stickers)
+**Gamification Domain:** 4 tables (achievements, pets, reading_streaks + user relations)
+**Notification Domain:** 2 tables (notifications, preferences)
+**Site Domain:** 3 tables (site_settings, advertisements, sticker_sets)
+
+All tables are typed via `DrizzleDB<typeof schema>`, enabling type-safe queries and mutations.
+
+## Next Steps (Phase 3+)
+
+- Auth module (JWT + Passport)
+- User CRUD + profile management
+- Manga CRUD + genre/artist management
+- Chapter & image management
+- Comment system (polymorphic + nested replies)
+- Rating & review system
+- Follow tracking
+- Notification system
+- Gamification (achievements, pets, streaks)
+- Integration tests for all domain modules

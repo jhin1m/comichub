@@ -29,10 +29,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
             ? Array.isArray(
                 (exResponse as { message: string | string[] }).message,
               )
-              ? (
-                  exResponse as { message: string[] }
-                ).message.join(', ')
-              : ((exResponse as { message: string }).message)
+              ? (exResponse as { message: string[] }).message.join(', ')
+              : (exResponse as { message: string }).message
             : exception.message;
     } else {
       this.logger.error('Unhandled exception', exception);

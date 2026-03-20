@@ -49,7 +49,10 @@ async function seed() {
     { key: 'maintenance_mode', value: 'false' },
   ];
 
-  await db.insert(schema.siteSettings).values(settingsData).onConflictDoNothing();
+  await db
+    .insert(schema.siteSettings)
+    .values(settingsData)
+    .onConflictDoNothing();
   console.log(`  ✓ ${settingsData.length} site settings`);
 
   // Default sticker set

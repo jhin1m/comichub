@@ -23,11 +23,20 @@ import {
   stickers,
   stickerSets,
 } from './community.schema.js';
-import { achievements, userAchievements, pets, userPets, readingStreaks } from './gamification.schema.js';
+import {
+  achievements,
+  userAchievements,
+  pets,
+  userPets,
+  readingStreaks,
+} from './gamification.schema.js';
 
 // ── User relations ──────────────────────────────────────────────
 export const usersRelations = relations(users, ({ one, many }) => ({
-  profile: one(userProfiles, { fields: [users.id], references: [userProfiles.userId] }),
+  profile: one(userProfiles, {
+    fields: [users.id],
+    references: [userProfiles.userId],
+  }),
   manga: many(manga),
   comments: many(comments),
   commentLikes: many(commentLikes),
@@ -37,7 +46,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   chapterReports: many(chapterReports),
   achievements: many(userAchievements),
   pets: many(userPets),
-  readingStreak: one(readingStreaks, { fields: [users.id], references: [readingStreaks.userId] }),
+  readingStreak: one(readingStreaks, {
+    fields: [users.id],
+    references: [readingStreaks.userId],
+  }),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -76,22 +88,34 @@ export const groupsRelations = relations(groups, ({ many }) => ({
 // Pivot relation bridges
 export const mangaGenresRelations = relations(mangaGenres, ({ one }) => ({
   manga: one(manga, { fields: [mangaGenres.mangaId], references: [manga.id] }),
-  genre: one(genres, { fields: [mangaGenres.genreId], references: [genres.id] }),
+  genre: one(genres, {
+    fields: [mangaGenres.genreId],
+    references: [genres.id],
+  }),
 }));
 
 export const mangaArtistsRelations = relations(mangaArtists, ({ one }) => ({
   manga: one(manga, { fields: [mangaArtists.mangaId], references: [manga.id] }),
-  artist: one(artists, { fields: [mangaArtists.artistId], references: [artists.id] }),
+  artist: one(artists, {
+    fields: [mangaArtists.artistId],
+    references: [artists.id],
+  }),
 }));
 
 export const mangaAuthorsRelations = relations(mangaAuthors, ({ one }) => ({
   manga: one(manga, { fields: [mangaAuthors.mangaId], references: [manga.id] }),
-  author: one(authors, { fields: [mangaAuthors.authorId], references: [authors.id] }),
+  author: one(authors, {
+    fields: [mangaAuthors.authorId],
+    references: [authors.id],
+  }),
 }));
 
 export const mangaGroupsRelations = relations(mangaGroups, ({ one }) => ({
   manga: one(manga, { fields: [mangaGroups.mangaId], references: [manga.id] }),
-  group: one(groups, { fields: [mangaGroups.groupId], references: [groups.id] }),
+  group: one(groups, {
+    fields: [mangaGroups.groupId],
+    references: [groups.id],
+  }),
 }));
 
 export const chaptersRelations = relations(chapters, ({ one, many }) => ({
@@ -102,7 +126,10 @@ export const chaptersRelations = relations(chapters, ({ one, many }) => ({
 }));
 
 export const chapterImagesRelations = relations(chapterImages, ({ one }) => ({
-  chapter: one(chapters, { fields: [chapterImages.chapterId], references: [chapters.id] }),
+  chapter: one(chapters, {
+    fields: [chapterImages.chapterId],
+    references: [chapters.id],
+  }),
 }));
 
 // ── Community relations ─────────────────────────────────────────
@@ -113,7 +140,10 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
 
 export const commentLikesRelations = relations(commentLikes, ({ one }) => ({
   user: one(users, { fields: [commentLikes.userId], references: [users.id] }),
-  comment: one(comments, { fields: [commentLikes.commentId], references: [comments.id] }),
+  comment: one(comments, {
+    fields: [commentLikes.commentId],
+    references: [comments.id],
+  }),
 }));
 
 export const ratingsRelations = relations(ratings, ({ one }) => ({
@@ -128,13 +158,22 @@ export const followsRelations = relations(follows, ({ one }) => ({
 
 export const readingHistoryRelations = relations(readingHistory, ({ one }) => ({
   user: one(users, { fields: [readingHistory.userId], references: [users.id] }),
-  manga: one(manga, { fields: [readingHistory.mangaId], references: [manga.id] }),
-  chapter: one(chapters, { fields: [readingHistory.chapterId], references: [chapters.id] }),
+  manga: one(manga, {
+    fields: [readingHistory.mangaId],
+    references: [manga.id],
+  }),
+  chapter: one(chapters, {
+    fields: [readingHistory.chapterId],
+    references: [chapters.id],
+  }),
 }));
 
 export const chapterReportsRelations = relations(chapterReports, ({ one }) => ({
   user: one(users, { fields: [chapterReports.userId], references: [users.id] }),
-  chapter: one(chapters, { fields: [chapterReports.chapterId], references: [chapters.id] }),
+  chapter: one(chapters, {
+    fields: [chapterReports.chapterId],
+    references: [chapters.id],
+  }),
 }));
 
 export const stickerSetsRelations = relations(stickerSets, ({ many }) => ({
@@ -142,7 +181,10 @@ export const stickerSetsRelations = relations(stickerSets, ({ many }) => ({
 }));
 
 export const stickersRelations = relations(stickers, ({ one }) => ({
-  stickerSet: one(stickerSets, { fields: [stickers.stickerSetId], references: [stickerSets.id] }),
+  stickerSet: one(stickerSets, {
+    fields: [stickers.stickerSetId],
+    references: [stickerSets.id],
+  }),
 }));
 
 // ── Gamification relations ──────────────────────────────────────
@@ -150,10 +192,19 @@ export const achievementsRelations = relations(achievements, ({ many }) => ({
   userAchievements: many(userAchievements),
 }));
 
-export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
-  user: one(users, { fields: [userAchievements.userId], references: [users.id] }),
-  achievement: one(achievements, { fields: [userAchievements.achievementId], references: [achievements.id] }),
-}));
+export const userAchievementsRelations = relations(
+  userAchievements,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userAchievements.userId],
+      references: [users.id],
+    }),
+    achievement: one(achievements, {
+      fields: [userAchievements.achievementId],
+      references: [achievements.id],
+    }),
+  }),
+);
 
 export const petsRelations = relations(pets, ({ many }) => ({
   userPets: many(userPets),

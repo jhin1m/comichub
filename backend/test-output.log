@@ -1,0 +1,77 @@
+
+> comichub@0.1.0 test /Users/jhin1m/Desktop/ducanh-project/comichub/backend
+> vitest run
+
+`esbuild` option is set to false, but `oxc` option was not set to false. `esbuild: false` does not have effect any more. If you want to disable the default transformation, which is now handled by Oxc, please set `oxc: false` instead.
+
+[1m[46m RUN [49m[22m [36mv4.1.0 [39m[90m/Users/jhin1m/Desktop/ducanh-project/comichub/backend[39m
+
+[31m[Nest] 18981  - [39m03/20/2026, 7:41:29 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mUnhandled exception[39m
+[31m[Nest] 18981  - [39m03/20/2026, 7:41:29 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39mError: unexpected
+    at [90m/Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39msrc/common/filters/http-exception.filter.spec.ts:39:18
+    at [90mfile:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:296:11
+    at [90mfile:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:1258:26
+    at [90mfile:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:1681:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:1678:10[90m)[39m
+    at [90mfile:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:1660:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:1627:10[90m)[39m
+    at [90mfile:///Users/jhin1m/Desktop/ducanh-project/comichub/backend/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.0/node_modules/[4m@vitest/runner[24m/dist/index.js:2309:64
+ [31m❯[39m src/modules/community/services/rating.service.spec.ts [2m([22m[2m19 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 27[2mms[22m[39m
+[31m       [31m×[31m should handle maximum rating score[39m[32m 5[2mms[22m[39m
+ [31m❯[39m src/modules/auth/auth.service.spec.ts [2m([22m[2m14 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 523[2mms[22m[39m
+[31m       [31m×[31m should return tokens on successful login[39m[32m 2[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/modules/auth/auth.service.spec.ts[2m > [22mAuthService[2m > [22mlogin()[2m > [22mshould return tokens on successful login
+[31m[1mUnauthorizedException[22m: Invalid credentials[39m
+[36m [2m❯[22m AuthService.login src/modules/auth/auth.service.ts:[2m59:13[22m[39m
+    [90m 57|[39m     [35mconst[39m valid [33m=[39m [35mawait[39m bcrypt[33m.[39m[34mcompare[39m(dto[33m.[39mpassword[33m,[39m user[33m.[39mpassword)[33m;[39m
+    [90m 58|[39m     [35mif[39m ([33m![39mvalid) {
+    [90m 59|[39m       [35mthrow[39m [35mnew[39m [33mUnauthorizedException[39m([32m'Invalid credentials'[39m)[33m;[39m
+    [90m   |[39m             [31m^[39m
+    [90m 60|[39m     }
+    [90m 61|[39m
+[90m [2m❯[22m src/modules/auth/auth.service.spec.ts:[2m252:22[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/community/services/rating.service.spec.ts[2m > [22mRatingService[2m > [22medge cases[2m > [22mshould handle maximum rating score
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ ObjectContaining {"score": "5.0"} ][90m
+
+Received:
+
+[1m  1st vi.fn() call:
+
+[22m[2m  [[22m
+[32m-   ObjectContaining {[90m
+[32m-     "score": "5.0",[90m
+[31m+   {[90m
+[31m+     "mangaId": 1,[90m
+[31m+     "score": "5",[90m
+[31m+     "userId": 5,[90m
+[2m    },[22m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m src/modules/community/services/rating.service.spec.ts:[2m326:29[22m[39m
+    [90m324|[39m       [35mawait[39m service[33m.[39m[34mupsert[39m(mangaId[33m,[39m userId[33m,[39m dto)[33m;[39m
+    [90m325|[39m
+    [90m326|[39m       [34mexpect[39m(mockDb[33m.[39mvalues)[33m.[39m[34mtoHaveBeenCalledWith[39m(
+    [90m   |[39m                             [31m^[39m
+    [90m327|[39m         expect[33m.[39m[34mobjectContaining[39m({ score[33m:[39m [32m'5.0'[39m })[33m,[39m
+    [90m328|[39m       )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (8)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m71 passed[39m[22m[90m (73)[39m
+[2m   Start at [22m 19:41:29
+[2m   Duration [22m 1.57s[2m (transform 714ms, setup 0ms, import 4.26s, tests 618ms, environment 0ms)[22m
+
+ ELIFECYCLE  Test failed. See above for more details.

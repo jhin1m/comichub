@@ -6,7 +6,9 @@ export const jwtConfig = registerAs('jwt', () => {
   const refreshSecret = process.env.JWT_REFRESH_SECRET;
 
   if (isProd && (!accessSecret || !refreshSecret)) {
-    throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are required in production');
+    throw new Error(
+      'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are required in production',
+    );
   }
 
   return {

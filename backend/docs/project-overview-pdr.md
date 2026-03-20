@@ -1,17 +1,31 @@
 # ComicHub Backend API — Project Overview & PDR
 
 **Project:** ComicHub Backend API
-**Phase:** 1 Complete — Project Setup & Scaffolding
-**Status:** Foundation Ready for Feature Development
+**Phase:** 2 Complete — Database Schema & Migrations
+**Status:** Data Layer Ready for CRUD Modules
 **Last Updated:** 2026-03-20
 
 ---
 
 ## Executive Summary
 
-ComicHub is a modern manga/comic platform backend API built with NestJS, PostgreSQL, and Drizzle ORM. Phase 1 establishes a production-ready foundation with configuration management, database integration, middleware, and common utilities. The architecture is designed for scalability, security, and developer productivity.
+ComicHub is a modern manga/comic platform backend API built with NestJS, PostgreSQL, and Drizzle ORM. Phase 1 established foundation; Phase 2 completes comprehensive database schema with 29 tables across 6 domains, type-safe relational queries, and seed data.
 
-**Key Achievement:** Completed project scaffolding with 36 files, 6,671 tokens, and comprehensive middleware/guard/filter setup.
+**Phase 2 Achievement:** 29-table database schema (users, manga, community, gamification, notifications, site) with full Drizzle relations, auto-timestamps, enums, indexes, and seeded data (22 genres, 5 site settings).
+
+---
+
+## Roadmap
+
+| Phase | Title | Status |
+|-------|-------|--------|
+| 1 | Project Setup & Scaffolding | ✅ Complete |
+| 2 | Database Schema & Migrations | ✅ Complete |
+| 3 | Auth Module & User CRUD | 🔄 Next |
+| 4 | Manga CRUD & Management | 📋 Planned |
+| 5 | Comments & Community Features | 📋 Planned |
+| 6 | Gamification & Notifications | 📋 Planned |
+| 7 | Integration Tests & Optimization | 📋 Planned |
 
 ---
 
@@ -31,6 +45,78 @@ Enable readers to discover, read, and engage with manga and comic content throug
 - Manga/comic readers
 - Content creators/publishers
 - API consumers (web/mobile apps)
+
+---
+
+## Phase 2: Database Schema & Migrations (COMPLETE)
+
+### Functional Requirements
+
+#### FR6: Database Schema Design
+**Status:** ✅ Complete
+- 29 tables across 6 domains for scalability
+- Type-safe query building with Drizzle relations
+- Proper foreign key constraints and cascading deletes
+- Enum types for domain-specific values
+- Indexes on high-traffic query paths
+
+**Implementation:**
+- `src/database/schema/` — 6 domain-specific files (user, manga, community, gamification, notification, site)
+- `src/database/schema/relations.ts` — Type-safe Drizzle relations (1-to-1, 1-to-many, many-to-many)
+- **User Domain:** 2 tables (users, user_profiles)
+- **Manga Domain:** 11 tables (manga + 4 lookup tables + 4 pivot tables + chapters + chapter_images)
+- **Community Domain:** 7 tables (comments, ratings, follows, reading_history, reports, stickers, sticker_likes)
+- **Gamification Domain:** 4 tables (achievements, pets, reading_streaks + user relations)
+- **Notification Domain:** 2 tables (notifications, preferences)
+- **Site Domain:** 3 tables (site_settings, advertisements, sticker_sets)
+
+#### FR7: Auto-Timestamps & Constraints
+**Status:** ✅ Complete
+- Auto-timestamps on all tables (createdAt, updatedAt with $onUpdateFn)
+- Unique constraints on domain keys (email, uuid, slug, names)
+- Foreign keys with cascading deletes for data consistency
+- No circular FK constraints — app-managed references documented
+
+**Implementation:**
+- All tables use `createdAt: timestamp.defaultNow()`
+- Updateable tables have `updatedAt.$onUpdateFn(() => new Date())`
+- Manga.lastChapterId has no FK (prevents circular constraint with chapters), managed by application
+
+#### FR8: Database Enums
+**Status:** ✅ Complete
+- Type-safe enums for domain values
+- User roles, manga status/type, report types, pet rarity
+
+**Enums:**
+- `user_role` — admin, user
+- `manga_status` — ongoing, completed, hiatus, dropped
+- `manga_type` — manga, manhwa, manhua, doujinshi
+- `report_type` — 6 issue categories
+- `report_status` — pending, resolved, rejected
+- `pet_rarity` — common, rare, epic, legendary
+
+#### FR9: Migrations & Seed Data
+**Status:** ✅ Complete
+- Drizzle migrations managed via Drizzle Kit
+- Seed runner for initial data population
+
+**Implementation:**
+- `src/database/migrations/0000_nasty_switch.sql` — Initial schema creation
+- `src/database/migrations/0001_absent_microchip.sql` — Refinements
+- `src/database/seed/seed.ts` — Populates:
+  - 22 genres (action, adventure, comedy, drama, fantasy, horror, etc.)
+  - 5 site_settings (site_name, site_description, site_logo, posts_per_page, maintenance_mode)
+  - 1 default sticker_set
+
+#### FR10: Type-Safe DrizzleDB Export
+**Status:** ✅ Complete
+- Global typed database access for all modules
+- Full schema typing enables IDE autocomplete
+
+**Implementation:**
+- `drizzle.provider.ts` exports `type DrizzleDB = PostgresJsDatabase<typeof schema>`
+- Services inject `@Inject(DRIZZLE)` and get full type coverage
+- All 29 tables + relations available on DrizzleDB instance
 
 ---
 

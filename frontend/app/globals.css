@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import '@pxlkit/ui-kit/styles.css';
+@import "tailwindcss";
+
+@source "../components/**/*.{ts,tsx}";
+@source "../node_modules/@pxlkit/ui-kit/dist/**/*.js";
+
+@theme inline {
+  --font-rajdhani: 'Rajdhani', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --color-accent: #e63946;
+  --color-accent-hover: #c1121f;
+  --color-surface: #1a1a1a;
+  --color-elevated: #242424;
+}
+
+:root {
+  --bg-base: #0f0f0f;
+  --bg-surface: #1a1a1a;
+  --bg-elevated: #242424;
+  --bg-hover: #2e2e2e;
+  --accent: #e63946;
+  --accent-hover: #c1121f;
+  --accent-muted: #e6394620;
+  --text-primary: #f5f5f5;
+  --text-secondary: #a0a0a0;
+  --text-muted: #5a5a5a;
+  --border: #2a2a2a;
+  --border-accent: #e63946;
+  --success: #2dc653;
+  --warning: #f4a261;
+  --info: #4895ef;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Rajdhani', sans-serif;
+}
