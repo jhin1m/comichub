@@ -1,0 +1,146 @@
+import {
+  pgTable,
+  pgEnum,
+  serial,
+  integer,
+  bigint,
+  varchar,
+  text,
+  boolean,
+  timestamp,
+  numeric,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+import { users } from './user.schema.js';
+
+// Enums
+export const mangaStatusEnum = pgEnum('manga_status', ['ongoing', 'completed', 'hiatus', 'dropped']);
+export const mangaTypeEnum = pgEnum('manga_type', ['manga', 'manhwa', 'manhua', 'doujinshi']);
+
+// Lookup tables — genres, artists, authors, translation groups
+export const genres = pgTable('genres', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  slug: varchar('slug', { length: 120 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const artists = pgTable('artists', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 280 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const authors = pgTable('authors', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 280 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const groups = pgTable('groups', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 280 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// manga — main content table with denormalized counters
+// Note: lastChapterId has no DB FK (circular dependency with chapters);
+//       maintained by application layer to avoid constraint cycle.
+export const manga = pgTable('manga', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  title: varchar('title', { length: 500 }).notNull(),
+  titleAlt: varchar('title_alt', { length: 500 }),
+  slug: varchar('slug', { length: 520 }).notNull().unique(),
+  description: text('description'),
+  cover: varchar('cover', { length: 500 }),
+  status: mangaStatusEnum('status').default('ongoing').notNull(),
+  type: mangaTypeEnum('type').default('manga').notNull(),
+  views: bigint('views', { mode: 'number' }).default(0).notNull(),
+  viewsDay: integer('views_day').default(0).notNull(),
+  viewsWeek: integer('views_week').default(0).notNull(),
+  followersCount: integer('followers_count').default(0).notNull(),
+  chaptersCount: integer('chapters_count').default(0).notNull(),
+  averageRating: numeric('average_rating', { precision: 3, scale: 1 }).default('0.0').notNull(),
+  totalRatings: integer('total_ratings').default(0).notNull(),
+  isHot: boolean('is_hot').default(false).notNull(),
+  isReviewed: boolean('is_reviewed').default(false).notNull(),
+  lastChapterId: integer('last_chapter_id'), // app-managed, no FK (circular)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdateFn(() => new Date()),
+  deletedAt: timestamp('deleted_at'),
+}, (table) => [
+  index('manga_status_type_idx').on(table.status, table.type),
+  index('manga_created_at_idx').on(table.createdAt),
+  index('manga_views_idx').on(table.views),
+]);
+
+// Pivot tables — many-to-many joins
+export const mangaGenres = pgTable('manga_genres', {
+  mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+  genreId: integer('genre_id').notNull().references(() => genres.id, { onDelete: 'cascade' }),
+}, (table) => [
+  uniqueIndex('manga_genres_unique_idx').on(table.mangaId, table.genreId),
+]);
+
+export const mangaArtists = pgTable('manga_artists', {
+  mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+  artistId: integer('artist_id').notNull().references(() => artists.id, { onDelete: 'cascade' }),
+}, (table) => [
+  uniqueIndex('manga_artists_unique_idx').on(table.mangaId, table.artistId),
+]);
+
+export const mangaAuthors = pgTable('manga_authors', {
+  mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+  authorId: integer('author_id').notNull().references(() => authors.id, { onDelete: 'cascade' }),
+}, (table) => [
+  uniqueIndex('manga_authors_unique_idx').on(table.mangaId, table.authorId),
+]);
+
+export const mangaGroups = pgTable('manga_groups', {
+  mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+  groupId: integer('group_id').notNull().references(() => groups.id, { onDelete: 'cascade' }),
+}, (table) => [
+  uniqueIndex('manga_groups_unique_idx').on(table.mangaId, table.groupId),
+]);
+
+// chapters — ordered list per manga
+export const chapters = pgTable('chapters', {
+  id: serial('id').primaryKey(),
+  mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+  number: numeric('number', { precision: 6, scale: 1 }).notNull(),
+  title: varchar('title', { length: 500 }),
+  slug: varchar('slug', { length: 520 }).notNull(),
+  viewCount: bigint('view_count', { mode: 'number' }).default(0).notNull(),
+  order: integer('order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdateFn(() => new Date()),
+  deletedAt: timestamp('deleted_at'),
+}, (table) => [
+  uniqueIndex('chapters_manga_number_idx').on(table.mangaId, table.number),
+  uniqueIndex('chapters_manga_slug_idx').on(table.mangaId, table.slug),
+  index('chapters_manga_order_idx').on(table.mangaId, table.order),
+]);
+
+// chapter_images — individual pages stored in S3
+export const chapterImages = pgTable('chapter_images', {
+  id: serial('id').primaryKey(),
+  chapterId: integer('chapter_id').notNull().references(() => chapters.id, { onDelete: 'cascade' }),
+  imageUrl: varchar('image_url', { length: 1000 }).notNull(),
+  pageNumber: integer('page_number').notNull(),
+  order: integer('order').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('chapter_images_chapter_page_idx').on(table.chapterId, table.pageNumber),
+  index('chapter_images_chapter_order_idx').on(table.chapterId, table.order),
+]);
+
+export type Manga = typeof manga.$inferSelect;
+export type NewManga = typeof manga.$inferInsert;
+export type Chapter = typeof chapters.$inferSelect;
+export type NewChapter = typeof chapters.$inferInsert;
+export type Genre = typeof genres.$inferSelect;
