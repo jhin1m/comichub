@@ -1,6 +1,14 @@
 packages/*/package-lock.json
 sample/**/package-lock.json
 
+# build output
+dist/
+
+# env secrets
+.env
+.env.local
+.env.production
+
 # dependencies
 node_modules/
 
