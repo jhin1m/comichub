@@ -1,0 +1,60 @@
+export interface MangaListItem {
+  id: number;
+  title: string;
+  slug: string;
+  cover: string | null;
+  status: string;
+  type: string;
+  views: number;
+  chaptersCount: number;
+  averageRating: string;
+  updatedAt: Date;
+}
+
+export interface MangaDetail extends MangaListItem {
+  titleAlt: string | null;
+  description: string | null;
+  followersCount: number;
+  totalRatings: number;
+  isHot: boolean;
+  genres: { id: number; name: string; slug: string }[];
+  artists: { id: number; name: string; slug: string }[];
+  authors: { id: number; name: string; slug: string }[];
+  groups: { id: number; name: string; slug: string }[];
+  chapters: ChapterListItem[];
+  createdAt: Date;
+}
+
+export interface ChapterListItem {
+  id: number;
+  number: string;
+  title: string | null;
+  slug: string;
+  viewCount: number;
+  order: number;
+  createdAt: Date;
+}
+
+export interface ChapterWithImages extends ChapterListItem {
+  mangaId: number;
+  images: { id: number; imageUrl: string; pageNumber: number; order: number }[];
+}
+
+export interface ChapterNavigation {
+  prev: { id: number; number: string; slug: string } | null;
+  next: { id: number; number: string; slug: string } | null;
+}
+
+export interface TaxonomyItem {
+  id: number;
+  name: string;
+  slug: string;
+  createdAt: Date;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
