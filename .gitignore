@@ -1,28 +1,3 @@
-# OS
-.DS_Store
-
-# IDE
-.idea
+.claude
 .vscode
-*.code-workspace
-
-# env
-.env
-.env.local
-.env.*.local
-
-# logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Backend build artifacts
-backend/dist
-backend/node_modules
-backend/coverage
-backend/.nyc_output
-backend/*.tsbuildinfo
-
-# drizzle generated
-backend/src/database/migrations/*
-!backend/src/database/migrations/.gitkeep
+plans
