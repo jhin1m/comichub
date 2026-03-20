@@ -1,0 +1,992 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+docs/
+  tech-stack.md
+src/
+  common/
+    decorators/
+      current-user.decorator.ts
+      public.decorator.ts
+      roles.decorator.ts
+    dto/
+      api-response.dto.ts
+      pagination.dto.spec.ts
+      pagination.dto.ts
+    filters/
+      http-exception.filter.spec.ts
+      http-exception.filter.ts
+    guards/
+      roles.guard.ts
+    interceptors/
+      transform.interceptor.spec.ts
+      transform.interceptor.ts
+    utils/
+      slug.util.spec.ts
+      slug.util.ts
+  config/
+    app.config.ts
+    config.module.ts
+    database.config.ts
+    jwt.config.ts
+    redis.config.ts
+    s3.config.ts
+  database/
+    schema/
+      index.ts
+    seed/
+      seed.ts
+    drizzle.module.ts
+    drizzle.provider.ts
+  app.module.ts
+  main.ts
+.env.example
+.gitignore
+.prettierrc
+drizzle.config.ts
+eslint.config.mjs
+nest-cli.json
+package.json
+tsconfig.build.json
+tsconfig.json
+vitest.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="docs/tech-stack.md">
+# ComicHub — Tech Stack
+
+## Runtime & Language
+- **Runtime:** Node.js 20+ (LTS)
+- **Language:** TypeScript 5.x (strict mode)
+- **Package Manager:** pnpm
+
+## Framework
+- **Backend:** NestJS 11
+- **Architecture:** Modular (modules/controllers/services/entities)
+- **API Style:** REST v1 (`/api/v1/...`)
+
+## Database
+- **Engine:** PostgreSQL 16
+- **ORM:** Drizzle ORM (type-safe, SQL-like)
+- **Migrations:** Drizzle Kit
+
+## Authentication & Authorization
+- **Auth:** Passport + JWT (access + refresh tokens)
+- **OAuth:** Google OAuth 2.0 via Passport strategy
+- **RBAC:** CASL or custom guards with decorators
+
+## Key Packages
+| Package | Purpose |
+|---------|---------|
+| `@nestjs/swagger` | Auto-generated OpenAPI docs |
+| `drizzle-orm` + `drizzle-kit` | ORM + migrations |
+| `@nestjs/passport` + `passport-jwt` | JWT authentication |
+| `passport-google-oauth20` | Google OAuth |
+| `class-validator` + `class-transformer` | DTO validation |
+| `@nestjs/cache-manager` + `ioredis` | Redis caching |
+| `@nestjs/throttler` | Rate limiting |
+| `@aws-sdk/client-s3` | S3 image storage |
+| `@nestjs/bull` | Queue/job processing |
+| `sharp` | Image optimization |
+| `nestjs-pino` | Structured logging |
+
+## Infrastructure
+- **Cache:** Redis
+- **Storage:** AWS S3
+- **Queue:** Bull (Redis-backed)
+- **Logging:** Pino
+
+## Testing
+- **Framework:** Vitest
+- **E2E:** Supertest
+- **Coverage target:** 80%+
+
+## Code Quality
+- **Linter:** ESLint (flat config)
+- **Formatter:** Prettier
+- **Pre-commit:** Husky + lint-staged
+</file>
+
+<file path="src/common/decorators/current-user.decorator.ts">
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { Request } from 'express';
+
+export const CurrentUser = createParamDecorator(
+  (data: string | undefined, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest<Request>();
+    const user = request.user;
+    return data ? (user as Record<string, unknown>)?.[data] : user;
+  },
+);
+</file>
+
+<file path="src/common/decorators/public.decorator.ts">
+import { SetMetadata } from '@nestjs/common';
+
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+</file>
+
+<file path="src/common/decorators/roles.decorator.ts">
+import { SetMetadata } from '@nestjs/common';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+</file>
+
+<file path="src/common/dto/api-response.dto.ts">
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class PaginationMeta {
+  @ApiProperty()
+  page!: number;
+
+  @ApiProperty()
+  limit!: number;
+
+  @ApiProperty()
+  total!: number;
+
+  @ApiProperty()
+  totalPages!: number;
+}
+
+export class ApiResponseDto<T = unknown> {
+  @ApiProperty()
+  success!: boolean;
+
+  @ApiProperty()
+  data!: T;
+
+  @ApiProperty()
+  message!: string;
+
+  @ApiPropertyOptional()
+  meta?: PaginationMeta;
+}
+</file>
+
+<file path="src/common/dto/pagination.dto.spec.ts">
+import { describe, it, expect } from 'vitest';
+import { PaginationDto } from './pagination.dto.js';
+
+describe('PaginationDto', () => {
+  it('should have default page=1 and limit=20', () => {
+    const dto = new PaginationDto();
+    expect(dto.page).toBe(1);
+    expect(dto.limit).toBe(20);
+  });
+
+  it('should calculate offset correctly', () => {
+    const dto = new PaginationDto();
+    dto.page = 3;
+    dto.limit = 10;
+    expect(dto.offset).toBe(20);
+  });
+});
+</file>
+
+<file path="src/common/dto/pagination.dto.ts">
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
+
+export class PaginationDto {
+  @ApiPropertyOptional({ default: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit: number = 20;
+
+  get offset(): number {
+    return (this.page - 1) * this.limit;
+  }
+}
+</file>
+
+<file path="src/common/filters/http-exception.filter.spec.ts">
+import { describe, it, expect, vi } from 'vitest';
+import { HttpExceptionFilter } from './http-exception.filter.js';
+import { HttpException, HttpStatus, ArgumentsHost } from '@nestjs/common';
+
+describe('HttpExceptionFilter', () => {
+  const filter = new HttpExceptionFilter();
+
+  function createMockHost() {
+    const json = vi.fn();
+    const status = vi.fn().mockReturnValue({ json });
+    const response = { status };
+    return {
+      host: {
+        switchToHttp: () => ({
+          getResponse: () => response,
+          getRequest: () => ({ url: '/test' }),
+        }),
+      } as unknown as ArgumentsHost,
+      json,
+      status,
+    };
+  }
+
+  it('should handle HttpException with string message', () => {
+    const { host, json, status } = createMockHost();
+    const exception = new HttpException('Not found', HttpStatus.NOT_FOUND);
+    filter.catch(exception, host);
+    expect(status).toHaveBeenCalledWith(404);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      data: null,
+      message: 'Not found',
+      statusCode: 404,
+    });
+  });
+
+  it('should handle unknown exceptions as 500', () => {
+    const { host, json, status } = createMockHost();
+    filter.catch(new Error('unexpected'), host);
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      success: false,
+      data: null,
+      message: 'Internal server error',
+      statusCode: 500,
+    });
+  });
+});
+</file>
+
+<file path="src/common/filters/http-exception.filter.ts">
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
+import { Response } from 'express';
+
+@Catch()
+export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal server error';
+
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const exResponse = exception.getResponse();
+      message =
+        typeof exResponse === 'string'
+          ? exResponse
+          : (exResponse as { message?: string | string[] }).message
+            ? Array.isArray(
+                (exResponse as { message: string | string[] }).message,
+              )
+              ? (
+                  exResponse as { message: string[] }
+                ).message.join(', ')
+              : ((exResponse as { message: string }).message)
+            : exception.message;
+    } else {
+      this.logger.error('Unhandled exception', exception);
+    }
+
+    response.status(status).json({
+      success: false,
+      data: null,
+      message,
+      statusCode: status,
+    });
+  }
+}
+</file>
+
+<file path="src/common/guards/roles.guard.ts">
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../decorators/roles.decorator.js';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!requiredRoles) return true;
+
+    const { user } = context.switchToHttp().getRequest();
+    return requiredRoles.some((role) =>
+      (user as { roles?: string[] })?.roles?.includes(role),
+    );
+  }
+}
+</file>
+
+<file path="src/common/interceptors/transform.interceptor.spec.ts">
+import { describe, it, expect } from 'vitest';
+import { TransformInterceptor } from './transform.interceptor.js';
+import { of } from 'rxjs';
+import { ExecutionContext, CallHandler } from '@nestjs/common';
+
+describe('TransformInterceptor', () => {
+  const interceptor = new TransformInterceptor();
+
+  const mockContext = {} as ExecutionContext;
+
+  it('should wrap plain data in standard response', async () => {
+    const handler: CallHandler = { handle: () => of({ id: 1, name: 'test' }) };
+    const result = await new Promise((resolve) => {
+      interceptor.intercept(mockContext, handler).subscribe(resolve);
+    });
+    expect(result).toEqual({
+      success: true,
+      data: { id: 1, name: 'test' },
+      message: 'OK',
+    });
+  });
+
+  it('should pass through data that already has response shape', async () => {
+    const existing = { success: true, data: [1], message: 'Done' };
+    const handler: CallHandler = { handle: () => of(existing) };
+    const result = await new Promise((resolve) => {
+      interceptor.intercept(mockContext, handler).subscribe(resolve);
+    });
+    expect(result).toEqual(existing);
+  });
+});
+</file>
+
+<file path="src/common/interceptors/transform.interceptor.ts">
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+  meta?: Record<string, unknown>;
+}
+
+@Injectable()
+export class TransformInterceptor<T>
+  implements NestInterceptor<T, ApiResponse<T>>
+{
+  intercept(
+    _context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<ApiResponse<T>> {
+    return next.handle().pipe(
+      map((data) => {
+        // If data already has our response shape, pass through
+        if (data && typeof data === 'object' && 'success' in data) {
+          return data as ApiResponse<T>;
+        }
+        return {
+          success: true,
+          data,
+          message: 'OK',
+        };
+      }),
+    );
+  }
+}
+</file>
+
+<file path="src/common/utils/slug.util.spec.ts">
+import { describe, it, expect } from 'vitest';
+import { slugify } from './slug.util.js';
+
+describe('slugify', () => {
+  it('should convert text to slug', () => {
+    expect(slugify('Hello World')).toBe('hello-world');
+  });
+
+  it('should strip special characters', () => {
+    expect(slugify('One Piece: Chapter 1000!')).toBe('one-piece-chapter-1000');
+  });
+
+  it('should trim whitespace', () => {
+    expect(slugify('  spaced  ')).toBe('spaced');
+  });
+});
+</file>
+
+<file path="src/common/utils/slug.util.ts">
+import slugifyLib from 'slugify';
+
+export function slugify(text: string): string {
+  return slugifyLib(text, {
+    lower: true,
+    strict: true,
+    trim: true,
+  });
+}
+</file>
+
+<file path="src/config/app.config.ts">
+import { registerAs } from '@nestjs/config';
+
+export const appConfig = registerAs('app', () => ({
+  nodeEnv: process.env.NODE_ENV || 'development',
+  port: parseInt(process.env.PORT || '3000', 10),
+}));
+</file>
+
+<file path="src/config/config.module.ts">
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { appConfig } from './app.config.js';
+import { databaseConfig } from './database.config.js';
+import { redisConfig } from './redis.config.js';
+import { s3Config } from './s3.config.js';
+import { jwtConfig } from './jwt.config.js';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [appConfig, databaseConfig, redisConfig, s3Config, jwtConfig],
+      envFilePath: ['.env'],
+    }),
+  ],
+})
+export class AppConfigModule {}
+</file>
+
+<file path="src/config/database.config.ts">
+import { registerAs } from '@nestjs/config';
+
+export const databaseConfig = registerAs('database', () => {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is required');
+  return { url };
+});
+</file>
+
+<file path="src/config/jwt.config.ts">
+import { registerAs } from '@nestjs/config';
+
+export const jwtConfig = registerAs('jwt', () => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const accessSecret = process.env.JWT_ACCESS_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+  if (isProd && (!accessSecret || !refreshSecret)) {
+    throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET are required in production');
+  }
+
+  return {
+    accessSecret: accessSecret || 'dev-access-secret',
+    refreshSecret: refreshSecret || 'dev-refresh-secret',
+    accessExpiry: process.env.JWT_ACCESS_EXPIRY || '15m',
+    refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '7d',
+  };
+});
+</file>
+
+<file path="src/config/redis.config.ts">
+import { registerAs } from '@nestjs/config';
+
+export const redisConfig = registerAs('redis', () => ({
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
+}));
+</file>
+
+<file path="src/config/s3.config.ts">
+import { registerAs } from '@nestjs/config';
+
+export const s3Config = registerAs('s3', () => ({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  bucket: process.env.AWS_S3_BUCKET || '',
+  region: process.env.AWS_S3_REGION || 'ap-southeast-1',
+}));
+</file>
+
+<file path="src/database/schema/index.ts">
+// Schema barrel export — populated in Phase 2
+</file>
+
+<file path="src/database/seed/seed.ts">
+// Seed runner — populated in Phase 2
+export async function seed() {
+  console.log('Seeding database...');
+}
+</file>
+
+<file path="src/database/drizzle.module.ts">
+import { Global, Module, OnModuleDestroy, Inject } from '@nestjs/common';
+import { drizzleProvider, postgresClientProvider, POSTGRES_CLIENT } from './drizzle.provider.js';
+import type { Sql } from 'postgres';
+
+@Global()
+@Module({
+  providers: [postgresClientProvider, drizzleProvider],
+  exports: [drizzleProvider],
+})
+export class DrizzleModule implements OnModuleDestroy {
+  constructor(@Inject(POSTGRES_CLIENT) private readonly client: Sql) {}
+
+  async onModuleDestroy() {
+    await this.client.end();
+  }
+}
+</file>
+
+<file path="src/database/drizzle.provider.ts">
+import { Provider } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { drizzle, PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import postgres, { Sql } from 'postgres';
+
+export const DRIZZLE = Symbol('DRIZZLE');
+export const POSTGRES_CLIENT = Symbol('POSTGRES_CLIENT');
+
+export type DrizzleDB = PostgresJsDatabase;
+
+export const postgresClientProvider: Provider = {
+  provide: POSTGRES_CLIENT,
+  inject: [ConfigService],
+  useFactory: (config: ConfigService): Sql => {
+    const url = config.getOrThrow<string>('database.url');
+    return postgres(url);
+  },
+};
+
+export const drizzleProvider: Provider = {
+  provide: DRIZZLE,
+  inject: [POSTGRES_CLIENT],
+  useFactory: (client: Sql): DrizzleDB => {
+    return drizzle(client);
+  },
+};
+</file>
+
+<file path="src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { AppConfigModule } from './config/config.module.js';
+import { DrizzleModule } from './database/drizzle.module.js';
+
+@Module({
+  imports: [
+    AppConfigModule,
+    DrizzleModule,
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+  ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+})
+export class AppModule {}
+</file>
+
+<file path="src/main.ts">
+import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
+import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module.js';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
+
+  app.enableShutdownHooks();
+
+  // Global prefix
+  app.setGlobalPrefix('api/v1');
+
+  // Validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Global filters & interceptors
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
+
+  // CORS — restrict in production
+  app.enableCors({
+    origin: nodeEnv === 'production' ? false : true,
+  });
+
+  // Swagger — dev/staging only
+  if (nodeEnv !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('ComicHub API')
+      .setDescription('Manga/Comic platform REST API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
+
+  const port = configService.get<number>('app.port', 3000);
+  await app.listen(port);
+  console.log(`ComicHub API running on http://localhost:${port}`);
+  if (nodeEnv !== 'production') {
+    console.log(`Swagger docs at http://localhost:${port}/api/docs`);
+  }
+}
+
+void bootstrap();
+</file>
+
+<file path=".env.example">
+NODE_ENV=development
+PORT=3000
+
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/comichub
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# JWT
+JWT_ACCESS_SECRET=your-access-secret
+JWT_REFRESH_SECRET=your-refresh-secret
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
+
+# AWS S3
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET=
+AWS_S3_REGION=ap-southeast-1
+</file>
+
+<file path=".gitignore">
+# compiled output
+/dist
+/node_modules
+/build
+
+# logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+*.code-workspace
+
+# env
+.env
+.env.local
+.env.*.local
+
+# test
+/coverage
+/.nyc_output
+
+# misc
+*.tsbuildinfo
+
+# drizzle
+/drizzle/meta
+
+# plan
+/plans
+
+# tests
+/test
+/benchmarks/memory
+/coverage
+/.nyc_output
+/packages/graphql
+/benchmarks/memory
+build/config\.gypi
+</file>
+
+<file path=".prettierrc">
+{
+  "singleQuote": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="drizzle.config.ts">
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './src/database/schema/index.ts',
+  out: './src/database/migrations',
+  dialect: 'postgresql',
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+});
+</file>
+
+<file path="eslint.config.mjs">
+// @ts-check
+import eslint from '@eslint/js';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  {
+    ignores: ['eslint.config.mjs'],
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  eslintPluginPrettierRecommended,
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+      sourceType: 'commonjs',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
+    },
+  },
+);
+</file>
+
+<file path="nest-cli.json">
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "comichub",
+  "version": "0.1.0",
+  "description": "ComicHub Backend API — manga/comic platform",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1013.0",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.3",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.2.6",
+    "@nestjs/throttler": "^6.5.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "drizzle-orm": "^0.45.1",
+    "ioredis": "^5.10.1",
+    "nestjs-pino": "^4.6.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "pino-http": "^11.0.0",
+    "postgres": "^3.4.8",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "sharp": "^0.34.5",
+    "slugify": "^1.6.8"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.0",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^16.0.0",
+    "prettier": "^3.4.2",
+    "supertest": "^7.0.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "unplugin-swc": "^1.5.9",
+    "vitest": "^4.1.0"
+  }
+}
+</file>
+
+<file path="tsconfig.build.json">
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+</file>
+
+<file path="vitest.config.ts">
+import swc from 'unplugin-swc';
+import { defineConfig } from 'vitest/config';
+import path from 'path';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    root: './',
+    include: ['src/**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.spec.ts', 'src/**/*.dto.ts', 'src/main.ts'],
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  plugins: [swc.vite()],
+});
+</file>
+
+</files>
