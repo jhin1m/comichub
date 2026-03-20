@@ -1,23 +1,9 @@
-# compiled output
-/dist
-/node_modules
-/build
-
-# logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
 # OS
 .DS_Store
 
 # IDE
 .idea
 .vscode
-*.swp
-*.swo
-*~
 *.code-workspace
 
 # env
@@ -25,24 +11,18 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 
-# test
-/coverage
-/.nyc_output
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
 
-# misc
-*.tsbuildinfo
+# Backend build artifacts
+backend/dist
+backend/node_modules
+backend/coverage
+backend/.nyc_output
+backend/*.tsbuildinfo
 
-# drizzle
-/drizzle/meta
-
-# plan
-/plans
-
-# tests
-/test
-/benchmarks/memory
-/coverage
-/.nyc_output
-/packages/graphql
-/benchmarks/memory
-build/config\.gypi
+# drizzle generated
+backend/src/database/migrations/*
+!backend/src/database/migrations/.gitkeep
