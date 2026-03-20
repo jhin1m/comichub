@@ -5,12 +5,20 @@ import { databaseConfig } from './database.config.js';
 import { redisConfig } from './redis.config.js';
 import { s3Config } from './s3.config.js';
 import { jwtConfig } from './jwt.config.js';
+import { googleConfig } from './google.config.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig, s3Config, jwtConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        redisConfig,
+        s3Config,
+        jwtConfig,
+        googleConfig,
+      ],
       envFilePath: ['.env'],
     }),
   ],
