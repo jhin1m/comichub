@@ -17,6 +17,14 @@ export const clearTokens = () => {
 
 export const apiClient = axios.create({ baseURL: BASE_URL });
 
+// Unwrap backend's standard { success, data, message } envelope
+apiClient.interceptors.response.use((res) => {
+  if (res.data && typeof res.data === 'object' && 'success' in res.data && 'data' in res.data) {
+    res.data = res.data.data;
+  }
+  return res;
+});
+
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (_accessToken) {
     config.headers.Authorization = `Bearer ${_accessToken}`;

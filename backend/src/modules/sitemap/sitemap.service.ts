@@ -1,40 +1,52 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import type Redis from 'ioredis';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { manga } from '../../database/schema/index.js';
 import { isNull } from 'drizzle-orm';
 
-const SITEMAP_CACHE_KEY = 'sitemap:main';
-const SITEMAP_TTL = 86400; // 24h
-
 @Injectable()
 export class SitemapService {
+  private readonly logger = new Logger(SitemapService.name);
   private readonly appUrl: string;
+  /** Path to frontend/public where static files are written */
+  private readonly outputDir: string;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly configService: ConfigService,
   ) {
     this.appUrl = this.configService.get('app.url', 'https://comichub.app');
+    this.outputDir = join(process.cwd(), '..', 'frontend', 'public');
   }
 
-  async getSitemap(): Promise<string> {
-    const cached = await this.redis.get(SITEMAP_CACHE_KEY);
-    if (cached) return cached;
-
-    const xml = await this.generateSitemapXml();
-    await this.redis.setex(SITEMAP_CACHE_KEY, SITEMAP_TTL, xml);
-    return xml;
+  /** Generate sitemap + robots.txt on startup and every 6 hours */
+  async onModuleInit(): Promise<void> {
+    await this.generateStaticFiles();
   }
 
-  getRobotsTxt(): string {
-    return `User-agent: *\nAllow: /\nSitemap: ${this.appUrl}/sitemap.xml`;
+  @Cron(CronExpression.EVERY_6_HOURS)
+  async generateStaticFiles(): Promise<void> {
+    try {
+      await mkdir(this.outputDir, { recursive: true });
+      const [sitemapXml, robotsTxt] = await Promise.all([
+        this.buildSitemapXml(),
+        this.buildRobotsTxt(),
+      ]);
+      await Promise.all([
+        writeFile(join(this.outputDir, 'sitemap.xml'), sitemapXml, 'utf-8'),
+        writeFile(join(this.outputDir, 'robots.txt'), robotsTxt, 'utf-8'),
+      ]);
+      this.logger.log('Sitemap + robots.txt written to frontend/public/');
+    } catch (err) {
+      this.logger.error('Failed to generate sitemap files', (err as Error).message);
+    }
   }
 
-  private async generateSitemapXml(): Promise<string> {
+  private async buildSitemapXml(): Promise<string> {
     const rows = await this.db
       .select({ slug: manga.slug, updatedAt: manga.updatedAt })
       .from(manga)
@@ -61,5 +73,9 @@ export class SitemapService {
       urls,
       '</urlset>',
     ].join('\n');
+  }
+
+  private buildRobotsTxt(): string {
+    return `User-agent: *\nAllow: /\nSitemap: ${this.appUrl}/sitemap.xml`;
   }
 }

@@ -1,6 +1,10 @@
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from '../schema/index.js';
+import { seedUsers } from './users.seed.js';
+import { seedManga } from './manga.seed.js';
+import { seedChapters } from './chapters.seed.js';
+import { seedCommunity } from './community.seed.js';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) throw new Error('DATABASE_URL is required');
@@ -36,11 +40,10 @@ async function seed() {
     { name: 'Seinen', slug: 'seinen' },
     { name: 'Josei', slug: 'josei' },
   ];
-
   await db.insert(schema.genres).values(genreData).onConflictDoNothing();
   console.log(`  ✓ ${genreData.length} genres`);
 
-  // Site settings defaults
+  // Site settings
   const settingsData = [
     { key: 'site_name', value: 'ComicHub' },
     { key: 'site_description', value: 'Read manga, manhwa, manhua online' },
@@ -48,23 +51,28 @@ async function seed() {
     { key: 'posts_per_page', value: '20' },
     { key: 'maintenance_mode', value: 'false' },
   ];
-
-  await db
-    .insert(schema.siteSettings)
-    .values(settingsData)
-    .onConflictDoNothing();
+  await db.insert(schema.siteSettings).values(settingsData).onConflictDoNothing();
   console.log(`  ✓ ${settingsData.length} site settings`);
 
-  // Default sticker set
+  // Sticker set
   const [stickerSet] = await db
     .insert(schema.stickerSets)
     .values({ name: 'Default', isActive: true })
     .onConflictDoNothing()
     .returning();
+  if (stickerSet) console.log(`  ✓ Default sticker set`);
 
-  if (stickerSet) {
-    console.log(`  ✓ Default sticker set`);
+  // Fake data
+  const users = await seedUsers(db);
+  if (!users.length) {
+    console.log('⚠️  No users inserted (already seeded?). Skipping fake data.');
+    return;
   }
+
+  const adminUser = users[0];
+  const mangaList = await seedManga(db, adminUser.id);
+  const chapters = await seedChapters(db, mangaList);
+  await seedCommunity(db, users, mangaList, chapters);
 
   console.log('✅ Seeding complete');
 }

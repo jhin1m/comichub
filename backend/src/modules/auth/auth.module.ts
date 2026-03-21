@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { createResilientRedis } from '../../common/providers/redis.provider.js';
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
@@ -23,9 +23,7 @@ import { GoogleStrategy } from './strategies/google.strategy.js';
     {
       provide: 'REDIS_CLIENT',
       inject: [ConfigService],
-      useFactory: (config: ConfigService): Redis => {
-        return new Redis(config.getOrThrow<string>('redis.url'));
-      },
+      useFactory: (config: ConfigService) => createResilientRedis(config),
     },
   ],
   controllers: [AuthController],

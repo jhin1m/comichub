@@ -9,17 +9,19 @@ describe('ViewTrackingService', () => {
   let mockRedis: any;
 
   beforeEach(async () => {
-    // Mock Drizzle DB
-    mockDb = {
-      update: vi.fn().mockReturnThis(),
-      set: vi.fn().mockReturnThis(),
-      where: vi.fn().mockResolvedValue(undefined),
-    };
+    // Chainable select mock — returns empty chapter by default
+    const selectChain: any = {};
+    ['select', 'from', 'where', 'limit'].forEach((m) => {
+      selectChain[m] = vi.fn().mockReturnValue(selectChain);
+    });
+    selectChain.then = (resolve: any) => resolve([{ mangaId: 1 }]);
 
-    // Mock Redis
+    mockDb = { select: vi.fn().mockReturnValue(selectChain) };
+
     mockRedis = {
       get: vi.fn(),
-      setex: vi.fn(),
+      setex: vi.fn().mockResolvedValue('OK'),
+      incr: vi.fn().mockResolvedValue(1),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -33,150 +35,94 @@ describe('ViewTrackingService', () => {
     service = module.get<ViewTrackingService>(ViewTrackingService);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+  afterEach(() => { vi.clearAllMocks(); });
 
   describe('trackChapterView()', () => {
-    it('should return early if Redis key already exists', async () => {
-      const chapterId = 1;
-      const userId = 10;
-
+    it('should return early when Redis dedup key already exists', async () => {
       mockRedis.get.mockResolvedValue('1');
 
-      await service.trackChapterView(chapterId, userId);
+      await service.trackChapterView(1, 10);
 
-      expect(mockRedis.get).toHaveBeenCalledWith(`view:${chapterId}:user:${userId}`);
+      expect(mockRedis.get).toHaveBeenCalledWith('view:1:user:10');
       expect(mockRedis.setex).not.toHaveBeenCalled();
-      expect(mockDb.update).not.toHaveBeenCalled();
+      expect(mockRedis.incr).not.toHaveBeenCalled();
     });
 
-    it('should increment view count and set TTL when key does not exist with userId', async () => {
-      const chapterId = 1;
-      const userId = 10;
-
+    it('should set dedup key and increment counters for userId', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId, userId);
+      await service.trackChapterView(1, 10);
 
-      expect(mockRedis.get).toHaveBeenCalledWith(`view:${chapterId}:user:${userId}`);
-      expect(mockRedis.setex).toHaveBeenCalledWith(`view:${chapterId}:user:${userId}`, 5, '1');
-      expect(mockDb.update).toHaveBeenCalled();
-      expect(mockDb.set).toHaveBeenCalled();
-      expect(mockDb.where).toHaveBeenCalled();
+      expect(mockRedis.setex).toHaveBeenCalledWith('view:1:user:10', 5, '1');
+      expect(mockRedis.incr).toHaveBeenCalledWith('counter:chapter:1:views');
     });
 
-    it('should increment view count and set TTL when key does not exist with ip', async () => {
-      const chapterId = 2;
-      const ip = '192.168.1.1';
-
+    it('should use ip identifier when userId is not provided', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId, undefined, ip);
+      await service.trackChapterView(2, undefined, '192.168.1.1');
 
-      expect(mockRedis.get).toHaveBeenCalledWith(`view:${chapterId}:ip:${ip}`);
-      expect(mockRedis.setex).toHaveBeenCalledWith(`view:${chapterId}:ip:${ip}`, 5, '1');
-      expect(mockDb.update).toHaveBeenCalled();
+      expect(mockRedis.get).toHaveBeenCalledWith('view:2:ip:192.168.1.1');
+      expect(mockRedis.setex).toHaveBeenCalledWith('view:2:ip:192.168.1.1', 5, '1');
     });
 
-    it('should use unknown ip when neither userId nor ip provided', async () => {
-      const chapterId = 3;
-
+    it('should fall back to "unknown" when neither userId nor ip is provided', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId);
+      await service.trackChapterView(3);
 
-      expect(mockRedis.get).toHaveBeenCalledWith(`view:${chapterId}:ip:unknown`);
-      expect(mockRedis.setex).toHaveBeenCalledWith(`view:${chapterId}:ip:unknown`, 5, '1');
+      expect(mockRedis.get).toHaveBeenCalledWith('view:3:ip:unknown');
+      expect(mockRedis.setex).toHaveBeenCalledWith('view:3:ip:unknown', 5, '1');
     });
 
-    it('should set Redis TTL to 5 seconds', async () => {
-      const chapterId = 1;
-      const userId = 20;
-
+    it('should set dedup TTL to 5 seconds', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId, userId);
+      await service.trackChapterView(1, 20);
 
-      const calls = mockRedis.setex.mock.calls;
-      expect(calls[0][1]).toBe(5); // Second argument is TTL in seconds
+      expect(mockRedis.setex).toHaveBeenCalledWith(expect.any(String), 5, '1');
     });
 
-    it('should call db.update with chapters table', async () => {
-      const chapterId = 1;
-      const userId = 10;
-
+    it('should increment manga-level counters when chapter exists', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId, userId);
+      await service.trackChapterView(1, 10);
 
-      expect(mockDb.update).toHaveBeenCalled();
-      expect(mockDb.set).toHaveBeenCalled();
-      expect(mockDb.where).toHaveBeenCalled();
+      // chapter select resolves to { mangaId: 1 } — manga counters should be incremented
+      expect(mockRedis.incr).toHaveBeenCalledWith('counter:manga:1:views_day');
+      expect(mockRedis.incr).toHaveBeenCalledWith('counter:manga:1:views_week');
+      expect(mockRedis.incr).toHaveBeenCalledWith('counter:manga:1:views');
     });
 
     it('should prioritize userId over ip when both provided', async () => {
-      const chapterId = 5;
-      const userId = 15;
-      const ip = '10.0.0.1';
-
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId, userId, ip);
+      await service.trackChapterView(5, 15, '10.0.0.1');
 
-      // Should use userId, not ip
-      expect(mockRedis.get).toHaveBeenCalledWith(`view:${chapterId}:user:${userId}`);
-      expect(mockRedis.setex).toHaveBeenCalledWith(`view:${chapterId}:user:${userId}`, 5, '1');
+      expect(mockRedis.get).toHaveBeenCalledWith('view:5:user:15');
     });
 
-    it('should handle multiple concurrent views for same chapter', async () => {
-      const chapterId = 1;
-      const userId1 = 10;
-      const userId2 = 20;
+    it('should not increment counters on second call within TTL window', async () => {
+      mockRedis.get.mockResolvedValueOnce(null); // first call: not seen
+      await service.trackChapterView(1, 10);
+      const incrAfterFirst = mockRedis.incr.mock.calls.length;
 
+      mockRedis.get.mockResolvedValueOnce('1');  // second call: already seen
+      await service.trackChapterView(1, 10);
+
+      // incr should not have been called again
+      expect(mockRedis.incr).toHaveBeenCalledTimes(incrAfterFirst);
+    });
+
+    it('should handle two different users viewing the same chapter', async () => {
       mockRedis.get.mockResolvedValue(null);
-      mockRedis.setex.mockResolvedValue('OK');
 
-      await service.trackChapterView(chapterId, userId1);
-      await service.trackChapterView(chapterId, userId2);
+      await service.trackChapterView(1, 10);
+      await service.trackChapterView(1, 20);
 
       expect(mockRedis.setex).toHaveBeenCalledTimes(2);
-      expect(mockRedis.setex).toHaveBeenNthCalledWith(
-        1,
-        `view:${chapterId}:user:${userId1}`,
-        5,
-        '1',
-      );
-      expect(mockRedis.setex).toHaveBeenNthCalledWith(
-        2,
-        `view:${chapterId}:user:${userId2}`,
-        5,
-        '1',
-      );
-    });
-
-    it('should handle no view increment on subsequent calls within TTL', async () => {
-      const chapterId = 1;
-      const userId = 10;
-
-      // First call: key doesn't exist
-      mockRedis.get.mockResolvedValueOnce(null);
-      mockRedis.setex.mockResolvedValue('OK');
-
-      await service.trackChapterView(chapterId, userId);
-      expect(mockDb.update).toHaveBeenCalledTimes(1);
-
-      // Second call: key exists (within TTL)
-      mockRedis.get.mockResolvedValueOnce('1');
-
-      await service.trackChapterView(chapterId, userId);
-      expect(mockDb.update).toHaveBeenCalledTimes(1); // Still called only once
+      expect(mockRedis.setex).toHaveBeenNthCalledWith(1, 'view:1:user:10', 5, '1');
+      expect(mockRedis.setex).toHaveBeenNthCalledWith(2, 'view:1:user:20', 5, '1');
     });
   });
 });

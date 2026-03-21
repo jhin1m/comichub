@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComicHub — UI Wireframes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:        #0f0f0f;
+      --bg-surface:     #1a1a1a;
+      --bg-elevated:    #242424;
+      --bg-hover:       #2e2e2e;
+      --accent:         #e63946;
+      --accent-hover:   #c1121f;
+      --accent-muted:   rgba(230,57,70,0.15);
+      --text-primary:   #f5f5f5;
+      --text-secondary: #a0a0a0;
+      --text-muted:     #5a5a5a;
+      --border:         #2a2a2a;
+      --border-accent:  #e63946;
+      --success:        #2dc653;
+      --warning:        #f4a261;
+      --info:           #4895ef;
+      --font-heading:   'Rajdhani', sans-serif;
+      --font-body:      'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: #080808;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── TOC Nav ──────────────────────────────────────────────── */
+    .toc {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex; align-items: center; gap: 8px;
+      height: 52px;
+    }
+    .toc-logo {
+      font-family: var(--font-heading);
+      font-size: 20px; font-weight: 700;
+      color: var(--text-primary);
+      margin-right: 16px;
+    }
+    .toc-logo span { color: var(--accent); }
+    .toc a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 12px; font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      transition: all 150ms ease;
+      white-space: nowrap;
+    }
+    .toc a:hover {
+      color: var(--text-primary);
+      border-color: var(--border);
+      background: var(--bg-elevated);
+    }
+    .toc-label {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-right: 8px;
+    }
+
+    /* ── Page Section Wrapper ─────────────────────────────────── */
+    .page-section {
+      margin-top: 52px;
+      border-bottom: 2px solid var(--border);
+    }
+    .page-label {
+      background: var(--bg-elevated);
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-label-num {
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 2px;
+      font-family: var(--font-body);
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .page-label-title {
+      font-family: var(--font-heading);
+      font-size: 15px; font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.04em;
+    }
+    .page-label-note {
+      margin-left: auto;
+      font-size: 11px; color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* ── Shared Components ────────────────────────────────────── */
+    .navbar {
+      height: 64px;
+      background: var(--bg-base);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 32px; gap: 24px;
+      position: sticky; top: 52px; z-index: 50;
+    }
+    .logo {
+      font-family: var(--font-heading);
+      font-size: 26px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 4px; margin-left: 8px; }
+    .nav-link {
+      padding: 6px 14px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: 4px;
+      transition: color 150ms;
+      cursor: pointer;
+    }
+    .nav-link:hover, .nav-link.active { color: var(--text-primary); }
+    .nav-link.active {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+    .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+    /* Pixel Button (pxlkit simulation) */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 18px;
+      font-family: var(--font-body);
+      font-size: 13px; font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 150ms ease;
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-ghost {
+      background: transparent; color: var(--text-secondary);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg-elevated); color: var(--text-primary); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn-lg { padding: 12px 28px; font-size: 15px; }
+    .btn-icon {
+      width: 36px; height: 36px; padding: 0;
+      background: var(--bg-elevated); border-color: var(--border);
+      color: var(--text-secondary); border-radius: 4px;
+    }
+    .btn-icon:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+    /* Pixel Badge */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 8px;
+      font-size: 11px; font-weight: 600;
+      border-radius: 3px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-default { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border); }
+    .badge-accent  { background: var(--accent-muted); color: var(--accent); border: 1px solid rgba(230,57,70,0.3); }
+    .badge-success { background: rgba(45,198,83,0.15); color: var(--success); border: 1px solid rgba(45,198,83,0.3); }
+    .badge-warning { background: rgba(244,162,97,0.15); color: var(--warning); border: 1px solid rgba(244,162,97,0.3); }
+    .badge-info    { background: rgba(72,149,239,0.15); color: var(--info); border: 1px solid rgba(72,149,239,0.3); }
+
+    /* Pixel Card */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    /* Pixel Input */
+    .input {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0 14px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 150ms;
+    }
+    .input:focus { border-color: var(--accent); }
+    .input::placeholder { color: var(--text-muted); }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); pointer-events: none;
+    }
+    .input-wrap .input { padding-left: 38px; }
+
+    /* Manga cover card */
+    .manga-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    }
+    .manga-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px rgba(230,57,70,0.15);
+    }
+    .manga-cover {
+      width: 100%; aspect-ratio: 2/3;
+      background: var(--bg-elevated);
+      position: relative; overflow: hidden;
+    }
+    .manga-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .manga-cover-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
+    }
+    .manga-cover-placeholder .cover-icon {
+      font-size: 28px; opacity: 0.3;
+    }
+    .manga-cover-placeholder .cover-text {
+      font-size: 10px; color: var(--text-muted);
+      text-align: center; padding: 0 8px;
+    }
+    .manga-card-body { padding: 8px 10px 10px; }
+    .manga-card-title {
+      font-family: var(--font-heading);
+      font-size: 14px; font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .manga-card-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .manga-cover-badge {
+      position: absolute; top: 8px; left: 8px;
+    }
+    .manga-cover-chapter {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+      padding: 20px 8px 8px;
+      font-size: 11px; color: var(--text-secondary); font-weight: 500;
+    }
+
+    /* Grid */
+    .manga-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (min-width: 480px) { .manga-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 768px) { .manga-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; } }
+    @media (min-width: 1024px) { .manga-grid { grid-template-columns: repeat(5, 1fr); } }
+    @media (min-width: 1280px) { .manga-grid { grid-template-columns: repeat(6, 1fr); } }
+
+    /* Section heading */
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 22px; font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .section-title-accent { color: var(--accent); }
+    .section-more {
+      margin-left: auto;
+      font-size: 12px; color: var(--text-muted);
+      text-decoration: none; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      transition: color 150ms;
+    }
+    .section-more:hover { color: var(--accent); }
+    .section-divider {
+      width: 3px; height: 20px;
+      background: var(--accent); border-radius: 2px;
+    }
+
+    /* Container */
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+    .section-pad { padding: 48px 0; }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-elevated) 0%, var(--bg-hover) 50%, var(--bg-elevated) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+    /* Annotation tooltip */
+    .annotation {
+      position: relative; display: inline-block;
+    }
+    .annotation::after {
+      content: attr(data-note);
+      position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+      background: #1c2030; border: 1px solid #3a4060;
+      color: #8899cc; font-size: 11px; font-family: var(--font-body);
+      padding: 4px 10px; border-radius: 4px; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity 150ms;
+      z-index: 999;
+    }
+    .annotation:hover::after { opacity: 1; }
+
+    /* ═══════════════════════════════════════════════════════════
+       PAGE 1 — HOME
+    ═══════════════════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      height: 480px;
+      overflow: hidden;
+      background: var(--bg-base);
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #1a0a0c 0%, #0a0a14 50%, #0f0f0f 100%);
+    }
+    .hero-bg-art {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      width: 55%;
+      background: linear-gradient(to left, transparent 0%, var(--bg-base) 80%),
+                  linear-gradient(135deg, #1a0810 0%, #20101a 40%, #141420 100%);
+      opacity: 0.7;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-bg-art::after {
+      content: 'Cover Art';
+      color: var(--text-muted); font-size: 13px;
+      opacity: 0.4;
+    }
+    .hero-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(15,15,15,0.98) 35%, rgba(15,15,15,0.6) 60%, transparent 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      height: 100%; display: flex; flex-direction: column;
+      justify-content: flex-end; padding: 0 0 48px;
+    }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .hero-eyebrow-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    .hero-eyebrow-text {
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: 52px; font-weight: 700;
+      line-height: 1.1; letter-spacing: 0.01em;
+      max-width: 520px;
+    }
+    .hero-meta {
+      display: flex; align-items: center; gap: 10px;
+      margin: 14px 0; flex-wrap: wrap;
+    }
+    .hero-desc {
+      max-width: 440px;
+      color: var(--text-secondary);
+      font-size: 14px; line-height: 1.65;
+      margin-bottom: 24px;
+    }
+    .hero-actions { display: flex; gap: 10px; }
+    .hero-indicators {
+      position: absolute; bottom: 24px; right: 32px; z-index: 2;
+      display: flex; gap: 6px; align-items: center;
+    }
+    .hero-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-muted); cursor: pointer;
+      transition: background 150ms;
+    }
+    .hero-dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
+
+    /* Latest Updates strip */
+    .update-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 150ms, background 150ms;
+    }
+    .update-item:hover { border-color: var(--accent); background: var(--bg-elevated); }
+    .update-cover {
+      width: 42px; height: 56px; flex-shrink: 0;
+      background: var(--bg-elevated); border-radius: 3px; overflow: hidden;
+    }
+    .update-cover-inner {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #1e1e2e, #2a1a2e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; opacity: 0.5;
+    }
+    .update-info { flex: 1; min-width: 0; }
+    .update-title {
+      font-family: var(--font-heading); font-size: 14px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .update-chapter { font-size: 12px; color: var(--accent); font-weight: 500; }
+    .update-time { font-size: 11px; color: var(--text-muted); }
+    .update-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    @media (min-width: 640px) { .update-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .update-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    /* Trending row */
+    .trending-row {
+      display: flex; gap: 6px; padding-bottom: 8px;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .trending-row::-webkit-scrollbar { display: none; }
+    .trending-pill {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-secondary);
+      cursor: pointer; transition: all 150ms;
+      white-space: nowrap;
+    }
+    .trending-pill:hover, .trending-pill.active {
+      border-color: var(--accent); color: var(--accent);
+      background: var(--accent-muted);
+    }
+
+    /* Footer strip */
+    .footer-strip {
+      background: var(--bg-base);
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+    }
+    .footer-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo { font-family: var(--font-heading); font-size: 20px; font-weight: 700; }
+    .footer-logo span { color: var(--accent); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-link { font-size: 12px; color: var(--text-muted); text-decoration: none; transition: color 150ms; }
+    .footer-link:hover { color: var(--text-secondary); }
+    .footer-copy { font-size: 11px; color: var(--text-muted); }
+
+    /* ═══════════════════════════════════════════════════════════
+       PAGE 2 — BROWSE / SEARCH
+    ═══════════════════════════════════════════════════════════ */
+    .browse-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 24px; align-items: start;
+    }
+    @media (max-width: 900px) { .browse-layout { grid-template-columns: 1fr; } }
+
+    .filter-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px; padding: 20px;
+      position: sticky; top: calc(52px + 64px + 16px);
+    }
+    .filter-panel-title {
+      font-family: var(--font-heading); font-size: 16px; font-weight: 600;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-group { margin-bottom: 20px; }
+    .filter-group-label {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .filter-tag-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+    .filter-tag {
+      padding: 4px 10px;
+      font-size: 11px; font-weight: 500;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 3px; cursor: pointer; transition: all 120ms;
+      color: var(--text-secondary);
+    }
+    .filter-tag:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .filter-tag.selected { background: var(--accent-muted); border-color: var(--accent); color: var(--accent); }
+    .filter-select {
+      width: 100%;
+      height: 38px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 4px; padding: 0 10px;
+      color: var(--text-secondary); font-size: 13px;
+      font-family: var(--font-body); outline: none; cursor: pointer;
+      transition: border-color 150ms; appearance: none;
+    }
+    .filter-select:focus { border-color: var(--accent); }
+
+    .browse-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .browse-count { font-size: 13px; color: var(--text-muted); }
+    .browse-sort { margin-left: auto; display: flex; gap: 8px; }
+
+    /* Pagination (PixelPagination simulation) */
+    .pagination { display: flex; align-items: center; gap: 4px; margin-top: 32px; justify-content: center; }
+    .page-btn {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 4px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 120ms; color: var(--text-secondary);
+    }
+    .page-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .page-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ═══════════════════════════════════════════════════════════
+       PAGE 3 — MANGA DETAIL
+    ═══════════════════════════════════════════════════════════ */
+    .detail-hero {
+      background: var(--bg-base);
+      position: relative;
+      padding: 48px 0;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .detail-hero-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(230,57,70,0.03) 0%, transparent 60%);
+    }
+    .detail-layout {
+      display: flex; gap: 40px; position: relative; z-index: 1;
+      align-items: flex-start;
+    }
+    @media (max-width: 768px) { .detail-layout { flex-direction: column; align-items: center; } }
+    .detail-cover {
+      width: 220px; flex-shrink: 0;
+      aspect-ratio: 2/3;
+      border-radius: 6px; overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    }
+    .detail-cover-inner {
+      width: 100%; height: 100%;
+      background: linear-gradient(145deg, #1e1020 0%, #2a1030 50%, #1a1530 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+    }
+    .cover-art-icon { font-size: 40px; opacity: 0.3; }
+    .cover-art-label { font-size: 11px; color: var(--text-muted); }
+    .detail-info { flex: 1; }
+    .detail-title {
+      font-family: var(--font-heading); font-size: 36px; font-weight: 700;
+      line-height: 1.15; margin-bottom: 8px;
+    }
+    .detail-alt-title { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+    .detail-meta-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+      align-items: center;
+    }
+    .detail-meta-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    .detail-meta-item strong { color: var(--text-primary); font-weight: 500; }
+    .detail-meta-divider { color: var(--border); }
+    .detail-genres { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .detail-desc {
+      font-size: 14px; color: var(--text-secondary); line-height: 1.7;
+      max-width: 680px; margin-bottom: 24px;
+    }
+    .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Stats bar */
+    .stats-bar {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 16px 24px;
+      display: flex; gap: 0;
+    }
+    .stat-item {
+      flex: 1; text-align: center;
+      padding: 0 16px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-value {
+      font-family: var(--font-heading); font-size: 22px; font-weight: 700;
+      color: var(--text-primary);
+    }
+    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Tabs (PixelTabs) */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab {
+      padding: 12px 20px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: all 150ms;
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+
+    /* Chapter list */
+    .chapter-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer;
+      transition: border-color 150ms, background 150ms;
+      margin-bottom: 6px;
+    }
+    .chapter-item:hover { border-color: var(--border-accent); background: var(--bg-elevated); }
+    .chapter-item.read { opacity: 0.5; }
+    .chapter-num {
+      font-family: var(--font-heading); font-size: 16px; font-weight: 700;
+      color: var(--text-primary); min-width: 80px;
+    }
+    .chapter-title { font-size: 13px; color: var(--text-secondary); flex: 1; }
+    .chapter-date { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    .chapter-new { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+    /* ═══════════════════════════════════════════════════════════
+       PAGE 4 — CHAPTER READER
+    ═══════════════════════════════════════════════════════════ */
+    .reader-bg { background: #000; }
+
+    .reader-topbar {
+      position: sticky; top: 52px; z-index: 50;
+      height: 56px;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid #1a1a1a;
+      display: flex; align-items: center; padding: 0 20px; gap: 12px;
+    }
+    .reader-back {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-secondary);
+      text-decoration: none; cursor: pointer;
+      transition: color 150ms;
+    }
+    .reader-back:hover { color: var(--text-primary); }
+    .reader-chapter-info { flex: 1; text-align: center; }
+    .reader-manga-title {
+      font-size: 11px; color: var(--text-muted); font-weight: 500;
+    }
+    .reader-chapter-title {
+      font-family: var(--font-heading); font-size: 16px; font-weight: 600;
+    }
+    .reader-controls { display: flex; gap: 6px; }
+
+    .reader-progress-bar {
+      height: 3px; background: #1a1a1a;
+      position: sticky; top: calc(52px + 56px); z-index: 49;
+    }
+    .reader-progress-fill {
+      height: 100%; background: var(--accent);
+      transition: width 300ms ease;
+    }
+
+    .reader-pages { max-width: 800px; margin: 0 auto; padding: 0; }
+    .reader-page {
+      width: 100%; display: block;
+      background: var(--bg-surface);
+      margin: 0; border: none;
+    }
+    .reader-page-placeholder {
+      width: 100%;
+      background: var(--bg-surface);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px;
+      color: var(--text-muted); font-size: 13px;
+      border-bottom: 1px solid #111;
+    }
+    .reader-page-num {
+      font-size: 11px; opacity: 0.4;
+    }
+
+    .reader-chapter-nav {
+      background: #000; border-top: 1px solid #1a1a1a;
+      padding: 24px;
+      display: flex; gap: 12px; align-items: center; justify-content: center;
+    }
+    .reader-settings-bar {
+      background: rgba(0,0,0,0.95);
+      border-bottom: 1px solid #1a1a1a;
+      padding: 10px 20px;
+      display: flex; gap: 20px; align-items: center;
+    }
+    .reader-setting-label {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .reader-setting-options { display: flex; gap: 4px; }
+    .reader-setting-btn {
+      padding: 4px 10px; font-size: 11px; font-weight: 600;
+      background: #111; border: 1px solid #2a2a2a;
+      border-radius: 3px; color: var(--text-muted); cursor: pointer;
+      transition: all 120ms;
+    }
+    .reader-setting-btn.active {
+      background: var(--accent-muted); border-color: var(--accent); color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PAGE 5 — AUTH
+    ═══════════════════════════════════════════════════════════ */
+    .auth-bg {
+      min-height: 100vh;
+      background: var(--bg-base);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .auth-bg-pattern {
+      position: absolute; inset: 0; opacity: 0.04;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .auth-bg-glow {
+      position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(230,57,70,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .auth-card {
+      position: relative; z-index: 2;
+      width: 100%; max-width: 420px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .auth-card-top {
+      height: 4px; background: linear-gradient(90deg, var(--accent), #ff6b6b);
+    }
+    .auth-card-body { padding: 36px 32px; }
+    .auth-logo {
+      font-family: var(--font-heading); font-size: 28px; font-weight: 700;
+      text-align: center; margin-bottom: 4px;
+    }
+    .auth-logo span { color: var(--accent); }
+    .auth-tagline {
+      text-align: center; font-size: 13px; color: var(--text-muted); margin-bottom: 28px;
+    }
+    .auth-tabs {
+      display: grid; grid-template-columns: 1fr 1fr;
+      background: var(--bg-elevated); border-radius: 4px; padding: 3px;
+      margin-bottom: 24px;
+    }
+    .auth-tab {
+      padding: 8px; text-align: center; font-size: 13px; font-weight: 600;
+      border-radius: 3px; cursor: pointer; transition: all 150ms;
+      color: var(--text-muted);
+    }
+    .auth-tab.active { background: var(--bg-surface); color: var(--text-primary); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+    .form-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px; margin: 20px 0;
+    }
+    .auth-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .auth-divider-text { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .social-btn {
+      width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 4px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; transition: all 150ms;
+    }
+    .social-btn:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .auth-footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); }
+    .auth-footer a { color: var(--accent); text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    /* ── Util ─────────────────────────────────────────────────── */
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .gap-4 { gap: 16px; }
+    .gap-6 { gap: 24px; }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .mt-6 { margin-top: 24px; }
+    .mb-4 { margin-bottom: 16px; }
+    .mb-6 { margin-bottom: 24px; }
+    .w-full { width: 100%; }
+    .text-sm { font-size: 13px; }
+    .text-xs { font-size: 11px; }
+    .text-muted { color: var(--text-muted); }
+    .text-secondary { color: var(--text-secondary); }
+    .text-accent { color: var(--accent); }
+    .font-heading { font-family: var(--font-heading); font-weight: 700; }
+
+    /* SVG Icons (inline) */
+    .icon { width: 16px; height: 16px; display: inline-block; vertical-align: middle; }
+
+    /* Page header breadcrumb */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; transition: color 150ms; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb-sep { color: var(--border); }
+    .breadcrumb-current { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+<!-- ── TOC Navigation ──────────────────────────────────────────── -->
+<nav class="toc">
+  <div class="toc-logo">Comic<span>Hub</span></div>
+  <span class="toc-label">Wireframes:</span>
+  <a href="#page-home">Home</a>
+  <a href="#page-browse">Browse</a>
+  <a href="#page-detail">Manga Detail</a>
+  <a href="#page-reader">Reader</a>
+  <a href="#page-auth">Auth</a>
+</nav>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 1 — HOME                                             ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<section id="page-home" class="page-section">
+  <div class="page-label">
+    <span class="page-label-num">Page 01</span>
+    <span class="page-label-title">Home — Hero + Featured + Latest Updates</span>
+    <span class="page-label-note">Route: /</span>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar annotation" data-note="PixelButton + PixelAvatar. Sticky on desktop.">
+    <div class="logo">Comic<span>Hub</span></div>
+    <div class="nav-links">
+      <a class="nav-link active">Home</a>
+      <a class="nav-link">Browse</a>
+      <a class="nav-link">Genres</a>
+      <a class="nav-link">Rankings</a>
+      <a class="nav-link">Updates</a>
+    </div>
+    <div class="nav-right">
+      <!-- Search icon -->
+      <button class="btn-icon btn annotation" data-note="Expands to full search bar on click">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm">Log In</button>
+      <button class="btn btn-primary btn-sm">Sign Up</button>
+    </div>
+  </nav>
+
+  <!-- Hero Banner -->
+  <div class="hero annotation" data-note="Featured manga spotlight. Auto-rotate every 6s. 5 slides.">
+    <div class="hero-bg"></div>
+    <div class="hero-bg-art">
+      <!-- Simulated blurred cover -->
+    </div>
+    <div class="hero-gradient"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <div class="hero-eyebrow-dot"></div>
+          <span class="hero-eyebrow-text">Featured This Week</span>
+        </div>
+        <h1 class="hero-title">Demon Slayer:<br />Kimetsu no Yaiba</h1>
+        <div class="hero-meta">
+          <span class="badge badge-success">Ongoing</span>
+          <span class="badge badge-default">Action</span>
+          <span class="badge badge-default">Fantasy</span>
+          <span class="badge badge-default">Shounen</span>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">
+            <svg style="width:12px;height:12px;display:inline-block;vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            4.9 · 2.3M views
+          </span>
+        </div>
+        <p class="hero-desc">
+          A young boy's quest to avenge his family and cure his demon-turned sister. An extraordinary journey through Taisho-era Japan filled with breathtaking battles.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg annotation" data-note="PixelButton tone=danger, leads to chapter 1">
+            <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start Reading
+          </button>
+          <button class="btn btn-ghost btn-lg annotation" data-note="Adds to reading list via API POST /api/v1/reading-list">
+            <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            Add to List
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="hero-indicators">
+      <div class="hero-dot active"></div>
+      <div class="hero-dot"></div>
+      <div class="hero-dot"></div>
+      <div class="hero-dot"></div>
+      <div class="hero-dot"></div>
+    </div>
+  </div>
+
+  <!-- Genre Filter Pills -->
+  <div style="background:var(--bg-base); border-bottom:1px solid var(--border); padding:14px 0;">
+    <div class="container">
+      <div class="trending-row annotation" data-note="Horizontal scroll on mobile. Clicking filters home grid.">
+        <div class="trending-pill active">All</div>
+        <div class="trending-pill">Action</div>
+        <div class="trending-pill">Romance</div>
+        <div class="trending-pill">Fantasy</div>
+        <div class="trending-pill">Isekai</div>
+        <div class="trending-pill">Horror</div>
+        <div class="trending-pill">Comedy</div>
+        <div class="trending-pill">Slice of Life</div>
+        <div class="trending-pill">Sci-Fi</div>
+        <div class="trending-pill">Mystery</div>
+        <div class="trending-pill">Sports</div>
+        <div class="trending-pill">Mecha</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popular Manga Grid -->
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-divider"></div>
+      <h2 class="section-title">Popular <span class="section-title-accent">Now</span></h2>
+      <a class="section-more">View All →</a>
+    </div>
+    <div class="manga-grid annotation" data-note="2→3→4→5→6 cols by breakpoint. Cover = 2:3 ratio.">
+      <!-- Card 1 -->
+      <div class="manga-card">
+        <div class="manga-cover">
+          <div class="manga-cover-placeholder">
+            <div class="cover-icon">📚</div>
+            <div class="cover-text">One Piece</div>
+          </div>
+          <div class="manga-cover-badge"><span class="badge badge-success">Ongoing</span></div>
+          <div class="manga-cover-chapter">Ch. 1108</div>
+        </div>
+        <div class="manga-card-body">
+          <div class="manga-card-title">One Piece</div>
+          <div class="manga-card-meta">Eiichiro Oda · Adventure</div>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="manga-card">
+        <div class="manga-cover">
+          <div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#1a0a0a,#2a1515)">
+            <div class="cover-icon">⚔️</div>
+            <div class="cover-text">Jujutsu Kaisen</div>
+          </div>
+          <div class="manga-cover-badge"><span class="badge badge-info">Completed</span></div>
+          <div class="manga-cover-chapter">Ch. 271</div>
+        </div>
+        <div class="manga-card-body">
+          <div class="manga-card-title">Jujutsu Kaisen</div>
+          <div class="manga-card-meta">Gege Akutami · Action</div>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div class="manga-card">
+        <div class="manga-cover">
+          <div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#0a0a1a,#101530)">
+            <div class="cover-icon">🔮</div>
+            <div class="cover-text">Blue Lock</div>
+          </div>
+          <div class="manga-cover-badge"><span class="badge badge-success">Ongoing</span></div>
+          <div class="manga-cover-chapter">Ch. 265</div>
+        </div>
+        <div class="manga-card-body">
+          <div class="manga-card-title">Blue Lock</div>
+          <div class="manga-card-meta">Muneyuki Kaneshiro · Sports</div>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="manga-card">
+        <div class="manga-cover">
+          <div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#0d1a0d,#152015)">
+            <div class="cover-icon">🌿</div>
+            <div class="cover-text">Vinland Saga</div>
+          </div>
+          <div class="manga-cover-badge"><span class="badge badge-success">Ongoing</span></div>
+          <div class="manga-cover-chapter">Ch. 212</div>
+        </div>
+        <div class="manga-card-body">
+          <div class="manga-card-title">Vinland Saga</div>
+          <div class="manga-card-meta">Makoto Yukimura · Historical</div>
+        </div>
+      </div>
+      <!-- Card 5 -->
+      <div class="manga-card">
+        <div class="manga-cover">
+          <div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#1a150a,#2a2010)">
+            <div class="cover-icon">🗡️</div>
+            <div class="cover-text">Chainsaw Man</div>
+          </div>
+          <div class="manga-cover-badge"><span class="badge badge-success">Ongoing</span></div>
+          <div class="manga-cover-chapter">Ch. 183</div>
+        </div>
+        <div class="manga-card-body">
+          <div class="manga-card-title">Chainsaw Man</div>
+          <div class="manga-card-meta">Tatsuki Fujimoto · Horror</div>
+        </div>
+      </div>
+      <!-- Card 6 -->
+      <div class="manga-card">
+        <div class="manga-cover">
+          <div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#150a1a,#201025)">
+            <div class="cover-icon">💜</div>
+            <div class="cover-text">Spy × Family</div>
+          </div>
+          <div class="manga-cover-badge"><span class="badge badge-success">Ongoing</span></div>
+          <div class="manga-cover-chapter">Ch. 105</div>
+        </div>
+        <div class="manga-card-body">
+          <div class="manga-card-title">Spy × Family</div>
+          <div class="manga-card-meta">Tatsuya Endo · Comedy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Updates Section -->
+  <div style="background:var(--bg-surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:48px 0;">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-divider"></div>
+        <h2 class="section-title">Latest <span class="section-title-accent">Updates</span></h2>
+        <a class="section-more">All Updates →</a>
+      </div>
+      <div class="update-grid annotation" data-note="Fetched from GET /api/v1/chapters?sort=latest&limit=12">
+        <div class="update-item">
+          <div class="update-cover"><div class="update-cover-inner">📖</div></div>
+          <div class="update-info">
+            <div class="update-title">One Piece</div>
+            <div class="update-chapter">Chapter 1108 — A New Dawn</div>
+            <div class="update-time">2 hours ago</div>
+          </div>
+          <span class="badge badge-accent">NEW</span>
+        </div>
+        <div class="update-item">
+          <div class="update-cover"><div class="update-cover-inner">⚔️</div></div>
+          <div class="update-info">
+            <div class="update-title">Jujutsu Kaisen</div>
+            <div class="update-chapter">Chapter 271 — Finale</div>
+            <div class="update-time">5 hours ago</div>
+          </div>
+        </div>
+        <div class="update-item">
+          <div class="update-cover"><div class="update-cover-inner">🔮</div></div>
+          <div class="update-info">
+            <div class="update-title">Blue Lock</div>
+            <div class="update-chapter">Chapter 265</div>
+            <div class="update-time">8 hours ago</div>
+          </div>
+        </div>
+        <div class="update-item">
+          <div class="update-cover"><div class="update-cover-inner">🌿</div></div>
+          <div class="update-info">
+            <div class="update-title">Vinland Saga</div>
+            <div class="update-chapter">Chapter 212</div>
+            <div class="update-time">1 day ago</div>
+          </div>
+        </div>
+        <div class="update-item">
+          <div class="update-cover"><div class="update-cover-inner">🗡️</div></div>
+          <div class="update-info">
+            <div class="update-title">Chainsaw Man</div>
+            <div class="update-chapter">Chapter 183</div>
+            <div class="update-time">1 day ago</div>
+          </div>
+        </div>
+        <div class="update-item">
+          <div class="update-cover"><div class="update-cover-inner">💜</div></div>
+          <div class="update-info">
+            <div class="update-title">Spy × Family</div>
+            <div class="update-chapter">Chapter 105</div>
+            <div class="update-time">2 days ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Additions -->
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-divider"></div>
+      <h2 class="section-title">New <span class="section-title-accent">Additions</span></h2>
+      <a class="section-more">Browse All →</a>
+    </div>
+    <div class="manga-grid" style="grid-template-columns:repeat(2,1fr);">
+      <!-- Skeleton cards to show loading state -->
+      <div style="display:contents" class="annotation" data-note="PixelSkeleton while data loads">
+        <div class="manga-card" style="pointer-events:none;">
+          <div class="manga-cover skeleton" style="aspect-ratio:2/3;"></div>
+          <div class="manga-card-body">
+            <div class="skeleton" style="height:14px;width:80%;border-radius:3px;margin-bottom:6px;"></div>
+            <div class="skeleton" style="height:11px;width:55%;border-radius:3px;"></div>
+          </div>
+        </div>
+        <div class="manga-card" style="pointer-events:none;">
+          <div class="manga-cover skeleton" style="aspect-ratio:2/3;"></div>
+          <div class="manga-card-body">
+            <div class="skeleton" style="height:14px;width:70%;border-radius:3px;margin-bottom:6px;"></div>
+            <div class="skeleton" style="height:11px;width:50%;border-radius:3px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px;">↑ PixelSkeleton loading state (pxlkit)</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-strip">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-logo">Comic<span>Hub</span></div>
+        <div class="footer-links">
+          <a class="footer-link">About</a>
+          <a class="footer-link">Terms</a>
+          <a class="footer-link">Privacy</a>
+          <a class="footer-link">DMCA</a>
+          <a class="footer-link">Contact</a>
+        </div>
+        <div class="footer-copy">© 2026 ComicHub. All rights reserved.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 2 — BROWSE / SEARCH                                  ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<section id="page-browse" class="page-section">
+  <div class="page-label">
+    <span class="page-label-num">Page 02</span>
+    <span class="page-label-title">Browse &amp; Search — Filters + Grid + Pagination</span>
+    <span class="page-label-note">Route: /browse?genre=&status=&type=&q=</span>
+  </div>
+
+  <nav class="navbar">
+    <div class="logo">Comic<span>Hub</span></div>
+    <div class="nav-links">
+      <a class="nav-link">Home</a>
+      <a class="nav-link active">Browse</a>
+      <a class="nav-link">Genres</a>
+      <a class="nav-link">Rankings</a>
+    </div>
+    <div class="nav-right">
+      <!-- Expanded search -->
+      <div class="input-wrap" style="width:280px;" class="annotation" data-note="PixelInput — debounce 300ms, calls GET /api/v1/manga?q=">
+        <span class="input-icon">
+          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </span>
+        <input class="input" placeholder="Search manga, author..." style="height:38px;" />
+      </div>
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text-secondary);">JD</div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <div style="background:var(--bg-surface);border-bottom:1px solid var(--border);padding:20px 0;">
+    <div class="container">
+      <div class="breadcrumb">
+        <a>Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Browse</span>
+      </div>
+      <h1 class="font-heading" style="font-size:28px;">Browse Manga</h1>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:4px;">Discover your next favorite series</p>
+    </div>
+  </div>
+
+  <div class="container section-pad">
+    <div class="browse-layout">
+      <!-- Filter Sidebar -->
+      <aside class="filter-panel annotation" data-note="Collapses to sheet on mobile. State synced to URL params.">
+        <div class="filter-panel-title">
+          <svg style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filters
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-group-label">Status</div>
+          <div class="filter-tag-wrap">
+            <div class="filter-tag selected">All</div>
+            <div class="filter-tag">Ongoing</div>
+            <div class="filter-tag">Completed</div>
+            <div class="filter-tag">Hiatus</div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-group-label">Type</div>
+          <div class="filter-tag-wrap">
+            <div class="filter-tag selected">All</div>
+            <div class="filter-tag">Manga</div>
+            <div class="filter-tag">Manhwa</div>
+            <div class="filter-tag">Manhua</div>
+            <div class="filter-tag">Webtoon</div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-group-label">Genres</div>
+          <div class="filter-tag-wrap">
+            <div class="filter-tag selected">Action</div>
+            <div class="filter-tag">Adventure</div>
+            <div class="filter-tag">Comedy</div>
+            <div class="filter-tag selected">Fantasy</div>
+            <div class="filter-tag">Horror</div>
+            <div class="filter-tag">Isekai</div>
+            <div class="filter-tag">Mystery</div>
+            <div class="filter-tag">Romance</div>
+            <div class="filter-tag">Sci-Fi</div>
+            <div class="filter-tag">Slice of Life</div>
+            <div class="filter-tag">Sports</div>
+            <div class="filter-tag">Thriller</div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-group-label">Sort By</div>
+          <select class="filter-select">
+            <option>Most Popular</option>
+            <option>Latest Updated</option>
+            <option>Top Rated</option>
+            <option>Newest Added</option>
+            <option>A–Z</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-group-label">Rating</div>
+          <select class="filter-select">
+            <option>Any Rating</option>
+            <option>4+ Stars</option>
+            <option>3+ Stars</option>
+          </select>
+        </div>
+
+        <button class="btn btn-ghost w-full" style="margin-top:4px;">Clear Filters</button>
+      </aside>
+
+      <!-- Results -->
+      <div>
+        <div class="browse-header">
+          <span class="browse-count annotation" data-note="Count from API response.total">
+            <strong style="color:var(--text-primary);">1,284</strong>
+            <span style="color:var(--text-muted);"> results for </span>
+            <strong style="color:var(--accent);">"Action, Fantasy"</strong>
+          </span>
+          <div class="browse-sort">
+            <!-- View toggle: grid/list -->
+            <button class="btn-icon btn active" style="border-color:var(--accent);color:var(--accent);">
+              <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+            <button class="btn-icon btn">
+              <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Manga Grid -->
+        <div class="manga-grid" style="grid-template-columns:repeat(3,1fr);" class="annotation" data-note="Responsive: 2 cols on xs, up to 5 on xl">
+          <div class="manga-card"><div class="manga-cover"><div class="manga-cover-placeholder"><div class="cover-icon">⚡</div><div class="cover-text">My Hero Academia</div></div><div class="manga-cover-badge"><span class="badge badge-info">Completed</span></div><div class="manga-cover-chapter">Ch. 430</div></div><div class="manga-card-body"><div class="manga-card-title">My Hero Academia</div><div class="manga-card-meta">Kōhei Horikoshi · Action</div></div></div>
+          <div class="manga-card"><div class="manga-cover"><div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#1a0a10,#250f18)"><div class="cover-icon">🌸</div><div class="cover-text">Fullmetal Alchemist</div></div><div class="manga-cover-badge"><span class="badge badge-info">Completed</span></div><div class="manga-cover-chapter">Ch. 108</div></div><div class="manga-card-body"><div class="manga-card-title">Fullmetal Alchemist</div><div class="manga-card-meta">Hiromu Arakawa · Fantasy</div></div></div>
+          <div class="manga-card"><div class="manga-cover"><div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#0a1510,#102018)"><div class="cover-icon">🌿</div><div class="cover-text">Hunter x Hunter</div></div><div class="manga-cover-badge"><span class="badge badge-warning">Hiatus</span></div><div class="manga-cover-chapter">Ch. 401</div></div><div class="manga-card-body"><div class="manga-card-title">Hunter × Hunter</div><div class="manga-card-meta">Yoshihiro Togashi · Fantasy</div></div></div>
+          <div class="manga-card"><div class="manga-cover"><div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#100a1a,#180f25)"><div class="cover-icon">🔥</div><div class="cover-text">Berserk</div></div><div class="manga-cover-badge"><span class="badge badge-success">Ongoing</span></div><div class="manga-cover-chapter">Ch. 374</div></div><div class="manga-card-body"><div class="manga-card-title">Berserk</div><div class="manga-card-meta">Kentaro Miura · Dark Fantasy</div></div></div>
+          <div class="manga-card"><div class="manga-cover"><div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#0a0a18,#0f0f22)"><div class="cover-icon">⭐</div><div class="cover-text">Attack on Titan</div></div><div class="manga-cover-badge"><span class="badge badge-info">Completed</span></div><div class="manga-cover-chapter">Ch. 139</div></div><div class="manga-card-body"><div class="manga-card-title">Attack on Titan</div><div class="manga-card-meta">Hajime Isayama · Action</div></div></div>
+          <div class="manga-card"><div class="manga-cover"><div class="manga-cover-placeholder" style="background:linear-gradient(135deg,#141010,#201515)"><div class="cover-icon">🎭</div><div class="cover-text">Vagabond</div></div><div class="manga-cover-badge"><span class="badge badge-warning">Hiatus</span></div><div class="manga-cover-chapter">Ch. 327</div></div><div class="manga-card-body"><div class="manga-card-title">Vagabond</div><div class="manga-card-meta">Takehiko Inoue · Historical</div></div></div>
+        </div>
+
+        <!-- Pagination (PixelPagination) -->
+        <div class="pagination annotation" data-note="PixelPagination — URL param ?page=N, 24 items per page">
+          <div class="page-btn disabled">
+            <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </div>
+          <div class="page-btn active">1</div>
+          <div class="page-btn">2</div>
+          <div class="page-btn">3</div>
+          <div class="page-btn" style="border:none;background:none;color:var(--text-muted);">…</div>
+          <div class="page-btn">54</div>
+          <div class="page-btn">
+            <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 3 — MANGA DETAIL                                     ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<section id="page-detail" class="page-section">
+  <div class="page-label">
+    <span class="page-label-num">Page 03</span>
+    <span class="page-label-title">Manga Detail — Cover + Info + Chapter List</span>
+    <span class="page-label-note">Route: /manga/[slug]</span>
+  </div>
+
+  <nav class="navbar">
+    <div class="logo">Comic<span>Hub</span></div>
+    <div class="nav-links">
+      <a class="nav-link">Home</a>
+      <a class="nav-link">Browse</a>
+    </div>
+    <div class="nav-right">
+      <button class="btn-icon btn">
+        <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text-secondary);">JD</div>
+    </div>
+  </nav>
+
+  <!-- Detail Hero -->
+  <div class="detail-hero">
+    <div class="detail-hero-bg"></div>
+    <div class="container">
+      <div class="breadcrumb" style="position:relative;z-index:1;margin-bottom:24px;">
+        <a>Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <a>Manga</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Demon Slayer</span>
+      </div>
+      <div class="detail-layout">
+        <!-- Cover -->
+        <div class="detail-cover annotation" data-note="WebP, 2:3 ratio. Lazy loaded.">
+          <div class="detail-cover-inner">
+            <div class="cover-art-icon">🗡️</div>
+            <div class="cover-art-label">Cover Image</div>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="detail-info">
+          <h1 class="detail-title">Demon Slayer:<br/>Kimetsu no Yaiba</h1>
+          <p class="detail-alt-title">鬼滅の刃 · Kimetsu no Yaiba</p>
+
+          <div class="detail-meta-row">
+            <span class="badge badge-info">Completed</span>
+            <span class="badge badge-default">Manga</span>
+            <span class="detail-meta-divider">·</span>
+            <div class="detail-meta-item">
+              <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span><strong>Author</strong> Koyoharu Gotouge</span>
+            </div>
+            <div class="detail-meta-item">
+              <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span><strong>Artist</strong> Koyoharu Gotouge</span>
+            </div>
+          </div>
+
+          <div class="detail-meta-row" style="margin-bottom:12px;">
+            <div class="detail-meta-item">
+              <svg style="width:12px;height:12px;color:gold;" viewBox="0 0 24 24" fill="#f4a261" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span style="color:var(--warning);font-weight:600;">4.9</span>
+              <span style="color:var(--text-muted);">(12,840 ratings)</span>
+            </div>
+            <span class="detail-meta-divider">·</span>
+            <div class="detail-meta-item">
+              <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>23.4M views</span>
+            </div>
+            <span class="detail-meta-divider">·</span>
+            <div class="detail-meta-item">
+              <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              <span>205 chapters</span>
+            </div>
+          </div>
+
+          <div class="detail-genres">
+            <span class="badge badge-default">Action</span>
+            <span class="badge badge-default">Fantasy</span>
+            <span class="badge badge-default">Supernatural</span>
+            <span class="badge badge-default">Historical</span>
+            <span class="badge badge-default">Shounen</span>
+            <span class="badge badge-default">Tragedy</span>
+          </div>
+
+          <p class="detail-desc">
+            It is the Taisho Period in Japan. Tanjiro, a kindhearted boy who sells charcoal for a living, finds his family slaughtered by a demon. To make matters worse, his younger sister Nezuko, the sole survivor, has been transformed into a demon herself. Tanjiro sets out on a dangerous journey to find a way to return his sister to normal and destroy the demon who ruined his life.
+          </p>
+
+          <div class="detail-actions">
+            <button class="btn btn-primary annotation" data-note="Navigates to first/last read chapter">
+              <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Read Chapter 1
+            </button>
+            <button class="btn btn-ghost annotation" data-note="Continues from reading history (localStorage + API)">
+              Continue Reading
+            </button>
+            <button class="btn btn-ghost annotation" data-note="POST /api/v1/reading-list — icon toggles filled/outline">
+              <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              Save
+            </button>
+            <button class="btn btn-ghost annotation" data-note="Share dialog — PixelModal">
+              <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="container" style="padding-top:24px;">
+    <div class="stats-bar annotation" data-note="Hydrated from GET /api/v1/manga/[slug]/stats">
+      <div class="stat-item">
+        <div class="stat-value">23.4M</div>
+        <div class="stat-label">Total Views</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">4.9</div>
+        <div class="stat-label">Rating</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">205</div>
+        <div class="stat-label">Chapters</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">842K</div>
+        <div class="stat-label">Bookmarks</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">2016</div>
+        <div class="stat-label">Published</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs + Chapter List -->
+  <div class="container" style="padding:24px 0 48px;">
+    <div class="tabs annotation" data-note="PixelTabs — Chapters / Comments / Recommendations">
+      <div class="tab active">Chapters (205)</div>
+      <div class="tab">Comments (1,203)</div>
+      <div class="tab">Similar</div>
+    </div>
+
+    <!-- Chapter list controls -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="input-wrap" style="max-width:220px;">
+        <span class="input-icon"><svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+        <input class="input" style="height:36px;" placeholder="Search chapters..." />
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;">
+        <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        Newest First
+      </button>
+    </div>
+
+    <!-- Chapters -->
+    <div class="annotation" data-note="GET /api/v1/manga/[id]/chapters?page=1&limit=20. Read state from JWT user context.">
+      <div class="chapter-item">
+        <div class="chapter-new"></div>
+        <div class="chapter-num">Ch. 205</div>
+        <div class="chapter-title">Final Chapter — A World Without Demons</div>
+        <span class="badge badge-accent" style="margin-right:8px;">NEW</span>
+        <div class="chapter-date">Mar 20, 2026</div>
+      </div>
+      <div class="chapter-item">
+        <div style="width:6px;flex-shrink:0;"></div>
+        <div class="chapter-num">Ch. 204</div>
+        <div class="chapter-title">Sunrise Countdown Arc</div>
+        <div class="chapter-date">Mar 13, 2026</div>
+      </div>
+      <div class="chapter-item">
+        <div style="width:6px;flex-shrink:0;"></div>
+        <div class="chapter-num">Ch. 203</div>
+        <div class="chapter-title">Sunrise Countdown Arc</div>
+        <div class="chapter-date">Mar 6, 2026</div>
+      </div>
+      <div class="chapter-item read">
+        <div style="width:6px;flex-shrink:0;"></div>
+        <div class="chapter-num">Ch. 202</div>
+        <div class="chapter-title">The King of Demons</div>
+        <div class="chapter-date">Feb 28, 2026</div>
+      </div>
+      <div class="chapter-item read">
+        <div style="width:6px;flex-shrink:0;"></div>
+        <div class="chapter-num">Ch. 201</div>
+        <div class="chapter-title">The King of Demons</div>
+        <div class="chapter-date">Feb 21, 2026</div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:12px;">Dimmed chapters = already read (tracked via JWT user history)</p>
+  </div>
+</section>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 4 — CHAPTER READER                                   ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<section id="page-reader" class="page-section reader-bg">
+  <div class="page-label">
+    <span class="page-label-num">Page 04</span>
+    <span class="page-label-title">Chapter Reader — Vertical Scroll + Controls</span>
+    <span class="page-label-note">Route: /manga/[slug]/chapter/[number]</span>
+  </div>
+
+  <!-- Reader Top Bar -->
+  <div class="reader-topbar annotation" data-note="Opacity 0.2 → 1 on hover/tap. Auto-hide after 3s idle.">
+    <a class="reader-back">
+      <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Demon Slayer
+    </a>
+    <div class="reader-chapter-info">
+      <div class="reader-manga-title">Demon Slayer: Kimetsu no Yaiba</div>
+      <div class="reader-chapter-title">Chapter 205 — Final Chapter</div>
+    </div>
+    <div class="reader-controls">
+      <button class="btn btn-ghost btn-sm annotation" data-note="Previous chapter">
+        <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Prev
+      </button>
+      <button class="btn btn-ghost btn-sm annotation" data-note="Chapter list dropdown — PixelDropdown">
+        Ch. 205 ▾
+      </button>
+      <button class="btn btn-ghost btn-sm annotation" data-note="Next chapter">
+        Next
+        <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="btn-icon btn annotation" data-note="Reader settings panel">
+        <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 0 4.93 19.07 10 10 0 0 0 19.07 4.93z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Bar -->
+  <div class="reader-settings-bar annotation" data-note="Collapsible. Persisted in localStorage.">
+    <span class="reader-setting-label">Mode</span>
+    <div class="reader-setting-options">
+      <button class="reader-setting-btn active">Vertical</button>
+      <button class="reader-setting-btn">Paged</button>
+    </div>
+    <span class="reader-setting-label" style="margin-left:16px;">Width</span>
+    <div class="reader-setting-options">
+      <button class="reader-setting-btn active">800px</button>
+      <button class="reader-setting-btn">Full</button>
+    </div>
+    <span class="reader-setting-label" style="margin-left:16px;">Theme</span>
+    <div class="reader-setting-options">
+      <button class="reader-setting-btn active">Dark</button>
+      <button class="reader-setting-btn">White</button>
+    </div>
+  </div>
+
+  <!-- Reading Progress Bar -->
+  <div class="reader-progress-bar annotation" data-note="Tracks scroll position. Updates server reading progress via PUT /api/v1/reading-progress">
+    <div class="reader-progress-fill" style="width:35%;"></div>
+  </div>
+
+  <!-- Page Images (vertical scroll) -->
+  <div class="reader-pages">
+    <!-- Page 1 -->
+    <div class="reader-page-placeholder" style="height:400px;position:relative;" class="annotation" data-note="Manga page image — WebP, lazy loaded with IntersectionObserver. Fade-in 300ms on load.">
+      <div style="text-align:center;">
+        <div style="font-size:32px;margin-bottom:12px;opacity:0.15;">🖼️</div>
+        <div style="font-size:13px;color:var(--text-muted);">Page 1 — Manga Image</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">WebP · Lazy loaded · Fade-in on intersect</div>
+      </div>
+      <div style="position:absolute;top:8px;right:8px;" class="reader-page-num">1 / 24</div>
+    </div>
+    <!-- Page 2 -->
+    <div class="reader-page-placeholder" style="height:560px;position:relative;">
+      <div style="text-align:center;">
+        <div style="font-size:32px;margin-bottom:12px;opacity:0.15;">🖼️</div>
+        <div style="font-size:13px;color:var(--text-muted);">Page 2 — Manga Image (double spread)</div>
+      </div>
+      <div style="position:absolute;top:8px;right:8px;" class="reader-page-num">2 / 24</div>
+    </div>
+    <!-- Page 3 -->
+    <div class="reader-page-placeholder" style="height:380px;position:relative;">
+      <div style="text-align:center;">
+        <div style="font-size:32px;margin-bottom:12px;opacity:0.15;">🖼️</div>
+        <div style="font-size:13px;color:var(--text-muted);">Page 3 — Manga Image</div>
+      </div>
+      <div style="position:absolute;top:8px;right:8px;" class="reader-page-num">3 / 24</div>
+    </div>
+
+    <!-- ··· more pages scroll ··· -->
+    <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;border-top:1px solid #111;">
+      ↑ Pages 4–24 continue scrolling...
+    </div>
+  </div>
+
+  <!-- Chapter End + Navigation -->
+  <div class="reader-chapter-nav annotation" data-note="Appears after last page. Marks chapter read via PUT /api/v1/reading-progress.">
+    <button class="btn btn-ghost">
+      <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Chapter 204
+    </button>
+    <div style="text-align:center;flex:1;">
+      <div style="font-family:var(--font-heading);font-size:15px;font-weight:600;color:var(--text-primary);">End of Chapter 205</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Marked as read · 35% progress saved</div>
+    </div>
+    <button class="btn btn-primary" disabled style="opacity:0.4;cursor:not-allowed;">
+      No Next Chapter
+    </button>
+  </div>
+</section>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  PAGE 5 — AUTH (Login / Register)                          ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<section id="page-auth" class="page-section">
+  <div class="page-label">
+    <span class="page-label-num">Page 05</span>
+    <span class="page-label-title">Auth — Login &amp; Register Forms</span>
+    <span class="page-label-note">Route: /login · /register</span>
+  </div>
+
+  <div class="auth-bg" style="min-height:780px;">
+    <div class="auth-bg-pattern"></div>
+    <div class="auth-bg-glow"></div>
+
+    <div class="auth-card annotation" data-note="PixelCard. Max-width 420px, centered. JWT stored in httpOnly cookie.">
+      <div class="auth-card-top"></div>
+      <div class="auth-card-body">
+        <!-- Logo -->
+        <div class="auth-logo">Comic<span>Hub</span></div>
+        <div class="auth-tagline">Your manga reading companion</div>
+
+        <!-- Login / Register toggle -->
+        <div class="auth-tabs">
+          <div class="auth-tab active">Login</div>
+          <div class="auth-tab">Register</div>
+        </div>
+
+        <!-- Login Form -->
+        <form>
+          <div class="form-group">
+            <label class="form-label">Email or Username</label>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <input class="input" type="text" placeholder="user@example.com" />
+            </div>
+          </div>
+          <div class="form-group">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label class="form-label" style="margin:0;">Password</label>
+              <a style="font-size:11px;color:var(--accent);text-decoration:none;cursor:pointer;">Forgot password?</a>
+            </div>
+            <div class="input-wrap">
+              <span class="input-icon">
+                <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input class="input" type="password" placeholder="Enter your password" />
+              <button type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;">
+                <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember me -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
+            <div style="width:16px;height:16px;border:1px solid var(--border);border-radius:3px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+              <svg style="width:10px;height:10px;color:var(--accent);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span style="font-size:12px;color:var(--text-secondary);">Remember me for 30 days</span>
+          </div>
+
+          <button class="btn btn-primary w-full" style="height:44px;" type="submit" class="annotation" data-note="POST /api/v1/auth/login — PixelButton tone=danger, full width">
+            Log In
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <div class="auth-divider-line"></div>
+          <span class="auth-divider-text">or continue with</span>
+          <div class="auth-divider-line"></div>
+        </div>
+
+        <button class="social-btn annotation" data-note="OAuth — Google. POST /api/v1/auth/google">
+          <svg style="width:16px;height:16px;" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+
+        <div class="auth-footer">
+          Don't have an account? <a>Sign up free</a>
+        </div>
+
+        <!-- Register form (shown when Register tab active) -->
+        <div style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">Register Form (tab toggle)</div>
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input class="input" placeholder="Choose a username" style="background:var(--bg-elevated);opacity:0.6;" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="input" placeholder="your@email.com" style="background:var(--bg-elevated);opacity:0.6;" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="input" type="password" placeholder="Min. 8 characters" style="background:var(--bg-elevated);opacity:0.6;" disabled />
+            <div class="form-hint">Must contain uppercase, number, and special character</div>
+          </div>
+          <button class="btn btn-primary w-full" style="height:44px;opacity:0.5;" disabled>Create Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Design Token Reference ──────────────────────────────────── -->
+<section style="background:#050505;padding:48px 0;border-top:2px solid var(--border);">
+  <div class="container">
+    <h2 style="font-family:var(--font-heading);font-size:22px;font-weight:700;margin-bottom:24px;color:var(--text-secondary);">
+      Design Token Reference
+    </h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+      <!-- Color swatches -->
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+        <div style="height:40px;border-radius:4px;background:#0f0f0f;border:1px solid var(--border);margin-bottom:10px;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">--bg-base</div>
+        <div style="font-size:11px;color:var(--text-muted);">#0f0f0f</div>
+      </div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+        <div style="height:40px;border-radius:4px;background:#1a1a1a;border:1px solid var(--border);margin-bottom:10px;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">--bg-surface</div>
+        <div style="font-size:11px;color:var(--text-muted);">#1a1a1a</div>
+      </div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+        <div style="height:40px;border-radius:4px;background:#e63946;margin-bottom:10px;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">--accent</div>
+        <div style="font-size:11px;color:var(--text-muted);">#e63946</div>
+      </div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+        <div style="height:40px;border-radius:4px;background:#f5f5f5;margin-bottom:10px;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">--text-primary</div>
+        <div style="font-size:11px;color:var(--text-muted);">#f5f5f5</div>
+      </div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+        <div style="height:40px;border-radius:4px;background:#2dc653;margin-bottom:10px;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">--success</div>
+        <div style="font-size:11px;color:var(--text-muted);">#2dc653</div>
+      </div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;">
+        <div style="height:40px;border-radius:4px;background:#f4a261;margin-bottom:10px;"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">--warning</div>
+        <div style="font-size:11px;color:var(--text-muted);">#f4a261</div>
+      </div>
+      <!-- Font samples -->
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;grid-column:span 2;">
+        <div style="font-family:var(--font-heading);font-size:28px;font-weight:700;margin-bottom:4px;">Rajdhani Heading</div>
+        <div style="font-size:13px;color:var(--text-secondary);font-weight:500;">Heading font — Angular, bold, manga-style. Sizes: 20–72px</div>
+      </div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;grid-column:span 2;">
+        <div style="font-size:16px;line-height:1.6;margin-bottom:4px;">Inter Body Text — Clean and readable for long reading sessions. Used for all body copy, captions, UI labels, and metadata.</div>
+        <div style="font-size:11px;color:var(--text-muted);">Body font — Sizes: 11–16px · Line height: 1.6</div>
+      </div>
+      <!-- Badge examples -->
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <span class="badge badge-success">Ongoing</span>
+        <span class="badge badge-info">Completed</span>
+        <span class="badge badge-warning">Hiatus</span>
+        <span class="badge badge-accent">New</span>
+        <span class="badge badge-default">Action</span>
+      </div>
+      <!-- Button examples -->
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <button class="btn btn-primary btn-sm">Primary</button>
+        <button class="btn btn-ghost btn-sm">Ghost</button>
+        <button class="btn-icon btn">
+          <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
