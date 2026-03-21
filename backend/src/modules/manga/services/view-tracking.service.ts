@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
@@ -14,17 +14,32 @@ export class ViewTrackingService {
     @Inject('REDIS_CLIENT') private redis: Redis,
   ) {}
 
+  /** Buffer view in Redis (flushed to DB by CounterFlushJob every 5 min) */
   async trackChapterView(chapterId: number, userId?: number, ip?: string): Promise<void> {
     const identifier = userId ? `user:${userId}` : `ip:${ip ?? 'unknown'}`;
-    const key = `view:${chapterId}:${identifier}`;
+    const dedupKey = `view:${chapterId}:${identifier}`;
 
-    const exists = await this.redis.get(key);
+    const exists = await this.redis.get(dedupKey);
     if (exists) return;
 
-    await this.redis.setex(key, VIEW_TTL_SECONDS, '1');
-    await this.db
-      .update(chapters)
-      .set({ viewCount: sql`view_count + 1` })
-      .where(eq(chapters.id, chapterId));
+    await this.redis.setex(dedupKey, VIEW_TTL_SECONDS, '1');
+
+    // Buffer counters in Redis — flushed to DB by cron job
+    await this.redis.incr(`counter:chapter:${chapterId}:views`);
+
+    // Also increment manga-level counters
+    const [chapter] = await this.db
+      .select({ mangaId: chapters.mangaId })
+      .from(chapters)
+      .where(eq(chapters.id, chapterId))
+      .limit(1);
+
+    if (chapter) {
+      await Promise.all([
+        this.redis.incr(`counter:manga:${chapter.mangaId}:views_day`),
+        this.redis.incr(`counter:manga:${chapter.mangaId}:views_week`),
+        this.redis.incr(`counter:manga:${chapter.mangaId}:views`),
+      ]);
+    }
   }
 }

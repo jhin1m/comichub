@@ -1,4 +1,5 @@
 import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, isNull, and, gt, lt, asc, desc } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
@@ -6,11 +7,15 @@ import { chapters, chapterImages, manga } from '../../../database/schema/index.j
 import { slugify } from '../../../common/utils/slug.util.js';
 import { CreateChapterDto } from '../dto/create-chapter.dto.js';
 import { UpdateChapterDto } from '../dto/update-chapter.dto.js';
+import { NewChapterEvent } from '../../notification/events/new-chapter.event.js';
 import type { ChapterWithImages, ChapterNavigation, ChapterListItem } from '../types/manga.types.js';
 
 @Injectable()
 export class ChapterService {
-  constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE) private db: DrizzleDB,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findByManga(mangaId: number): Promise<ChapterListItem[]> {
     return this.db
@@ -89,7 +94,7 @@ export class ChapterService {
 
   async create(mangaId: number, dto: CreateChapterDto): Promise<ChapterListItem> {
     const [mangaRow] = await this.db
-      .select({ id: manga.id })
+      .select({ id: manga.id, title: manga.title, cover: manga.cover })
       .from(manga)
       .where(and(eq(manga.id, mangaId), isNull(manga.deletedAt)))
       .limit(1);
@@ -121,6 +126,15 @@ export class ChapterService {
       .update(manga)
       .set({ chaptersCount: this.db.$count(chapters, and(eq(chapters.mangaId, mangaId), isNull(chapters.deletedAt))) as unknown as number })
       .where(eq(manga.id, mangaId));
+
+    // Emit event for notifications + cache invalidation
+    const event = new NewChapterEvent();
+    event.mangaId = mangaId;
+    event.mangaTitle = mangaRow.title;
+    event.chapterId = created.id;
+    event.chapterNumber = dto.number;
+    event.mangaCover = mangaRow.cover ?? null;
+    this.eventEmitter.emit('chapter.created', event);
 
     return created as unknown as ChapterListItem;
   }

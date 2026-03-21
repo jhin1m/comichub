@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
@@ -18,12 +19,17 @@ import {
   UpdateCommentDto,
   CommentableType,
 } from '../dto/create-comment.dto.js';
+import { CommentReplyEvent } from '../../notification/events/comment-reply.event.js';
+import { CommentLikeEvent } from '../../notification/events/comment-like.event.js';
 
 const MAX_DEPTH = 3;
 
 @Injectable()
 export class CommentService {
-  constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE) private db: DrizzleDB,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async listForManga(mangaId: number, pagination: PaginationDto) {
     return this.db
@@ -84,7 +90,7 @@ export class CommentService {
       .orderBy(comments.createdAt);
   }
 
-  async create(userId: number, dto: CreateCommentDto) {
+  async create(userId: number, dto: CreateCommentDto, userName?: string) {
     if (dto.parentId) {
       await this.validateDepth(dto.parentId);
     }
@@ -99,6 +105,19 @@ export class CommentService {
         content: dto.content,
       })
       .returning();
+
+    // Emit reply notification if this is a reply to another comment
+    if (dto.parentId) {
+      const parent = await this.findOrFail(dto.parentId);
+      if (parent.userId && parent.userId !== userId) {
+        const event = new CommentReplyEvent();
+        event.commentId = dto.parentId;
+        event.replyAuthorName = userName ?? '';
+        event.mangaId = dto.commentableType === CommentableType.MANGA ? dto.commentableId : null;
+        event.commentOwnerId = parent.userId;
+        this.eventEmitter.emit('comment.replied', event);
+      }
+    }
 
     return comment;
   }
@@ -130,8 +149,8 @@ export class CommentService {
       .where(eq(comments.id, commentId));
   }
 
-  async toggleLike(commentId: number, userId: number) {
-    await this.findOrFail(commentId);
+  async toggleLike(commentId: number, userId: number, likerName?: string) {
+    const commentData = await this.findOrFail(commentId);
 
     const [existing] = await this.db
       .select()
@@ -165,6 +184,16 @@ export class CommentService {
       .set({ likesCount: sql`${comments.likesCount} + 1` })
       .where(eq(comments.id, commentId))
       .returning({ likesCount: comments.likesCount });
+
+    // Emit like notification (don't notify self)
+    if (commentData.userId && commentData.userId !== userId) {
+      const event = new CommentLikeEvent();
+      event.commentId = commentId;
+      event.likerName = likerName ?? '';
+      event.commentOwnerId = commentData.userId;
+      event.commentPreview = (commentData.content ?? '').slice(0, 100);
+      this.eventEmitter.emit('comment.liked', event);
+    }
 
     return { liked: true, likesCount: updated?.likesCount ?? 0 };
   }
