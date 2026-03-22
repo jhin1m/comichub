@@ -31,7 +31,7 @@ export function MangaCarouselCard({ item, rank }: Props) {
   return (
     <Link href={`/manga/${item.slug}`} className="group block cursor-pointer mb-4">
       {/* Cover */}
-      <div className="relative aspect-2/3 rounded-sm overflow-hidden bg-surface border border-[#2a2a2a] mb-2">
+      <div className="relative aspect-2/3 rounded-sm overflow-hidden bg-surface border border-default mb-2">
         {item.cover ? (
           <Image
             src={item.cover}
@@ -43,7 +43,7 @@ export function MangaCarouselCard({ item, rank }: Props) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#5a5a5a] text-[10px]">
+          <div className="w-full h-full flex items-center justify-center text-muted text-[10px]">
             No Cover
           </div>
         )}
@@ -67,8 +67,8 @@ export function MangaCarouselCard({ item, rank }: Props) {
       </div>
 
       {/* Chapter + time */}
-      <div className="flex items-center gap-1 text-[11px] text-[#5a5a5a] mb-1">
-        <span className="text-[#a0a0a0]">
+      <div className="flex items-center gap-1 text-[11px] text-muted mb-1">
+        <span className="text-secondary">
           {item.chaptersCount > 0 ? `Ch.${item.chaptersCount}` : 'No ch.'}
         </span>
         <span>·</span>
@@ -76,7 +76,7 @@ export function MangaCarouselCard({ item, rank }: Props) {
       </div>
 
       {/* Title */}
-      <p className="text-sm font-medium text-[#f5f5f5] line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
+      <p className="text-sm font-medium text-primary line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
         {item.title}
       </p>
     </Link>

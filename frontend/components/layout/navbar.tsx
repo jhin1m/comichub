@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { Menu, X, Bell, LayoutGrid } from 'lucide-react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
+import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth.context';
 import { notificationApi } from '@/lib/api/notification.api';
 
@@ -34,11 +35,11 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="h-14 sticky top-0 z-50 bg-[#111111] border-b border-[#2a2a2a]">
+    <header className="h-14 sticky top-0 z-50 bg-base border-b border-default">
       <div className="max-w-350 mx-auto px-4 h-full flex items-center gap-3">
 
         {/* Logo */}
-        <Link href="/" className="font-rajdhani font-bold text-xl text-[#f5f5f5] shrink-0 mr-1">
+        <Link href="/" className="font-rajdhani font-bold text-xl text-primary shrink-0 mr-1">
           Comic<span className="text-accent">Hub</span>
         </Link>
 
@@ -49,18 +50,18 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-1 shrink-0">
           <Link
             href="/profile?tab=follows"
-            className="w-9 h-9 flex items-center justify-center rounded text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
             aria-label="Reading list"
           >
-            <LayoutGrid size={16} />
+            <LayoutGrid size={18} />
           </Link>
 
           {user && (
             <button
-              className="relative w-9 h-9 flex items-center justify-center rounded text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors"
+              className="relative w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
               aria-label="Notifications"
             >
-              <Bell size={16} />
+              <Bell size={18} />
               {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
               )}
@@ -68,7 +69,7 @@ export default function Navbar() {
           )}
 
           {loading ? (
-            <div className="w-8 h-8 rounded-full bg-[#2a2a2a] animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-hover animate-pulse" />
           ) : user ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -76,30 +77,25 @@ export default function Navbar() {
                 className="flex items-center focus:outline-none"
                 aria-label="User menu"
               >
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover border border-[#2a2a2a]"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white text-sm font-semibold">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <Avatar
+                  src={user.avatar ?? undefined}
+                  fallback={user.name}
+                  size="sm"
+                  className="border border-default"
+                />
               </button>
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-surface border border-[#2a2a2a] rounded shadow-lg py-1 z-50">
+                <div className="absolute right-0 mt-2 w-44 bg-surface border border-default rounded shadow-lg py-1 z-50">
                   <Link
                     href="/profile"
-                    className="block px-4 py-2 text-sm text-[#f5f5f5] hover:bg-[#2e2e2e] transition-colors"
+                    className="block px-4 py-2 text-sm text-primary hover:bg-hover transition-colors"
                     onClick={() => setDropdownOpen(false)}
                   >
                     Profile
                   </Link>
                   <button
                     onClick={() => { setDropdownOpen(false); logout(); }}
-                    className="w-full text-left px-4 py-2 text-sm text-[#a0a0a0] hover:bg-[#2e2e2e] hover:text-[#f5f5f5] transition-colors"
+                    className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
                   >
                     Logout
                   </button>
@@ -118,7 +114,7 @@ export default function Navbar() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden text-[#a0a0a0] hover:text-[#f5f5f5] p-1"
+          className="md:hidden text-secondary hover:text-primary p-1"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >
@@ -128,13 +124,13 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-[#111111] border-b border-[#2a2a2a] px-4 py-3 flex flex-col gap-3">
-          <Link href="/" className="text-sm text-[#a0a0a0] hover:text-[#f5f5f5]" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link href="/browse" className="text-sm text-[#a0a0a0] hover:text-[#f5f5f5]" onClick={() => setMenuOpen(false)}>Browse</Link>
+        <div className="md:hidden bg-base border-b border-default px-4 py-3 flex flex-col gap-3">
+          <Link href="/" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Home</Link>
+          <Link href="/browse" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Browse</Link>
           {user ? (
             <>
-              <Link href="/profile" className="text-sm text-[#a0a0a0] hover:text-[#f5f5f5]" onClick={() => setMenuOpen(false)}>Profile</Link>
-              <button onClick={() => { setMenuOpen(false); logout(); }} className="text-left text-sm text-[#a0a0a0] hover:text-[#f5f5f5]">Logout</button>
+              <Link href="/profile" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Profile</Link>
+              <button onClick={() => { setMenuOpen(false); logout(); }} className="text-left text-sm text-secondary hover:text-primary">Logout</button>
             </>
           ) : (
             <Link href="/login" className="text-sm text-[#00d4d4]" onClick={() => setMenuOpen(false)}>Login</Link>

@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 import { mangaApi } from '@/lib/api/manga.api';
 import { commentApi, type RecentComment } from '@/lib/api/comment.api';
@@ -26,8 +26,8 @@ export default async function HomePage() {
       mangaApi.list({ page: 1, limit: 12, status: 'completed', sort: 'updated_at', order: 'desc' }),
       commentApi.recent(10),
     ]);
-  } catch {
-    // API unavailable — render empty state
+  } catch (err) {
+    console.error('Failed to fetch homepage data:', err);
   }
 
   return (

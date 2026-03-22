@@ -12,10 +12,10 @@ const FOOTER_LINKS = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#2a2a2a] bg-[#0f0f0f] mt-auto">
+    <footer className="border-t border-default bg-base mt-auto">
       <div className="max-w-350 mx-auto px-4 md:px-6 lg:px-8 py-8">
         <div className="flex flex-col items-center gap-4">
-          <span className="font-rajdhani font-bold text-lg text-[#f5f5f5]">
+          <span className="font-rajdhani font-bold text-lg text-primary">
             Comic<span className="text-accent">Hub</span>
           </span>
           <nav className="flex items-center gap-5 flex-wrap justify-center">
@@ -23,13 +23,13 @@ export default function Footer() {
               <Link
                 key={label}
                 href={href}
-                className="text-xs text-[#5a5a5a] hover:text-[#a0a0a0] transition-colors"
+                className="text-xs text-muted hover:text-secondary transition-colors"
               >
                 {label}
               </Link>
             ))}
           </nav>
-          <p className="text-xs text-[#5a5a5a]">
+          <p className="text-xs text-muted">
             &copy; {new Date().getFullYear()} ComicHub. All rights reserved.
           </p>
         </div>

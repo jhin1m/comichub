@@ -1,18 +1,18 @@
 import Link from 'next/link';
-import { PixelButton } from '@pxlkit/ui-kit';
+import { Button } from '@/components/ui/button';
 import PageWrapper from '@/components/layout/page-wrapper';
 
 export default function NotFound() {
   return (
     <PageWrapper className="py-24 flex flex-col items-center text-center">
-      <h1 className="font-rajdhani font-bold text-5xl text-[#f5f5f5] mb-4">
+      <h1 className="font-rajdhani font-bold text-5xl text-primary mb-4">
         Manga Not Found
       </h1>
-      <p className="text-[#a0a0a0] text-lg mb-8">
+      <p className="text-secondary text-lg mb-8">
         The page you&apos;re looking for doesn&apos;t exist.
       </p>
       <Link href="/">
-        <PixelButton tone="red">Back to Home</PixelButton>
+        <Button variant="primary">Back to Home</Button>
       </Link>
     </PageWrapper>
   );

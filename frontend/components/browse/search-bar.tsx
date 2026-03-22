@@ -23,14 +23,14 @@ export function SearchBar({ initialValue = '', onSearch }: SearchBarProps) {
     <form onSubmit={handleSubmit} className="relative w-full">
       <Search
         size={16}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a5a] pointer-events-none"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search manga..."
-        className="w-full pl-9 pr-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-[4px] text-sm text-[#f5f5f5] placeholder-[#5a5a5a] focus:outline-none focus:border-[#e63946] transition-colors"
+        className="w-full pl-9 pr-4 py-2 bg-surface border border-default rounded-[4px] text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
       />
     </form>
   );

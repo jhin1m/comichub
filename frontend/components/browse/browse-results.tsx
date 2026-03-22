@@ -1,5 +1,5 @@
 import { MangaGrid } from '@/components/manga/manga-grid';
-import { PixelPagination } from '@pxlkit/ui-kit';
+import { Pagination } from '@/components/ui/pagination';
 import type { PaginatedResult, MangaListItem } from '@/types/manga.types';
 
 interface BrowseResultsProps {
@@ -7,6 +7,8 @@ interface BrowseResultsProps {
   isLoading: boolean;
   currentPage: number;
   onPageChange: (page: number) => void;
+  // viewMode is accepted for future list view support
+  viewMode?: 'grid' | 'list';
 }
 
 export function BrowseResults({
@@ -19,12 +21,6 @@ export function BrowseResults({
 
   return (
     <div className="flex-1 min-w-0">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-[#a0a0a0]">
-          {isLoading ? 'Loading...' : result ? `${result.total} results` : '0 results'}
-        </p>
-      </div>
-
       <MangaGrid
         items={result?.data ?? []}
         isLoading={isLoading}
@@ -33,10 +29,10 @@ export function BrowseResults({
 
       {!isLoading && totalPages > 1 && (
         <div className="mt-8 flex justify-center">
-          <PixelPagination
-            page={currentPage}
-            total={totalPages}
-            onChange={onPageChange}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
           />
         </div>
       )}

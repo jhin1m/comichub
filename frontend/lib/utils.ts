@@ -26,12 +26,18 @@ export function formatRelativeDate(dateStr: string): string {
   return formatDate(dateStr);
 }
 
-export function statusTone(status: string): 'green' | 'cyan' | 'gold' | 'red' | 'neutral' {
+export function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+export function statusVariant(status: string): 'success' | 'info' | 'warning' | 'accent' | 'default' {
   switch (status) {
-    case 'ongoing': return 'green';
-    case 'completed': return 'cyan';
-    case 'hiatus': return 'gold';
-    case 'dropped': return 'red';
-    default: return 'neutral';
+    case 'ongoing': return 'success';
+    case 'completed': return 'info';
+    case 'hiatus': return 'warning';
+    case 'dropped': return 'accent';
+    default: return 'default';
   }
 }

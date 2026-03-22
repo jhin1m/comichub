@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth.context';
 import { mangaApi } from '@/lib/api/manga.api';
 
@@ -97,8 +98,9 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
       try {
         await mangaApi.removeRating(mangaId);
         setUserRating(null);
+        toast.success('Rating removed');
       } catch {
-        // silent
+        toast.error('Failed to save rating');
       } finally {
         setSubmitting(false);
       }
@@ -109,8 +111,9 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
     try {
       await mangaApi.rate(mangaId, score);
       setUserRating(score);
+      toast.success('Rating saved');
     } catch {
-      // silent
+      toast.error('Failed to save rating');
     } finally {
       setSubmitting(false);
     }
@@ -155,9 +158,9 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
       </div>
 
       {/* Sub-label */}
-      <p style={{ color: '#a0a0a0' }} className="text-sm">
+      <p className="text-sm text-secondary">
         Score:{' '}
-        <span style={{ color: '#f5f5f5' }} className="font-medium">
+        <span className="font-medium text-primary">
           {displayScore}
         </span>{' '}
         by {totalRatings.toLocaleString()} users

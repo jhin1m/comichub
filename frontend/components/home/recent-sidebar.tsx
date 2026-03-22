@@ -16,20 +16,20 @@ const TYPE_LABEL: Record<MangaType, string> = {
 };
 
 const TYPE_COLOR: Record<MangaType, string> = {
-  manga: 'text-[#4895ef]',
-  manhwa: 'text-[#2dc653]',
-  manhua: 'text-[#f4a261]',
-  doujinshi: 'text-[#a0a0a0]',
+  manga: 'text-info',
+  manhwa: 'text-success',
+  manhua: 'text-warning',
+  doujinshi: 'text-secondary',
 };
 
 function SidebarItem({ item }: { item: MangaListItem }) {
   return (
     <Link
       href={`/manga/${item.slug}`}
-      className="flex gap-2.5 py-2 border-b border-[#1e1e1e] last:border-0 group"
+      className="flex gap-2.5 py-2 border-b border-default last:border-0 group"
     >
       {/* Thumbnail */}
-      <div className="relative w-13 h-17.5 shrink-0 rounded-[3px] overflow-hidden bg-elevated border border-[#2a2a2a]">
+      <div className="relative w-13 h-17.5 shrink-0 rounded-[3px] overflow-hidden bg-elevated border border-default">
         {item.cover ? (
           <Image
             src={item.cover}
@@ -40,7 +40,7 @@ function SidebarItem({ item }: { item: MangaListItem }) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[#5a5a5a] text-[9px]">
+          <div className="w-full h-full flex items-center justify-center text-muted text-[9px]">
             N/A
           </div>
         )}
@@ -51,11 +51,11 @@ function SidebarItem({ item }: { item: MangaListItem }) {
         <div className={`text-[9px] font-bold tracking-widest uppercase mb-0.5 ${TYPE_COLOR[item.type]}`}>
           {TYPE_LABEL[item.type]}
         </div>
-        <p className="text-[12px] font-medium text-[#f5f5f5] line-clamp-2 leading-snug mb-1 group-hover:text-accent transition-colors duration-150">
+        <p className="text-[12px] font-medium text-primary line-clamp-2 leading-snug mb-1 group-hover:text-accent transition-colors duration-150">
           {item.title}
         </p>
-        <div className="text-[11px] text-[#5a5a5a]">
-          <span className="text-[#a0a0a0]">
+        <div className="text-[11px] text-muted">
+          <span className="text-secondary">
             {item.chaptersCount > 0 ? `Ch.${item.chaptersCount}` : 'Ch.0'}
           </span>
           {' · '}
@@ -81,20 +81,20 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
   return (
     <aside>
       {/* Tab header */}
-      <div className="mb-3 pb-2.5 border-b border-[#2a2a2a] flex items-baseline gap-1">
+      <div className="mb-3 pb-2.5 border-b border-default flex items-baseline gap-1">
         <button
           onClick={() => setActiveTab('recent')}
           className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer ${
-            activeTab === 'recent' ? 'text-[#f5f5f5]' : 'text-[#5a5a5a] hover:text-[#a0a0a0]'
+            activeTab === 'recent' ? 'text-primary' : 'text-muted hover:text-secondary'
           }`}
         >
           Recently Added
         </button>
-        <span className="text-[#5a5a5a] text-[15px] font-medium">/</span>
+        <span className="text-muted text-[15px] font-medium">/</span>
         <button
           onClick={() => setActiveTab('complete')}
           className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer ${
-            activeTab === 'complete' ? 'text-[#f5f5f5]' : 'text-[#5a5a5a] hover:text-[#a0a0a0]'
+            activeTab === 'complete' ? 'text-primary' : 'text-muted hover:text-secondary'
           }`}
         >
           Complete Series
@@ -104,7 +104,7 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
       {items.length > 0 ? (
         items.map((item) => <SidebarItem key={item.id} item={item} />)
       ) : (
-        <p className="text-[#5a5a5a] text-sm py-6 text-center">No data available</p>
+        <p className="text-muted text-sm py-6 text-center">No data available</p>
       )}
 
       <LatestComments comments={recentComments} />

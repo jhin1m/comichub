@@ -1,62 +1,67 @@
 'use client';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PixelInput, PixelButton } from '@pxlkit/ui-kit';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod/v4';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth.context';
 
-export function RegisterForm() {
-  const { register } = useAuth();
-  const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const schema = z.object({
+  name: z.string().min(2, 'Min 2 characters'),
+  email: z.email('Invalid email'),
+  password: z.string().min(6, 'Min 6 characters'),
+});
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+type FormData = z.infer<typeof schema>;
+
+export function RegisterForm() {
+  const { register: authRegister } = useAuth();
+  const router = useRouter();
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const onSubmit = async (data: FormData) => {
     try {
-      await register({ name, email, password });
+      await authRegister(data);
       router.push('/');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Registration failed';
-      setError(message);
-    } finally {
-      setIsLoading(false);
+      setError('root', { message });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PixelInput
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Input
         label="Name"
         type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
+        error={errors.name?.message}
+        {...register('name')}
       />
-      <PixelInput
+      <Input
         label="Email"
         type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
+        error={errors.email?.message}
+        {...register('email')}
       />
-      <PixelInput
+      <Input
         label="Password"
         type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
+        error={errors.password?.message}
+        {...register('password')}
       />
-      {error && <p className="text-accent text-sm">{error}</p>}
-      <PixelButton tone="red" type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Creating account...' : 'Create Account'}
-      </PixelButton>
+      {errors.root && <p className="text-accent text-sm">{errors.root.message}</p>}
+      <Button variant="primary" type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? 'Creating account...' : 'Create Account'}
+      </Button>
     </form>
   );
 }

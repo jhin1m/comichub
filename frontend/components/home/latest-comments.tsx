@@ -11,14 +11,14 @@ function CommentItem({ comment }: { comment: RecentComment }) {
   const href = comment.mangaSlug ? `/manga/${comment.mangaSlug}` : '#';
 
   return (
-    <div className="py-2.5 border-b border-[#1e1e1e] last:border-0">
+    <div className="py-2.5 border-b border-default last:border-0">
       {/* Chapter/Manga header */}
       <Link
         href={href}
         className="flex items-center gap-2 mb-1.5 group cursor-pointer"
       >
         {/* Manga cover thumbnail */}
-        <div className="relative w-7 h-7 shrink-0 rounded-[3px] overflow-hidden bg-elevated border border-[#2a2a2a]">
+        <div className="relative w-7 h-7 shrink-0 rounded-[3px] overflow-hidden bg-elevated border border-default">
           {comment.mangaCover ? (
             <Image
               src={comment.mangaCover}
@@ -29,25 +29,25 @@ function CommentItem({ comment }: { comment: RecentComment }) {
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full bg-[#2a2a2a]" />
+            <div className="w-full h-full bg-hover" />
           )}
         </div>
-        <span className="text-[11px] font-medium text-[#a0a0a0] bg-[#1a1a1a] px-2 py-0.5 rounded-sm line-clamp-1 flex-1 group-hover:text-accent transition-colors duration-150">
+        <span className="text-[11px] font-medium text-secondary bg-surface px-2 py-0.5 rounded-sm line-clamp-1 flex-1 group-hover:text-accent transition-colors duration-150">
           {heading || 'Unknown'}
         </span>
       </Link>
 
       {/* Comment content */}
-      <p className="text-[12px] text-[#d0d0d0] leading-relaxed line-clamp-2 mb-1">
+      <p className="text-[12px] text-primary leading-relaxed line-clamp-2 mb-1">
         {comment.content}
       </p>
 
       {/* User info + time */}
       <div className="flex items-center justify-between text-[11px]">
-        <span className="text-[#a0a0a0] truncate max-w-[60%]">
+        <span className="text-secondary truncate max-w-[60%]">
           {comment.userName}
         </span>
-        <span className="text-[#5a5a5a] shrink-0">
+        <span className="text-muted shrink-0">
           {formatRelativeDate(comment.createdAt)}
         </span>
       </div>
@@ -64,8 +64,8 @@ export function LatestComments({ comments }: Props) {
 
   return (
     <div className="mt-6">
-      <div className="mb-3 pb-2.5 border-b border-[#2a2a2a]">
-        <h2 className="font-rajdhani font-bold text-[17px] text-[#f5f5f5]">
+      <div className="mb-3 pb-2.5 border-b border-default">
+        <h2 className="font-rajdhani font-bold text-[17px] text-primary">
           Latest Comments
         </h2>
       </div>

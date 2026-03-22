@@ -80,12 +80,12 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
     <section className="mb-8">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3.5">
-        <h2 className="font-rajdhani font-bold text-[20px] text-[#f5f5f5] flex-1">{title}</h2>
+        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1">{title}</h2>
 
         <button
           onClick={() => scroll(-1)}
           disabled={!canPrev}
-          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-[#2a2a2a] text-[#5a5a5a] disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-[#2e2e2e] hover:enabled:text-[#f5f5f5] transition-colors"
+          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
           aria-label="Previous"
         >
           <ChevronLeft size={13} />
@@ -93,7 +93,7 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
         <button
           onClick={() => scroll(1)}
           disabled={!canNext}
-          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-[#2a2a2a] text-[#a0a0a0] disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-[#2e2e2e] hover:enabled:text-[#f5f5f5] transition-colors"
+          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
           aria-label="Next"
         >
           <ChevronRight size={13} />
@@ -101,7 +101,7 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
 
         <Link
           href={moreHref}
-          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-[#2a2a2a] text-[#a0a0a0] hover:bg-[#2e2e2e] hover:text-[#f5f5f5] transition-colors"
+          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
           aria-label="See all"
         >
           <MoreHorizontal size={13} />
@@ -132,7 +132,7 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
           ))}
         </div>
       ) : (
-        <p className="text-[#5a5a5a] text-sm py-8 text-center">No data available</p>
+        <p className="text-muted text-sm py-8 text-center">No data available</p>
       )}
     </section>
   );

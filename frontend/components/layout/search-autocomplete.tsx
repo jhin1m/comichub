@@ -122,17 +122,17 @@ export function SearchAutocomplete() {
   const dropdown = (
     <>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded shadow-xl z-50 overflow-hidden max-h-[70vh] overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface border border-default rounded shadow-xl z-50 overflow-hidden max-h-[70vh] overflow-y-auto">
           {results.map((item, i) => (
             <button
               key={item.id}
               onClick={() => selectItem(item)}
               onMouseEnter={() => setActiveIndex(i)}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${
-                i === activeIndex ? 'bg-[#2e2e2e]' : 'hover:bg-[#242424]'
+                i === activeIndex ? 'bg-hover' : 'hover:bg-elevated'
               }`}
             >
-              <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-[#242424] border border-[#2a2a2a]">
+              <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated border border-default">
                 {item.cover ? (
                   <Image
                     src={item.cover}
@@ -142,12 +142,12 @@ export function SearchAutocomplete() {
                     sizes="40px"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#5a5a5a] text-[8px]">
+                  <div className="w-full h-full flex items-center justify-center text-muted text-[8px]">
                     N/A
                   </div>
                 )}
               </div>
-              <span className="text-sm text-[#f5f5f5] truncate leading-snug">
+              <span className="text-sm text-primary truncate leading-snug">
                 {item.title}
               </span>
             </button>
@@ -155,16 +155,16 @@ export function SearchAutocomplete() {
           <Link
             href={`/browse?search=${encodeURIComponent(query.trim())}`}
             onClick={() => { setOpen(false); setMobileOpen(false); }}
-            className="block px-3.5 py-2.5 text-xs text-[#a0a0a0] hover:text-accent border-t border-[#2a2a2a] text-center transition-colors"
+            className="block px-3.5 py-2.5 text-xs text-secondary hover:text-accent border-t border-default text-center transition-colors"
           >
             View all results for &quot;{query.trim()}&quot;
           </Link>
         </div>
       )}
       {loading && !open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3.5 py-3 z-50">
-          <div className="flex gap-2 items-center text-[#5a5a5a] text-xs">
-            <div className="w-3.5 h-3.5 border-2 border-[#5a5a5a] border-t-transparent rounded-full animate-spin" />
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface border border-default rounded px-3.5 py-3 z-50">
+          <div className="flex gap-2 items-center text-muted text-xs">
+            <div className="w-3.5 h-3.5 border-2 border-muted border-t-transparent rounded-full animate-spin" />
             Searching...
           </div>
         </div>
@@ -178,7 +178,7 @@ export function SearchAutocomplete() {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="md:hidden w-9 h-9 flex items-center justify-center rounded text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors ml-auto"
+        className="md:hidden w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors ml-auto"
         aria-label="Open search"
       >
         <Search size={18} />
@@ -186,12 +186,12 @@ export function SearchAutocomplete() {
 
       {/* Mobile: Drop-down search panel (below navbar) */}
       {mobileOpen && (
-        <div className="fixed top-14 left-0 right-0 z-[60] bg-[#111111] border-b border-[#2a2a2a] shadow-lg md:hidden">
+        <div className="fixed top-14 left-0 right-0 z-[60] bg-base border-b border-default shadow-lg md:hidden">
           <div className="flex items-center gap-2 px-3 py-2.5">
             <form onSubmit={handleSubmit} className="flex-1 relative">
               <Search
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a5a] pointer-events-none"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
               />
               <input
                 ref={mobileInputRef}
@@ -203,13 +203,13 @@ export function SearchAutocomplete() {
                 onFocus={() => results.length > 0 && setOpen(true)}
                 placeholder="Search comic..."
                 autoComplete="off"
-                className="w-full h-10 bg-elevated border border-[#2a2a2a] rounded pl-10 pr-10 text-sm text-[#f5f5f5] placeholder:text-[#5a5a5a] outline-none focus:border-[#3a3a3a] transition-colors"
+                className="w-full h-10 bg-elevated border border-default rounded pl-10 pr-10 text-sm text-primary placeholder:text-muted outline-none focus:border-hover transition-colors"
               />
               {query && (
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a5a5a] hover:text-[#a0a0a0] transition-colors cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-secondary transition-colors cursor-pointer"
                   aria-label="Clear search"
                 >
                   <X size={14} />
@@ -219,7 +219,7 @@ export function SearchAutocomplete() {
             <button
               type="button"
               onClick={closeMobileSearch}
-              className="w-9 h-9 flex items-center justify-center rounded text-[#a0a0a0] hover:text-[#f5f5f5] transition-colors shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:text-primary transition-colors shrink-0"
               aria-label="Close search"
             >
               <X size={18} />
@@ -228,17 +228,17 @@ export function SearchAutocomplete() {
           {/* Mobile results */}
           <div className="relative px-3 pb-2">
             {open && (
-              <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
+              <div className="bg-surface border border-default rounded shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
                 {results.map((item, i) => (
                   <button
                     key={item.id}
                     onClick={() => selectItem(item)}
                     onMouseEnter={() => setActiveIndex(i)}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${
-                      i === activeIndex ? 'bg-[#2e2e2e]' : 'hover:bg-[#242424]'
+                      i === activeIndex ? 'bg-hover' : 'hover:bg-elevated'
                     }`}
                   >
-                    <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-[#242424] border border-[#2a2a2a]">
+                    <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated border border-default">
                       {item.cover ? (
                         <Image
                           src={item.cover}
@@ -248,12 +248,12 @@ export function SearchAutocomplete() {
                           sizes="40px"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#5a5a5a] text-[8px]">
+                        <div className="w-full h-full flex items-center justify-center text-muted text-[8px]">
                           N/A
                         </div>
                       )}
                     </div>
-                    <span className="text-sm text-[#f5f5f5] truncate leading-snug">
+                    <span className="text-sm text-primary truncate leading-snug">
                       {item.title}
                     </span>
                   </button>
@@ -261,16 +261,16 @@ export function SearchAutocomplete() {
                 <Link
                   href={`/browse?search=${encodeURIComponent(query.trim())}`}
                   onClick={() => { setOpen(false); setMobileOpen(false); }}
-                  className="block px-3.5 py-2.5 text-xs text-[#a0a0a0] hover:text-accent border-t border-[#2a2a2a] text-center transition-colors"
+                  className="block px-3.5 py-2.5 text-xs text-secondary hover:text-accent border-t border-default text-center transition-colors"
                 >
                   View all results for &quot;{query.trim()}&quot;
                 </Link>
               </div>
             )}
             {loading && !open && (
-              <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3.5 py-3">
-                <div className="flex gap-2 items-center text-[#5a5a5a] text-xs">
-                  <div className="w-3.5 h-3.5 border-2 border-[#5a5a5a] border-t-transparent rounded-full animate-spin" />
+              <div className="bg-surface border border-default rounded px-3.5 py-3">
+                <div className="flex gap-2 items-center text-muted text-xs">
+                  <div className="w-3.5 h-3.5 border-2 border-muted border-t-transparent rounded-full animate-spin" />
                   Searching...
                 </div>
               </div>
@@ -293,7 +293,7 @@ export function SearchAutocomplete() {
           <div className="relative flex-1">
             <Search
               size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5a5a5a] pointer-events-none"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
             />
             <input
               ref={desktopInputRef}
@@ -305,13 +305,13 @@ export function SearchAutocomplete() {
               onFocus={() => results.length > 0 && setOpen(true)}
               placeholder="Search comic..."
               autoComplete="off"
-              className="w-full h-10 bg-elevated border border-[#2a2a2a] rounded-l pl-10 pr-9 text-sm text-[#f5f5f5] placeholder:text-[#5a5a5a] outline-none focus:border-[#3a3a3a] transition-colors"
+              className="w-full h-10 bg-elevated border border-default rounded-l pl-10 pr-9 text-sm text-primary placeholder:text-muted outline-none focus:border-hover transition-colors"
             />
             {query && (
               <button
                 type="button"
                 onClick={handleClear}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5a5a5a] hover:text-[#a0a0a0] transition-colors cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-secondary transition-colors cursor-pointer"
                 aria-label="Clear search"
               >
                 <X size={14} />
@@ -320,7 +320,7 @@ export function SearchAutocomplete() {
           </div>
           <Link
             href="/browse"
-            className="h-10 flex items-center gap-1.5 px-4 bg-elevated border border-[#2a2a2a] border-l-0 rounded-r text-[#a0a0a0] text-xs font-semibold tracking-wide hover:bg-[#2e2e2e] hover:text-[#f5f5f5] transition-colors whitespace-nowrap shrink-0"
+            className="h-10 flex items-center gap-1.5 px-4 bg-elevated border border-default border-l-0 rounded-r text-secondary text-xs font-semibold tracking-wide hover:bg-hover hover:text-primary transition-colors whitespace-nowrap shrink-0"
           >
             FILTER
           </Link>

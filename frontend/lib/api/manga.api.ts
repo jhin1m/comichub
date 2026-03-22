@@ -23,7 +23,7 @@ export const mangaApi = {
     apiClient.post(`/manga/${mangaId}/follow`).then((r) => r.data),
 
   isFollowed: (mangaId: number) =>
-    apiClient.get<{ isFollowed: boolean }>(`/manga/${mangaId}/is-followed`).then((r) => r.data),
+    apiClient.get<{ followed: boolean; following?: boolean }>(`/manga/${mangaId}/follow`).then((r) => r.data),
 
   /** Rate manga (0.5–5.0) */
   rate: (mangaId: number, score: number) =>

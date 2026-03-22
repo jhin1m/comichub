@@ -70,11 +70,13 @@ No lint or test scripts configured in frontend yet.
 - `@Roles('admin')` — role-based access
 - `@CacheTTL(seconds)` — cache duration for Redis interceptor
 
-### Frontend (Next.js 16 + Tailwind CSS v4 + @pxlkit/ui-kit)
+### Frontend (Next.js 16 + Tailwind CSS v4 + Radix UI)
 
 - **Next.js 16** with App Router — check `node_modules/next/dist/docs/` for API changes from training data
-- **UI kit**: `@pxlkit/ui-kit` components (PixelButton, PixelCard, PixelBadge, etc.) — see `docs/design-guidelines.md` for mapping
-- **Design**: Dark-first theme, pixel/retro aesthetic. Rajdhani for headings, Inter for body. Color tokens defined in design guidelines.
+- **UI components**: Radix UI primitives + custom Tailwind styling. Shared UI in `components/ui/`. See `docs/design-guidelines.md` for full spec.
+- **Forms**: zod + react-hook-form for validation. All forms must use zod schemas.
+- **Toasts**: sonner — use `toast.success()` / `toast.error()` for transient feedback. Never `alert()`.
+- **Design**: Dark-only theme. Rajdhani headings, Inter body. Color tokens as Tailwind theme classes — never hardcode hex.
 - **API client**: `lib/api-client.ts` — axios instance with auto JWT refresh queue and response envelope unwrapping
 - **Auth state**: React Context (`contexts/auth.context.tsx`) with `useAuth` hook
 - **API URL**: `NEXT_PUBLIC_API_URL` env var, defaults to `http://localhost:8080/api/v1`

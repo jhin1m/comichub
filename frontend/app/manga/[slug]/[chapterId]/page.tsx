@@ -7,7 +7,7 @@ import { ReaderToolbar } from '@/components/reader/reader-toolbar';
 import { ReaderImage } from '@/components/reader/reader-image';
 import { ChapterNavBottom } from '@/components/reader/chapter-nav-bottom';
 import { ReaderProgressBar } from '@/components/reader/reader-progress-bar';
-import { PixelSkeleton } from '@pxlkit/ui-kit';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { ChapterWithImages, ChapterNavigation } from '@/types/manga.types';
 
 interface Props {
@@ -45,7 +45,7 @@ export default function ChapterReaderPage({ params }: Props) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center gap-2 pt-20">
         {Array.from({ length: 5 }, (_, i) => (
-          <PixelSkeleton key={i} className="w-[800px] max-w-full h-[1000px]" />
+          <Skeleton key={i} className="w-[800px] max-w-full h-[1000px]" />
         ))}
       </div>
     );

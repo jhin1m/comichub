@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PixelTabs } from '@pxlkit/ui-kit';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth.context';
 import { userApi } from '@/lib/api/user.api';
 import { ProfileHeader } from '@/components/profile/profile-header';
@@ -42,20 +42,22 @@ export default function ProfilePage() {
     <PageWrapper className="py-8">
       <ProfileHeader profile={profile} />
       <div className="mt-8">
-        <PixelTabs
-          items={[
-            {
-              id: 'history',
-              label: `History (${history?.total ?? 0})`,
-              content: <HistoryTab items={history?.data ?? []} />,
-            },
-            {
-              id: 'following',
-              label: `Following (${follows?.total ?? 0})`,
-              content: <FollowsTab items={follows?.data ?? []} />,
-            },
-          ]}
-        />
+        <Tabs defaultValue="history">
+          <TabsList>
+            <TabsTrigger value="history">
+              History ({history?.total ?? 0})
+            </TabsTrigger>
+            <TabsTrigger value="following">
+              Following ({follows?.total ?? 0})
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="history">
+            <HistoryTab items={history?.data ?? []} />
+          </TabsContent>
+          <TabsContent value="following">
+            <FollowsTab items={follows?.data ?? []} />
+          </TabsContent>
+        </Tabs>
       </div>
     </PageWrapper>
   );

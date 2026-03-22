@@ -1,5 +1,5 @@
 'use client';
-import { PixelButton } from '@pxlkit/ui-kit';
+import { Button } from '@/components/ui/button';
 
 export function OAuthButton() {
   const handleGoogleLogin = () => {
@@ -7,8 +7,8 @@ export function OAuthButton() {
   };
 
   return (
-    <PixelButton tone="neutral" className="w-full" onClick={handleGoogleLogin}>
+    <Button variant="secondary" className="w-full" onClick={handleGoogleLogin}>
       Continue with Google
-    </PixelButton>
+    </Button>
   );
 }

@@ -1,14 +1,9 @@
 import Link from 'next/link';
+import { formatCount } from '@/lib/utils';
 import type { MangaDetail, TaxonomyItem } from '@/types/manga.types';
 
 interface Props {
   manga: MangaDetail;
-}
-
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -32,18 +27,18 @@ function TaxonomyLinks({
   items: TaxonomyItem[];
   href: (item: TaxonomyItem) => string;
 }) {
-  if (!items.length) return <span className="text-[#707070]">—</span>;
+  if (!items.length) return <span className="text-muted">—</span>;
   return (
     <span className="flex flex-wrap gap-x-1">
       {items.map((item, i) => (
         <span key={item.id}>
           <Link
             href={href(item)}
-            className="text-[#f5f5f5] hover:text-[#a0a0a0] transition-colors"
+            className="text-primary hover:text-secondary transition-colors"
           >
             {item.name}
           </Link>
-          {i < items.length - 1 && <span className="text-[#707070]">,</span>}
+          {i < items.length - 1 && <span className="text-muted">,</span>}
         </span>
       ))}
     </span>
@@ -52,9 +47,9 @@ function TaxonomyLinks({
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-4 py-1.5 border-b border-[#2a2a2a] last:border-0">
-      <span className="text-[#707070] shrink-0">{label}</span>
-      <span className="text-[#f5f5f5] text-left">{children}</span>
+    <div className="flex items-start gap-4 py-1.5 border-b border-default last:border-0">
+      <span className="text-muted shrink-0">{label}</span>
+      <span className="text-primary text-left">{children}</span>
     </div>
   );
 }

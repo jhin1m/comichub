@@ -11,6 +11,7 @@ interface AuthContextValue {
   login: (data: LoginForm) => Promise<void>;
   register: (data: RegisterForm) => Promise<void>;
   logout: () => Promise<void>;
+  restoreSession: () => Promise<void>;
   setTokensFromOAuth: (accessToken: string, refreshToken: string) => Promise<void>;
 }
 
@@ -83,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setTokensFromOAuth }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, restoreSession, setTokensFromOAuth }}>
       {children}
     </AuthContext.Provider>
   );

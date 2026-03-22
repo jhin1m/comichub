@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Rajdhani, Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 import Providers from './providers';
 import Navbar from '@/components/layout/navbar';
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <div className="flex-1">{children}</div>
           <Footer />
+          <Toaster position="top-right" theme="dark" richColors />
         </Providers>
       </body>
     </html>

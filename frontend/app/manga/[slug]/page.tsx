@@ -24,7 +24,7 @@ export default async function MangaDetailPage({ params }: Props) {
     return (
       <PageWrapper className="py-8">
         {/* Top: cover+info left, rating+metadata right (desktop) */}
-        <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 pb-8 border-b border-[#2a2a2a]">
+        <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 pb-8 border-b border-default">
           <div className="space-y-4">
             <MangaCoverHero manga={manga} />
             {/* Mobile: rating bar + collapsible metadata */}

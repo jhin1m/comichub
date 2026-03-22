@@ -17,7 +17,7 @@ export function MobileDetailsBar({ manga }: Props) {
   return (
     <div className="lg:hidden">
       {/* Bar: rating left, details button right */}
-      <div className="flex items-center justify-between bg-[#1a1a1a] rounded-lg px-4 py-3">
+      <div className="flex items-center justify-between bg-surface rounded-lg px-4 py-3">
         <StarRating
           mangaId={manga.id}
           averageRating={manga.averageRating}
@@ -25,7 +25,7 @@ export function MobileDetailsBar({ manga }: Props) {
         />
         <button
           onClick={() => setOpen((o) => !o)}
-          className="flex items-center gap-1.5 text-sm text-[#a0a0a0] hover:text-[#f5f5f5] transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors cursor-pointer"
           aria-expanded={open}
           aria-label="Toggle manga details"
         >

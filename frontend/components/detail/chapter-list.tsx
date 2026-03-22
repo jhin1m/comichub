@@ -26,21 +26,21 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
       <div className="relative w-full max-w-[240px]">
         <Search
           size={12}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#707070] pointer-events-none"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
         />
         <input
           type="text"
           placeholder="Go to chap..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-7 pr-3 py-1.5 text-xs bg-elevated border border-[#2a2a2a] rounded-[4px] text-[#f5f5f5] placeholder-[#707070] focus:outline-none focus:border-[#404040] transition-colors"
+          className="w-full pl-7 pr-3 py-1.5 text-xs bg-elevated border border-default rounded-[4px] text-primary placeholder:text-muted focus:outline-none focus:border-hover transition-colors"
         />
       </div>
 
       {/* Chapter rows with alternating colors */}
       <div className="max-h-[600px] overflow-y-auto pr-1">
         {filtered.length === 0 ? (
-          <p className="text-sm text-[#707070] py-4 text-center">No chapters found.</p>
+          <p className="text-sm text-muted py-4 text-center">No chapters found.</p>
         ) : (
           filtered.map((chapter, index) => (
             <ChapterListItemRow

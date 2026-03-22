@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { PixelButton } from '@pxlkit/ui-kit';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { mangaApi } from '@/lib/api/manga.api';
 import { useAuth } from '@/contexts/auth.context';
 
@@ -14,23 +15,32 @@ export function FollowButton({ mangaId, followersCount }: Props) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [count, setCount] = useState(followersCount);
 
+  useEffect(() => {
+    if (!user) return;
+    mangaApi.isFollowed(mangaId).then((res) => {
+      // community follow service returns { following }, user follow service returns { followed }
+      setIsFollowing(res.followed ?? res.following ?? false);
+    }).catch(() => {});
+  }, [user, mangaId]);
+
   const handleToggle = async () => {
     if (!user) {
       window.location.href = '/login';
       return;
     }
     try {
-      await mangaApi.toggleFollow(mangaId);
-      setIsFollowing((f) => !f);
-      setCount((c) => (isFollowing ? c - 1 : c + 1));
+      const res = await mangaApi.toggleFollow(mangaId);
+      setIsFollowing(res.followed);
+      setCount(res.followersCount ?? (isFollowing ? count - 1 : count + 1));
+      toast.success(res.followed ? 'Followed successfully' : 'Unfollowed');
     } catch {
-      // silent fail
+      toast.error('Failed to update follow status');
     }
   };
 
   return (
-    <PixelButton tone="neutral" onClick={handleToggle}>
+    <Button variant="secondary" onClick={handleToggle}>
       {isFollowing ? 'Unfollow' : 'Follow'} ({count})
-    </PixelButton>
+    </Button>
   );
 }

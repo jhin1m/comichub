@@ -77,4 +77,6 @@ export interface MangaQueryParams {
   type?: MangaType;
   sort?: 'views' | 'created_at' | 'updated_at';
   order?: 'asc' | 'desc';
+  artist?: number;
+  author?: number;
 }

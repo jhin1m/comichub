@@ -2,8 +2,9 @@
 import { Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
+import { LayoutGrid, LayoutList, SlidersHorizontal } from 'lucide-react';
 import { mangaApi } from '@/lib/api/manga.api';
-import { FilterSidebar } from '@/components/browse/filter-sidebar';
+import { AdvancedFilterBar } from '@/components/browse/advanced-filter-bar';
 import { BrowseResults } from '@/components/browse/browse-results';
 import { SearchBar } from '@/components/browse/search-bar';
 import PageWrapper from '@/components/layout/page-wrapper';
@@ -15,6 +16,8 @@ function BrowseContent() {
   const pathname = usePathname();
   const [result, setResult] = useState<PaginatedResult<MangaListItem> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const params: MangaQueryParams = {
     page: Number(searchParams.get('page') ?? 1),
@@ -25,6 +28,8 @@ function BrowseContent() {
     type: (searchParams.get('type') as MangaQueryParams['type']) ?? undefined,
     sort: (searchParams.get('sort') as MangaQueryParams['sort']) ?? 'updated_at',
     order: 'desc',
+    artist: searchParams.get('artist') ? Number(searchParams.get('artist')) : undefined,
+    author: searchParams.get('author') ? Number(searchParams.get('author')) : undefined,
   };
 
   useEffect(() => {
@@ -45,28 +50,81 @@ function BrowseContent() {
 
   return (
     <PageWrapper className="py-8">
-      <div className="mb-6">
-        <SearchBar
-          initialValue={params.search ?? ''}
-          onSearch={(v) => updateParams({ search: v || null })}
+      {/* Search bar + Advanced Filters toggle */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex-1">
+          <SearchBar
+            initialValue={params.search ?? ''}
+            onSearch={(v) => updateParams({ search: v || null })}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className={`flex items-center gap-2 px-4 py-2 border rounded text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
+            filtersOpen
+              ? 'border-accent text-accent bg-accent/10'
+              : 'border-hover text-secondary hover:border-muted hover:text-primary'
+          }`}
+        >
+          <SlidersHorizontal size={14} />
+          Advanced Filters
+        </button>
+      </div>
+
+      {/* Advanced filters panel */}
+      <div className="mb-4">
+        <AdvancedFilterBar
+          currentParams={params}
+          onApplyFilters={updateParams}
+          isOpen={filtersOpen}
         />
       </div>
-      <div className="flex gap-6">
-        <FilterSidebar currentParams={params} onFilter={updateParams} />
-        <BrowseResults
-          result={result}
-          isLoading={isLoading}
-          currentPage={params.page!}
-          onPageChange={(p) => updateParams({ page: String(p) })}
-        />
+
+      {/* Results count + view toggle */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-secondary">
+          {isLoading ? 'Loading...' : result ? `${result.total.toLocaleString()} items` : '0 items'}
+        </p>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${
+              viewMode === 'list' ? 'text-primary bg-hover' : 'text-muted hover:text-secondary'
+            }`}
+            title="List view"
+          >
+            <LayoutList size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${
+              viewMode === 'grid' ? 'text-primary bg-hover' : 'text-muted hover:text-secondary'
+            }`}
+            title="Grid view"
+          >
+            <LayoutGrid size={18} />
+          </button>
+        </div>
       </div>
+
+      {/* Results */}
+      <BrowseResults
+        result={result}
+        isLoading={isLoading}
+        currentPage={params.page!}
+        onPageChange={(p) => updateParams({ page: String(p) })}
+        viewMode={viewMode}
+      />
     </PageWrapper>
   );
 }
 
 export default function BrowsePage() {
   return (
-    <Suspense fallback={<PageWrapper className="py-8"><div className="text-[#5a5a5a]">Loading...</div></PageWrapper>}>
+    <Suspense fallback={<PageWrapper className="py-8"><div className="text-muted">Loading...</div></PageWrapper>}>
       <BrowseContent />
     </Suspense>
   );

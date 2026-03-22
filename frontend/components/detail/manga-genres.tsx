@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PixelBadge } from '@pxlkit/ui-kit';
+import { Badge } from '@/components/ui/badge';
 import type { TaxonomyItem } from '@/types/manga.types';
 
 interface Props {
@@ -13,7 +13,7 @@ export function MangaGenres({ genres }: Props) {
     <div className="flex flex-wrap gap-2">
       {genres.map((genre) => (
         <Link key={genre.id} href={`/browse?genre=${genre.slug}`}>
-          <PixelBadge tone="neutral">{genre.name}</PixelBadge>
+          <Badge variant="default">{genre.name}</Badge>
         </Link>
       ))}
     </div>

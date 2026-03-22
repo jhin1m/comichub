@@ -1,17 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
-@import '@pxlkit/ui-kit/styles.css';
 @import "tailwindcss";
 
 @source "../components/**/*.{ts,tsx}";
-@source "../node_modules/@pxlkit/ui-kit/dist/**/*.js";
 
 @theme inline {
   --font-rajdhani: 'Rajdhani', sans-serif;
   --font-inter: 'Inter', sans-serif;
-  --color-accent: #e63946;
-  --color-accent-hover: #c1121f;
+  --color-base: #0f0f0f;
   --color-surface: #1a1a1a;
   --color-elevated: #242424;
+  --color-hover: #2e2e2e;
+  --color-accent: #e63946;
+  --color-accent-hover: #c1121f;
+  --color-accent-muted: #e6394620;
+  --color-primary: #f5f5f5;
+  --color-secondary: #a0a0a0;
+  --color-muted: #5a5a5a;
+  --color-default: #2a2a2a;
+  --color-border-accent: #e63946;
+  --color-success: #2dc653;
+  --color-warning: #f4a261;
+  --color-info: #4895ef;
 }
 
 :root {

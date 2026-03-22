@@ -33,7 +33,7 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
     <aside className="w-60 shrink-0 hidden md:block space-y-6">
       {/* Genre */}
       <div>
-        <h3 className="text-xs font-semibold text-[#a0a0a0] uppercase tracking-wider mb-3">
+        <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">
           Genre
         </h3>
         <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
@@ -41,13 +41,13 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
             <label key={genre.id} className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
-                className="accent-[#e63946]"
+                className="accent-accent"
                 checked={currentParams.genre === genre.slug}
                 onChange={(e) =>
                   onFilter({ genre: e.target.checked ? genre.slug : null })
                 }
               />
-              <span className="text-sm text-[#a0a0a0] group-hover:text-[#f5f5f5] transition-colors">
+              <span className="text-sm text-secondary group-hover:text-primary transition-colors">
                 {genre.name}
               </span>
             </label>
@@ -57,7 +57,7 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
 
       {/* Status */}
       <div>
-        <h3 className="text-xs font-semibold text-[#a0a0a0] uppercase tracking-wider mb-3">
+        <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">
           Status
         </h3>
         <div className="space-y-1.5">
@@ -66,11 +66,11 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
               <input
                 type="radio"
                 name="status"
-                className="accent-[#e63946]"
+                className="accent-accent"
                 checked={currentParams.status === s.value}
                 onChange={() => onFilter({ status: s.value })}
               />
-              <span className="text-sm text-[#a0a0a0] group-hover:text-[#f5f5f5] transition-colors">
+              <span className="text-sm text-secondary group-hover:text-primary transition-colors">
                 {s.label}
               </span>
             </label>
@@ -79,11 +79,11 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
             <input
               type="radio"
               name="status"
-              className="accent-[#e63946]"
+              className="accent-accent"
               checked={!currentParams.status}
               onChange={() => onFilter({ status: null })}
             />
-            <span className="text-sm text-[#a0a0a0] group-hover:text-[#f5f5f5] transition-colors">
+            <span className="text-sm text-secondary group-hover:text-primary transition-colors">
               All
             </span>
           </label>
@@ -92,7 +92,7 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
 
       {/* Type */}
       <div>
-        <h3 className="text-xs font-semibold text-[#a0a0a0] uppercase tracking-wider mb-3">
+        <h3 className="text-xs font-semibold text-secondary uppercase tracking-wider mb-3">
           Type
         </h3>
         <div className="space-y-1.5">
@@ -101,11 +101,11 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
               <input
                 type="radio"
                 name="type"
-                className="accent-[#e63946]"
+                className="accent-accent"
                 checked={currentParams.type === t.value}
                 onChange={() => onFilter({ type: t.value })}
               />
-              <span className="text-sm text-[#a0a0a0] group-hover:text-[#f5f5f5] transition-colors">
+              <span className="text-sm text-secondary group-hover:text-primary transition-colors">
                 {t.label}
               </span>
             </label>
@@ -114,11 +114,11 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
             <input
               type="radio"
               name="type"
-              className="accent-[#e63946]"
+              className="accent-accent"
               checked={!currentParams.type}
               onChange={() => onFilter({ type: null })}
             />
-            <span className="text-sm text-[#a0a0a0] group-hover:text-[#f5f5f5] transition-colors">
+            <span className="text-sm text-secondary group-hover:text-primary transition-colors">
               All
             </span>
           </label>

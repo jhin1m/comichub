@@ -5,15 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth.context';
 
 function AuthCallbackContent() {
-  const { setTokensFromOAuth } = useAuth();
+  const { restoreSession } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-    if (accessToken && refreshToken) {
-      setTokensFromOAuth(accessToken, refreshToken)
+    const oauth = searchParams.get('oauth');
+    if (oauth === 'success') {
+      // Tokens are in HTTP-only cookies; just restore the session
+      restoreSession()
         .then(() => router.replace('/'))
         .catch(() => router.replace('/login'));
     } else {
@@ -24,7 +24,7 @@ function AuthCallbackContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-[#a0a0a0]">Completing sign in...</p>
+      <p className="text-secondary">Completing sign in...</p>
     </div>
   );
 }
@@ -33,7 +33,7 @@ export default function AuthCallbackPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[#a0a0a0]">Completing sign in...</p>
+        <p className="text-secondary">Completing sign in...</p>
       </div>
     }>
       <AuthCallbackContent />
