@@ -11,7 +11,7 @@ export function ReaderImage({ src, alt }: Props) {
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className="w-full relative bg-[#111]">
+    <div className="w-full relative bg-base">
       <Image
         src={src}
         alt={alt}

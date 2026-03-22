@@ -25,7 +25,7 @@ export class FollowService {
 
       await this.db
         .update(manga)
-        .set({ followersCount: sql`${manga.followersCount} - 1` })
+        .set({ followersCount: sql`greatest(${manga.followersCount} - 1, 0)` })
         .where(eq(manga.id, mangaId));
 
       return { following: false };

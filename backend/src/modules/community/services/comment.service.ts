@@ -275,22 +275,21 @@ export class CommentService {
   }
 
   private async validateDepth(parentId: number) {
-    let depth = 1;
-    let currentId: number | null = parentId;
+    const result = await this.db.execute<{ depth: number }>(sql`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, parent_id, 1 AS depth
+        FROM comments WHERE id = ${parentId}
+        UNION ALL
+        SELECT c.id, c.parent_id, a.depth + 1
+        FROM comments c
+        JOIN ancestors a ON a.parent_id = c.id
+        WHERE a.depth <= ${MAX_DEPTH}
+      )
+      SELECT MAX(depth) AS depth FROM ancestors
+    `);
 
-    while (currentId !== null && depth <= MAX_DEPTH) {
-      const [parent] = await this.db
-        .select({ parentId: comments.parentId })
-        .from(comments)
-        .where(eq(comments.id, currentId))
-        .limit(1);
-
-      if (!parent) break;
-      currentId = parent.parentId;
-      depth++;
-    }
-
-    if (depth > MAX_DEPTH) {
+    const depth = (result[0] as { depth: number } | undefined)?.depth ?? 1;
+    if (depth >= MAX_DEPTH) {
       throw new BadRequestException(
         `Max comment depth of ${MAX_DEPTH} exceeded`,
       );

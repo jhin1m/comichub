@@ -76,6 +76,8 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen((v) => !v)}
                 className="flex items-center focus:outline-none"
                 aria-label="User menu"
+                aria-haspopup="menu"
+                aria-expanded={dropdownOpen}
               >
                 <Avatar
                   src={user.avatar ?? undefined}
@@ -85,7 +87,7 @@ export default function Navbar() {
                 />
               </button>
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-surface border border-default rounded shadow-lg py-1 z-50">
+                <div role="menu" className="absolute right-0 mt-2 w-44 bg-surface border border-default rounded shadow-lg py-1 z-50">
                   <Link
                     href="/profile"
                     className="block px-4 py-2 text-sm text-primary hover:bg-hover transition-colors"
@@ -133,7 +135,7 @@ export default function Navbar() {
               <button onClick={() => { setMenuOpen(false); logout(); }} className="text-left text-sm text-secondary hover:text-primary">Logout</button>
             </>
           ) : (
-            <Link href="/login" className="text-sm text-[#00d4d4]" onClick={() => setMenuOpen(false)}>Login</Link>
+            <Link href="/login" className="text-sm text-accent" onClick={() => setMenuOpen(false)}>Login</Link>
           )}
         </div>
       )}

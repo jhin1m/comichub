@@ -89,14 +89,8 @@ describe('CommentService', () => {
     });
 
     it('should throw BadRequestException when nesting exceeds MAX_DEPTH (3)', async () => {
-      // validateDepth traverses the parent chain — simulate depth > 3
-      let selectCall = 0;
-      mockDb.select.mockImplementation(() => {
-        selectCall++;
-        // Return a parent with its own parentId each time (simulate deep chain)
-        const parentId = selectCall < 5 ? selectCall + 1 : null;
-        return buildChain([{ parentId }]);
-      });
+      // validateDepth now uses db.execute with a recursive CTE
+      mockDb.execute = vi.fn().mockResolvedValue([{ depth: 3 }]);
 
       await expect(
         service.create(10, {

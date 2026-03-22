@@ -150,8 +150,7 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
 
         {/* Score */}
         <span
-          style={{ fontFamily: 'Rajdhani, sans-serif', color: '#f59e0b' }}
-          className="text-2xl font-bold leading-none"
+          className="font-rajdhani text-2xl font-bold leading-none text-amber-500"
         >
           {shownScore}
         </span>
@@ -165,7 +164,7 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
         </span>{' '}
         by {totalRatings.toLocaleString()} users
         {userRating != null && (
-          <span style={{ color: '#f59e0b' }} className="ml-2 text-xs">
+          <span className="ml-2 text-xs text-amber-500">
             (your rating: {(userRating * 2).toFixed(1)})
           </span>
         )}

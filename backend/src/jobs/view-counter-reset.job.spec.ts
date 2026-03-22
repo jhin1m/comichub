@@ -18,7 +18,7 @@ describe('ViewCounterResetJob', () => {
     mockDb = { update: vi.fn().mockReturnValue(updateChain) };
 
     mockRedis = {
-      keys: vi.fn().mockResolvedValue([]),
+      scan: vi.fn().mockResolvedValue(['0', []]),
       del: vi.fn().mockResolvedValue(0),
     };
 
@@ -44,19 +44,16 @@ describe('ViewCounterResetJob', () => {
     });
 
     it('should invalidate ranking caches after reset', async () => {
-      mockRedis.keys.mockResolvedValue(['rankings:day', 'rankings:week']);
+      mockRedis.scan.mockResolvedValue(['0', ['rankings:day', 'rankings:week']]);
 
       await job.resetDailyViews();
 
-      expect(mockRedis.keys).toHaveBeenCalledWith('rankings:*');
-      expect(mockRedis.del).toHaveBeenCalledWith(
-        'rankings:day',
-        'rankings:week',
-      );
+      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'rankings:*', 'COUNT', 100);
+      expect(mockRedis.del).toHaveBeenCalledWith('rankings:day', 'rankings:week');
     });
 
     it('should skip del when no ranking cache keys exist', async () => {
-      mockRedis.keys.mockResolvedValue([]);
+      mockRedis.scan.mockResolvedValue(['0', []]);
 
       await job.resetDailyViews();
 
@@ -71,7 +68,7 @@ describe('ViewCounterResetJob', () => {
     });
 
     it('should invalidate ranking caches after weekly reset', async () => {
-      mockRedis.keys.mockResolvedValue(['rankings:week']);
+      mockRedis.scan.mockResolvedValue(['0', ['rankings:week']]);
 
       await job.resetWeeklyViews();
 
@@ -81,14 +78,14 @@ describe('ViewCounterResetJob', () => {
 
   describe('flushViewCounters()', () => {
     it('should invalidate ranking caches without throwing', async () => {
-      mockRedis.keys.mockResolvedValue(['rankings:day']);
+      mockRedis.scan.mockResolvedValue(['0', ['rankings:day']]);
 
       await expect(job.flushViewCounters()).resolves.not.toThrow();
       expect(mockRedis.del).toHaveBeenCalledOnce();
     });
 
     it('should handle empty cache gracefully', async () => {
-      mockRedis.keys.mockResolvedValue([]);
+      mockRedis.scan.mockResolvedValue(['0', []]);
 
       await expect(job.flushViewCounters()).resolves.not.toThrow();
       expect(mockRedis.del).not.toHaveBeenCalled();

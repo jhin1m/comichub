@@ -176,12 +176,14 @@ describe('ChapterService', () => {
       await expect(service.remove(999)).rejects.toThrow(NotFoundException);
     });
 
-    it('should soft-delete chapter when it exists', async () => {
+    it('should soft-delete chapter and update chaptersCount', async () => {
       mockDb.select.mockReturnValue(buildChain([{ id: 1, mangaId: 1 }]));
       mockDb.update.mockReturnValue(buildChain([]));
+      mockDb.$count = vi.fn().mockReturnValue(0);
 
       await expect(service.remove(1)).resolves.not.toThrow();
-      expect(mockDb.update).toHaveBeenCalledOnce();
+      // Called twice: soft-delete chapter + update manga chaptersCount
+      expect(mockDb.update).toHaveBeenCalledTimes(2);
     });
   });
 

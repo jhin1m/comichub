@@ -94,15 +94,30 @@ export class AuthController {
   @ApiOperation({ summary: 'Google OAuth callback' })
   async googleCallback(@CurrentUser() user: User, @Res() res: Response) {
     const tokens = await this.authService.loginWithGoogle(user);
-    // Redirect to frontend with tokens as query params
     const frontendUrl = this.configService.get<string>(
       'app.frontendUrl',
-      'http://localhost:5173',
+      'http://localhost:3000',
     );
-    const url = new URL('/auth/callback', frontendUrl);
-    url.searchParams.set('accessToken', tokens.accessToken);
-    url.searchParams.set('refreshToken', tokens.refreshToken);
-    return res.redirect(url.toString());
+    const isProduction =
+      this.configService.get<string>('app.nodeEnv') === 'production';
+
+    // Set tokens as HTTP-only cookies instead of URL query params
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 min
+      path: '/',
+    });
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/api/v1/auth',
+    });
+
+    return res.redirect(`${frontendUrl}/auth/callback?oauth=success`);
   }
 
   @UseGuards(JwtAuthGuard)

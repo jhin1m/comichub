@@ -197,5 +197,16 @@ export class ChapterService {
       .update(chapters)
       .set({ deletedAt: new Date() })
       .where(eq(chapters.id, id));
+
+    // Update manga chaptersCount after soft-delete
+    await this.db
+      .update(manga)
+      .set({
+        chaptersCount: this.db.$count(
+          chapters,
+          and(eq(chapters.mangaId, chapter.mangaId), isNull(chapters.deletedAt)),
+        ) as unknown as number,
+      })
+      .where(eq(manga.id, chapter.mangaId));
   }
 }

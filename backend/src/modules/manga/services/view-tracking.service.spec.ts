@@ -55,7 +55,7 @@ describe('ViewTrackingService', () => {
 
       await service.trackChapterView(1, 10);
 
-      expect(mockRedis.setex).toHaveBeenCalledWith('view:1:user:10', 5, '1');
+      expect(mockRedis.setex).toHaveBeenCalledWith('view:1:user:10', 300, '1');
       expect(mockRedis.incr).toHaveBeenCalledWith('counter:chapter:1:views');
     });
 
@@ -67,7 +67,7 @@ describe('ViewTrackingService', () => {
       expect(mockRedis.get).toHaveBeenCalledWith('view:2:ip:192.168.1.1');
       expect(mockRedis.setex).toHaveBeenCalledWith(
         'view:2:ip:192.168.1.1',
-        5,
+        300,
         '1',
       );
     });
@@ -78,15 +78,15 @@ describe('ViewTrackingService', () => {
       await service.trackChapterView(3);
 
       expect(mockRedis.get).toHaveBeenCalledWith('view:3:ip:unknown');
-      expect(mockRedis.setex).toHaveBeenCalledWith('view:3:ip:unknown', 5, '1');
+      expect(mockRedis.setex).toHaveBeenCalledWith('view:3:ip:unknown', 300, '1');
     });
 
-    it('should set dedup TTL to 5 seconds', async () => {
+    it('should set dedup TTL to 300 seconds', async () => {
       mockRedis.get.mockResolvedValue(null);
 
       await service.trackChapterView(1, 20);
 
-      expect(mockRedis.setex).toHaveBeenCalledWith(expect.any(String), 5, '1');
+      expect(mockRedis.setex).toHaveBeenCalledWith(expect.any(String), 300, '1');
     });
 
     it('should increment manga-level counters when chapter exists', async () => {
@@ -130,13 +130,13 @@ describe('ViewTrackingService', () => {
       expect(mockRedis.setex).toHaveBeenNthCalledWith(
         1,
         'view:1:user:10',
-        5,
+        300,
         '1',
       );
       expect(mockRedis.setex).toHaveBeenNthCalledWith(
         2,
         'view:1:user:20',
-        5,
+        300,
         '1',
       );
     });

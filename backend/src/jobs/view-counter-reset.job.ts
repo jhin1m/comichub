@@ -47,7 +47,17 @@ export class ViewCounterResetJob {
   }
 
   private async invalidateRankingCaches(): Promise<void> {
-    const keys = await this.redis.keys('rankings:*');
-    if (keys.length) await this.redis.del(...keys);
+    let cursor = '0';
+    do {
+      const [nextCursor, keys] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        'rankings:*',
+        'COUNT',
+        100,
+      );
+      cursor = nextCursor;
+      if (keys.length) await this.redis.del(...keys);
+    } while (cursor !== '0');
   }
 }

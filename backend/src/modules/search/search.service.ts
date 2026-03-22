@@ -9,6 +9,7 @@ import type {
   PaginatedResult,
 } from '../manga/types/manga.types.js';
 import { SearchQueryDto, SearchSortField } from './dto/search-query.dto.js';
+import { escapeLike } from '../../common/utils/escape-like.util.js';
 
 const SUGGEST_TTL = 300; // 5 minutes
 
@@ -32,10 +33,11 @@ export class SearchService {
     const conditions: SQL[] = [isNull(manga.deletedAt)];
 
     if (q) {
+      const escaped = escapeLike(q);
       conditions.push(
         or(
-          ilike(manga.title, `%${q}%`),
-          ilike(manga.titleAlt, `%${q}%`),
+          ilike(manga.title, `%${escaped}%`),
+          ilike(manga.titleAlt, `%${escaped}%`),
         ) as SQL,
       );
     }
@@ -128,8 +130,8 @@ export class SearchService {
         and(
           isNull(manga.deletedAt),
           or(
-            ilike(manga.title, `%${trimmed}%`),
-            ilike(manga.titleAlt, `%${trimmed}%`),
+            ilike(manga.title, `%${escapeLike(trimmed)}%`),
+            ilike(manga.titleAlt, `%${escapeLike(trimmed)}%`),
           ) as SQL,
         ),
       )

@@ -8,6 +8,7 @@ import { eq, ilike, or, sql, count } from 'drizzle-orm';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
+import { escapeLike } from '../../../common/utils/escape-like.util.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -162,7 +163,7 @@ export class UserService {
     const { page, limit, offset, search } = query;
 
     const where = search
-      ? or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`))
+      ? or(ilike(users.name, `%${escapeLike(search)}%`), ilike(users.email, `%${escapeLike(search)}%`))
       : undefined;
 
     const [totalRow, rows] = await Promise.all([

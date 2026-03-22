@@ -31,7 +31,10 @@ async function bootstrap() {
 
   // CORS — restrict in production
   app.enableCors({
-    origin: nodeEnv === 'production' ? false : true,
+    origin:
+      nodeEnv === 'production'
+        ? configService.get<string>('app.frontendUrl', 'http://localhost:3000')
+        : true,
   });
 
   // Swagger — dev/staging only

@@ -5,7 +5,7 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { chapters } from '../../../database/schema/index.js';
 
-const VIEW_TTL_SECONDS = 5;
+const VIEW_TTL_SECONDS = 300;
 
 @Injectable()
 export class ViewTrackingService {
