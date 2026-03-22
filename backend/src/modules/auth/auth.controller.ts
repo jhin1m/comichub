@@ -27,6 +27,7 @@ import { GoogleAuthGuard } from './guards/google-auth.guard.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { JwtPayload } from './types/jwt-payload.type.js';
 import type { User } from '../../database/schema/index.js';
 
 @ApiTags('auth')
@@ -62,8 +63,8 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Invalidate refresh token' })
-  async logout(@CurrentUser() user: User): Promise<void> {
-    await this.authService.logout(user.id);
+  async logout(@CurrentUser() user: JwtPayload): Promise<void> {
+    await this.authService.logout(user.sub);
   }
 
   @Public()
@@ -108,8 +109,7 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current authenticated user' })
-  me(@CurrentUser() user: User) {
-    const { password: _password, ...safe } = user;
-    return safe;
+  me(@CurrentUser() user: JwtPayload) {
+    return this.authService.getMe(user.sub);
   }
 }

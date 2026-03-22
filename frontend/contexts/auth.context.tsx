@@ -28,10 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!refreshToken) return;
 
       const { default: axios } = await import('axios');
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
-      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-      setAccessToken(data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
+      const { data: envelope } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+      const tokens = envelope?.data ?? envelope;
+      if (!tokens?.accessToken || !tokens?.refreshToken) {
+        throw new Error('Invalid token response');
+      }
+      setAccessToken(tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
 
       const me = await authApi.me();
       setUser(me);

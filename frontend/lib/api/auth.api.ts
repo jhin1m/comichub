@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import type { TokenResponse, AuthUser, LoginForm, RegisterForm } from '@/types/auth.types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
 
 export const googleRedirectUrl = `${BASE_URL}/auth/google`;
 

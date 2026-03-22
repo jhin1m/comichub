@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
 
 let _accessToken: string | null = null;
 
@@ -57,12 +57,16 @@ apiClient.interceptors.response.use(
     try {
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) throw new Error('No refresh token');
-      const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-      setAccessToken(data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      refreshQueue.forEach((cb) => cb(data.accessToken));
+      const { data: envelope } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
+      const tokens = envelope?.data ?? envelope;
+      if (!tokens?.accessToken || !tokens?.refreshToken) {
+        throw new Error('Invalid token response');
+      }
+      setAccessToken(tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      refreshQueue.forEach((cb) => cb(tokens.accessToken));
       refreshQueue = [];
-      original.headers.Authorization = `Bearer ${data.accessToken}`;
+      original.headers.Authorization = `Bearer ${tokens.accessToken}`;
       return apiClient(original);
     } catch {
       clearTokens();

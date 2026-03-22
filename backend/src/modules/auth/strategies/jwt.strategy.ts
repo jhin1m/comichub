@@ -38,6 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       });
     }
 
-    return user;
+    // Return DB user with `sub` alias so both user.id and user.sub work in controllers
+    return { ...user, sub: user.id };
   }
 }
