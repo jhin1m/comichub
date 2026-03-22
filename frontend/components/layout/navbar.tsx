@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Menu, X, Bell, LayoutGrid, Search, SlidersHorizontal } from 'lucide-react';
+import { Menu, X, Bell, LayoutGrid } from 'lucide-react';
+import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { useAuth } from '@/contexts/auth.context';
 import { notificationApi } from '@/lib/api/notification.api';
 
@@ -12,7 +13,6 @@ export default function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -33,12 +33,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    const q = searchQuery.trim();
-    if (q) router.push(`/browse?search=${encodeURIComponent(q)}`);
-  }
-
   return (
     <header className="h-14 sticky top-0 z-50 bg-[#111111] border-b border-[#2a2a2a]">
       <div className="max-w-350 mx-auto px-4 h-full flex items-center gap-3">
@@ -48,48 +42,22 @@ export default function Navbar() {
           Comic<span className="text-accent">Hub</span>
         </Link>
 
-        {/* Centered search + filter */}
-        <div className="flex-1 flex justify-center">
-          <form onSubmit={handleSearch} className="flex w-full max-w-120 min-w-0">
-            <div className="relative flex-1">
-              <Search
-                size={13}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a5a5a] pointer-events-none"
-              />
-              <input
-                type="text"
-                name="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search comic..."
-                className="w-full h-9.5 bg-elevated border border-[#2a2a2a] border-r-0 rounded-l-sm pl-8 pr-3 text-[13px] text-[#f5f5f5] placeholder:text-[#5a5a5a] outline-none focus:border-[#3a3a3a] transition-colors"
-              />
-            </div>
-            <Link
-              href="/browse"
-              className="h-9.5 flex items-center gap-1.5 px-3 bg-elevated border border-[#2a2a2a] rounded-r-sm text-[#a0a0a0] text-[11px] font-semibold tracking-wide hover:bg-[#2e2e2e] hover:text-[#f5f5f5] transition-colors whitespace-nowrap shrink-0"
-            >
-              <SlidersHorizontal size={11} />
-              FILTER
-            </Link>
-          </form>
-        </div>
+        {/* Search (icon on mobile, full bar on desktop) */}
+        <SearchAutocomplete />
 
-        {/* Right action buttons */}
+        {/* Right action buttons — desktop */}
         <div className="hidden md:flex items-center gap-1 shrink-0">
-          {/* Reading list */}
           <Link
             href="/profile?tab=follows"
-            className="w-9 h-9 flex items-center justify-center rounded-sm text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors"
             aria-label="Reading list"
           >
             <LayoutGrid size={16} />
           </Link>
 
-          {/* Notifications (logged-in only) */}
           {user && (
             <button
-              className="relative w-9 h-9 flex items-center justify-center rounded-sm text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors"
+              className="relative w-9 h-9 flex items-center justify-center rounded text-[#a0a0a0] hover:bg-elevated hover:text-[#f5f5f5] transition-colors"
               aria-label="Notifications"
             >
               <Bell size={16} />
@@ -99,7 +67,6 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* User menu / login */}
           {loading ? (
             <div className="w-8 h-8 rounded-full bg-[#2a2a2a] animate-pulse" />
           ) : user ? (
@@ -142,7 +109,7 @@ export default function Navbar() {
           ) : (
             <button
               onClick={() => router.push('/login')}
-              className="h-9 px-4 border border-accent rounded-sm text-accent text-[11px] font-bold tracking-widest uppercase hover:bg-accent hover:text-black transition-colors"
+              className="h-9 px-4 border border-accent rounded text-accent text-[11px] font-bold tracking-widest uppercase hover:bg-accent hover:text-black transition-colors"
             >
               LOGIN
             </button>
@@ -151,7 +118,7 @@ export default function Navbar() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden ml-auto text-[#a0a0a0] hover:text-[#f5f5f5] p-1"
+          className="md:hidden text-[#a0a0a0] hover:text-[#f5f5f5] p-1"
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >

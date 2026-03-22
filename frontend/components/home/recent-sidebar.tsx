@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatRelativeDate } from '@/lib/utils';
@@ -63,23 +66,46 @@ function SidebarItem({ item }: { item: MangaListItem }) {
   );
 }
 
+type Tab = 'recent' | 'complete';
+
 interface Props {
-  items: MangaListItem[];
+  recentItems: MangaListItem[];
+  completeItems: MangaListItem[];
   recentComments?: RecentComment[];
 }
 
-export function RecentSidebar({ items = [], recentComments = [] }: Props) {
+export function RecentSidebar({ recentItems = [], completeItems = [], recentComments = [] }: Props) {
+  const [activeTab, setActiveTab] = useState<Tab>('recent');
+  const items = activeTab === 'recent' ? recentItems : completeItems;
+
   return (
     <aside>
-      <div className="mb-3 pb-2.5 border-b border-[#2a2a2a]">
-        <h2 className="font-rajdhani font-bold text-[17px] text-[#f5f5f5]">
-          Recently Added{' '}
-          <span className="text-[#a0a0a0] font-medium text-[15px]">/ Complete Series</span>
-        </h2>
+      {/* Tab header */}
+      <div className="mb-3 pb-2.5 border-b border-[#2a2a2a] flex items-baseline gap-1">
+        <button
+          onClick={() => setActiveTab('recent')}
+          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer ${
+            activeTab === 'recent' ? 'text-[#f5f5f5]' : 'text-[#5a5a5a] hover:text-[#a0a0a0]'
+          }`}
+        >
+          Recently Added
+        </button>
+        <span className="text-[#5a5a5a] text-[15px] font-medium">/</span>
+        <button
+          onClick={() => setActiveTab('complete')}
+          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer ${
+            activeTab === 'complete' ? 'text-[#f5f5f5]' : 'text-[#5a5a5a] hover:text-[#a0a0a0]'
+          }`}
+        >
+          Complete Series
+        </button>
       </div>
-      {items.map((item) => (
-        <SidebarItem key={item.id} item={item} />
-      ))}
+
+      {items.length > 0 ? (
+        items.map((item) => <SidebarItem key={item.id} item={item} />)
+      ) : (
+        <p className="text-[#5a5a5a] text-sm py-6 text-center">No data available</p>
+      )}
 
       <LatestComments comments={recentComments} />
     </aside>

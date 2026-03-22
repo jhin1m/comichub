@@ -27,13 +27,53 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
 
   useEffect(() => { updateButtons(); }, [updateButtons]);
 
+  // Drag-to-scroll state
+  const isPointerDown = useRef(false);
+  const hasDragged = useRef(false);
+  const startX = useRef(0);
+  const scrollStart = useRef(0);
+  const DRAG_THRESHOLD = 5; // px — movement below this counts as a click
+
   function scroll(dir: number) {
     const el = trackRef.current;
     if (!el) return;
     const card = el.children[0] as HTMLElement | undefined;
     if (!card) return;
     const gap = 12; // gap-3 = 0.75rem = 12px
-    el.scrollBy({ left: dir * (card.offsetWidth + gap), behavior: 'smooth' });
+    el.scrollBy({ left: dir * 2 * (card.offsetWidth + gap), behavior: 'smooth' });
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.pointerType === 'touch') return; // let native touch scroll handle it
+    const el = trackRef.current;
+    if (!el) return;
+    isPointerDown.current = true;
+    hasDragged.current = false;
+    startX.current = e.clientX;
+    scrollStart.current = el.scrollLeft;
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!isPointerDown.current) return;
+    const delta = e.clientX - startX.current;
+    if (!hasDragged.current && Math.abs(delta) < DRAG_THRESHOLD) return;
+    hasDragged.current = true;
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollLeft = scrollStart.current - delta;
+  }
+
+  function onPointerUp() {
+    isPointerDown.current = false;
+  }
+
+  // Block click on links/cards when user was dragging
+  function onClickCapture(e: React.MouseEvent) {
+    if (hasDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      hasDragged.current = false;
+    }
   }
 
   return (
@@ -68,12 +108,18 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
         </Link>
       </div>
 
-      {/* Scrollable card track — 1 card per click */}
+      {/* Scrollable card track — 2 cards per click, drag & touch enabled */}
       {items.length > 0 ? (
         <div
           ref={trackRef}
           onScroll={updateButtons}
-          className="flex gap-3 overflow-hidden"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onClickCapture={onClickCapture}
+          className="flex gap-3 overflow-x-auto scrollbar-none cursor-grab active:cursor-grabbing"
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
         >
           {items.map((item, i) => (
             <div

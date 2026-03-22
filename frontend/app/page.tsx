@@ -10,16 +10,20 @@ import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
 export default async function HomePage() {
   let daily: MangaListItem[] = [];
   let weekly: MangaListItem[] = [];
-  let latest: MangaListItem[] = [];
-  let recent: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
+  let alltime: MangaListItem[] = [];
+  let latestUpdates: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 10 };
+  let recentlyAdded: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
+  let completeSeries: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
   let recentComments: RecentComment[] = [];
 
   try {
-    [daily, weekly, latest, recent, recentComments] = await Promise.all([
+    [daily, weekly, alltime, latestUpdates, recentlyAdded, completeSeries, recentComments] = await Promise.all([
       mangaApi.rankings('daily', 1, 10),
       mangaApi.rankings('weekly', 1, 10),
       mangaApi.rankings('alltime', 1, 10),
-      mangaApi.list({ page: 1, limit: 12, sort: 'updated_at', order: 'desc' }),
+      mangaApi.list({ page: 1, limit: 10, sort: 'updated_at', order: 'desc' }),
+      mangaApi.list({ page: 1, limit: 12, sort: 'created_at', order: 'desc' }),
+      mangaApi.list({ page: 1, limit: 12, status: 'completed', sort: 'updated_at', order: 'desc' }),
       commentApi.recent(10),
     ]);
   } catch {
@@ -45,15 +49,25 @@ export default async function HomePage() {
             showRank
             moreHref="/browse?sort=views"
           />
+          <MangaCarousel
+            title="All-Time Popular"
+            items={alltime}
+            showRank
+            moreHref="/browse?sort=views"
+          />
           <MangaGrid
             title="Latest Updates"
-            items={latest}
+            items={latestUpdates.data}
             moreHref="/browse?sort=updated_at"
           />
         </div>
 
         {/* Right: recently added sidebar */}
-        <RecentSidebar items={recent.data} recentComments={recentComments} />
+        <RecentSidebar
+          recentItems={recentlyAdded.data}
+          completeItems={completeSeries.data}
+          recentComments={recentComments}
+        />
       </div>
     </main>
   );

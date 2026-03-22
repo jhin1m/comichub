@@ -29,7 +29,7 @@ export function MangaCarouselCard({ item, rank }: Props) {
   const rankStyle = rank ? (RANK_STYLES[rank] ?? RANK_DEFAULT) : null;
 
   return (
-    <Link href={`/manga/${item.slug}`} className="group block cursor-pointer">
+    <Link href={`/manga/${item.slug}`} className="group block cursor-pointer mb-4">
       {/* Cover */}
       <div className="relative aspect-2/3 rounded-sm overflow-hidden bg-surface border border-[#2a2a2a] mb-2">
         {item.cover ? (
@@ -75,7 +75,7 @@ export function MangaCarouselCard({ item, rank }: Props) {
       </div>
 
       {/* Title */}
-      <p className="text-[12px] font-medium text-[#f5f5f5] line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
+      <p className="text-sm font-medium text-[#f5f5f5] line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
         {item.title}
       </p>
     </Link>
