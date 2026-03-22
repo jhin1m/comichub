@@ -6,6 +6,7 @@ import type { ChapterListItem } from '@/types/manga.types';
 interface Props {
   chapter: ChapterListItem;
   mangaSlug: string;
+  striped?: boolean;
 }
 
 function formatCount(n: number): string {
@@ -14,11 +15,13 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-export function ChapterListItemRow({ chapter, mangaSlug }: Props) {
+export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
   return (
     <Link
       href={`/manga/${mangaSlug}/${chapter.id}`}
-      className="flex items-center justify-between px-3 py-2.5 rounded-[4px] hover:bg-elevated transition-colors group"
+      className={`flex items-center justify-between px-3 py-2.5 rounded-[4px] hover:bg-[#2a2a2a] transition-colors group ${
+        striped ? 'bg-[#1a1a1a]' : ''
+      }`}
     >
       <div className="flex items-center gap-3 min-w-0">
         <span className="text-sm font-medium text-[#f5f5f5] shrink-0">
