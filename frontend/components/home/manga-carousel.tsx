@@ -118,6 +118,7 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
           onClickCapture={onClickCapture}
+          onDragStart={(e) => e.preventDefault()}
           className="flex gap-3 overflow-x-auto scrollbar-none cursor-grab active:cursor-grabbing"
           style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
         >

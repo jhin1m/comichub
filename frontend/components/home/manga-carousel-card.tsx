@@ -37,7 +37,8 @@ export function MangaCarouselCard({ item, rank }: Props) {
             src={item.cover}
             alt={item.title}
             fill
-            className="object-cover group-hover:opacity-85 transition-opacity duration-200"
+            draggable={false}
+            className="object-cover group-hover:opacity-85 transition-opacity duration-200 pointer-events-none"
             sizes="(max-width:640px) 33vw, (max-width:1024px) 20vw, 180px"
             loading="lazy"
           />
