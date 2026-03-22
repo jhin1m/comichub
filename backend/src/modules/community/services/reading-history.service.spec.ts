@@ -5,9 +5,19 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert', 'values', 'delete'].forEach(
-    (m) => { chain[m] = vi.fn().mockReturnValue(chain); },
-  );
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'delete',
+  ].forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   chain.onConflictDoUpdate = vi.fn().mockReturnValue(chain);
   chain.then = (resolve: any) => resolve(resolvedValue);
@@ -35,14 +45,20 @@ describe('ReadingHistoryService', () => {
     service = module.get<ReadingHistoryService>(ReadingHistoryService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── upsert ────────────────────────────────────────────────────────
 
   describe('upsert()', () => {
     it('should insert and return reading history entry', async () => {
       const entry = {
-        id: 1, userId: 10, mangaId: 5, chapterId: 2, lastReadAt: new Date(),
+        id: 1,
+        userId: 10,
+        mangaId: 5,
+        chapterId: 2,
+        lastReadAt: new Date(),
       };
       mockDb.insert.mockReturnValue(buildChain([entry]));
 
@@ -68,7 +84,11 @@ describe('ReadingHistoryService', () => {
     it('should return empty array when no history', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      const result = await service.getHistory(10, { page: 1, limit: 20, offset: 0 });
+      const result = await service.getHistory(10, {
+        page: 1,
+        limit: 20,
+        offset: 0,
+      });
 
       expect(result).toEqual([]);
     });
@@ -80,7 +100,11 @@ describe('ReadingHistoryService', () => {
       ];
       mockDb.select.mockReturnValue(buildChain(entries));
 
-      const result = await service.getHistory(10, { page: 1, limit: 20, offset: 0 });
+      const result = await service.getHistory(10, {
+        page: 1,
+        limit: 20,
+        offset: 0,
+      });
 
       expect(result).toHaveLength(2);
     });

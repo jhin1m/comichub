@@ -65,7 +65,10 @@ export async function seedCommunity(
       chapterId: mangaChapters[i % mangaChapters.length].id,
     }));
   });
-  await db.insert(schema.readingHistory).values(historyData).onConflictDoNothing();
+  await db
+    .insert(schema.readingHistory)
+    .values(historyData)
+    .onConflictDoNothing();
   console.log(`  ✓ ${historyData.length} reading history entries`);
 
   // Reading streaks
@@ -75,7 +78,10 @@ export async function seedCommunity(
     longestStreak: (i + 1) * 5 + 2,
     lastReadAt: new Date(Date.now() - i * 86_400_000),
   }));
-  await db.insert(schema.readingStreaks).values(streaksData).onConflictDoNothing();
+  await db
+    .insert(schema.readingStreaks)
+    .values(streaksData)
+    .onConflictDoNothing();
   console.log(`  ✓ ${streaksData.length} reading streaks`);
 
   // Chapter reports
@@ -86,7 +92,10 @@ export async function seedCommunity(
     description: 'Some images are not loading properly.',
     status: 'pending' as const,
   }));
-  await db.insert(schema.chapterReports).values(reportsData).onConflictDoNothing();
+  await db
+    .insert(schema.chapterReports)
+    .values(reportsData)
+    .onConflictDoNothing();
   console.log(`  ✓ ${reportsData.length} chapter reports`);
 
   // Comments on manga
@@ -133,14 +142,19 @@ export async function seedCommunity(
     .onConflictDoNothing()
     .returning({ id: schema.comments.id });
 
-  const totalComments = mangaComments.length + replyData.length + chapterComments.length;
+  const totalComments =
+    mangaComments.length + replyData.length + chapterComments.length;
   console.log(`  ✓ ${totalComments} comments`);
 
   // Comment likes
   const allCommentIds = [...mangaComments, ...chapterComments].map((c) => c.id);
-  const likesData = allCommentIds.slice(0, 10).flatMap((cid, ci) =>
-    users.slice(1, (ci % 3) + 2).map((u) => ({ userId: u.id, commentId: cid })),
-  );
+  const likesData = allCommentIds
+    .slice(0, 10)
+    .flatMap((cid, ci) =>
+      users
+        .slice(1, (ci % 3) + 2)
+        .map((u) => ({ userId: u.id, commentId: cid })),
+    );
   await db.insert(schema.commentLikes).values(likesData).onConflictDoNothing();
   console.log(`  ✓ ${likesData.length} comment likes`);
 }

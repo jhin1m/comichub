@@ -7,8 +7,19 @@ import { DRIZZLE } from '../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert',
-    'values', 'update', 'set', 'delete'].forEach((m) => {
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+  ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
@@ -55,7 +66,9 @@ describe('NotificationService', () => {
     service = module.get<NotificationService>(NotificationService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── createForFollowers ────────────────────────────────────────────
 
@@ -64,20 +77,28 @@ describe('NotificationService', () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
       await service.createForFollowers({
-        mangaId: 1, mangaTitle: 'Test', chapterId: 5,
-        chapterNumber: '1', mangaCover: null,
+        mangaId: 1,
+        mangaTitle: 'Test',
+        chapterId: 5,
+        chapterNumber: '1',
+        mangaCover: null,
       });
 
       expect(mockDb.insert).not.toHaveBeenCalled();
     });
 
     it('should insert notifications for each follower', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ userId: 10 }, { userId: 20 }]));
+      mockDb.select.mockReturnValue(
+        buildChain([{ userId: 10 }, { userId: 20 }]),
+      );
       mockDb.insert.mockReturnValue(buildChain([]));
 
       await service.createForFollowers({
-        mangaId: 1, mangaTitle: 'One Piece', chapterId: 5,
-        chapterNumber: '100', mangaCover: null,
+        mangaId: 1,
+        mangaTitle: 'One Piece',
+        chapterId: 5,
+        chapterNumber: '100',
+        mangaCover: null,
       });
 
       expect(mockDb.insert).toHaveBeenCalledOnce();
@@ -104,10 +125,14 @@ describe('NotificationService', () => {
       mockDb.select.mockImplementation(() => {
         call++;
         if (call === 1) return buildChain([{ cnt: 2 }]); // count
-        return buildChain([notifFixture]);               // rows
+        return buildChain([notifFixture]); // rows
       });
 
-      const result = await service.list(10, { page: 1, limit: 20, type: undefined } as any);
+      const result = await service.list(10, {
+        page: 1,
+        limit: 20,
+        type: undefined,
+      } as any);
 
       expect(result.data).toBeDefined();
       expect(result.page).toBe(1);
@@ -116,7 +141,11 @@ describe('NotificationService', () => {
     it('should filter by type when provided', async () => {
       mockDb.select.mockReturnValue(buildChain([{ cnt: 0 }]));
 
-      const result = await service.list(10, { page: 1, limit: 20, type: 'chapter.created' } as any);
+      const result = await service.list(10, {
+        page: 1,
+        limit: 20,
+        type: 'chapter.created',
+      } as any);
 
       expect(result.total).toBe(0);
     });
@@ -148,15 +177,20 @@ describe('NotificationService', () => {
     it('should throw NotFoundException when notification not found', async () => {
       mockDb.query.notifications.findFirst.mockResolvedValue(null);
 
-      await expect(service.markRead(10, 'uuid-missing')).rejects.toThrow(NotFoundException);
+      await expect(service.markRead(10, 'uuid-missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when notification belongs to another user', async () => {
       mockDb.query.notifications.findFirst.mockResolvedValue({
-        ...notifFixture, notifiableId: 99,
+        ...notifFixture,
+        notifiableId: 99,
       });
 
-      await expect(service.markRead(10, 'uuid-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.markRead(10, 'uuid-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should mark notification as read', async () => {
@@ -186,15 +220,20 @@ describe('NotificationService', () => {
     it('should throw NotFoundException when notification not found', async () => {
       mockDb.query.notifications.findFirst.mockResolvedValue(null);
 
-      await expect(service.delete(10, 'uuid-missing')).rejects.toThrow(NotFoundException);
+      await expect(service.delete(10, 'uuid-missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should throw ForbiddenException for another user\'s notification', async () => {
+    it("should throw ForbiddenException for another user's notification", async () => {
       mockDb.query.notifications.findFirst.mockResolvedValue({
-        ...notifFixture, notifiableId: 99,
+        ...notifFixture,
+        notifiableId: 99,
       });
 
-      await expect(service.delete(10, 'uuid-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.delete(10, 'uuid-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should delete notification and return message', async () => {
@@ -214,8 +253,11 @@ describe('NotificationService', () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
       await service.handleNewChapter({
-        mangaId: 1, mangaTitle: 'Test', chapterId: 5,
-        chapterNumber: '1', mangaCover: null,
+        mangaId: 1,
+        mangaTitle: 'Test',
+        chapterId: 5,
+        chapterNumber: '1',
+        mangaCover: null,
       });
 
       expect(mockDiscord.sendNewChapter).toHaveBeenCalledOnce();

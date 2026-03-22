@@ -30,10 +30,7 @@ describe('RatingService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RatingService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [RatingService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<RatingService>(RatingService);
@@ -66,7 +63,9 @@ describe('RatingService', () => {
       // Mock no existing rating
       mockDb.limit.mockResolvedValueOnce([]);
       // Mock getUserRating returns the new rating
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -87,9 +86,13 @@ describe('RatingService', () => {
       // Mock manga exists
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       // Mock existing rating
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
       // Mock getUserRating after upsert
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '3.0' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '3.0' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -109,7 +112,9 @@ describe('RatingService', () => {
       // Mock no existing rating
       mockDb.limit.mockResolvedValueOnce([]);
       // Mock getUserRating
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -143,7 +148,9 @@ describe('RatingService', () => {
 
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -161,7 +168,9 @@ describe('RatingService', () => {
 
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '2.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '2.5' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -241,7 +250,9 @@ describe('RatingService', () => {
       const mangaId = 1;
       const userId = 5;
 
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.remove(mangaId, userId);
 
@@ -254,7 +265,9 @@ describe('RatingService', () => {
       const mangaId = 1;
       const userId = 5;
 
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.remove(mangaId, userId);
 
@@ -271,7 +284,9 @@ describe('RatingService', () => {
 
       // Call through upsert to trigger recalcAverage
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId: 5, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId: 5, mangaId, score: '4.5' },
+      ]);
 
       await service.upsert(mangaId, 5, { score: 4.5 });
 
@@ -286,7 +301,9 @@ describe('RatingService', () => {
 
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.upsert(mangaId, userId, { score: 4.5 });
 
@@ -303,7 +320,9 @@ describe('RatingService', () => {
 
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '0.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '0.5' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -319,7 +338,9 @@ describe('RatingService', () => {
 
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '5' },
+      ]);
 
       await service.upsert(mangaId, userId, dto);
 
@@ -337,7 +358,9 @@ describe('RatingService', () => {
       // First rating
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
       mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '3.0' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '3.0' },
+      ]);
 
       await service.upsert(mangaId, userId, oldDto);
 
@@ -345,8 +368,12 @@ describe('RatingService', () => {
 
       // Re-rating (update)
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '3.0' }]);
-      mockDb.limit.mockResolvedValueOnce([{ id: 1, userId, mangaId, score: '4.5' }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '3.0' },
+      ]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 1, userId, mangaId, score: '4.5' },
+      ]);
 
       await service.upsert(mangaId, userId, newDto);
 

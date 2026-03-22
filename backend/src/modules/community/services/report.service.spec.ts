@@ -6,8 +6,19 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert', 'values',
-    'update', 'set', 'delete'].forEach((m) => {
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+  ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
@@ -15,7 +26,13 @@ function buildChain(resolvedValue: any = []) {
   return chain;
 }
 
-const reportFixture = { id: 1, userId: 10, chapterId: 1, type: 'missing_pages', status: 'pending' };
+const reportFixture = {
+  id: 1,
+  userId: 10,
+  chapterId: 1,
+  type: 'missing_pages',
+  status: 'pending',
+};
 
 describe('ReportService', () => {
   let service: ReportService;
@@ -30,16 +47,15 @@ describe('ReportService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ReportService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [ReportService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<ReportService>(ReportService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── submit ────────────────────────────────────────────────────────
 
@@ -60,8 +76,13 @@ describe('ReportService', () => {
       });
       mockDb.insert.mockReturnValue(buildChain([reportFixture]));
 
-      const result = await service.submit(1, 10, { type: 'missing_pages' as any });
-      expect(result).toMatchObject({ type: 'missing_pages', status: 'pending' });
+      const result = await service.submit(1, 10, {
+        type: 'missing_pages' as any,
+      });
+      expect(result).toMatchObject({
+        type: 'missing_pages',
+        status: 'pending',
+      });
     });
   });
 
@@ -78,7 +99,10 @@ describe('ReportService', () => {
     it('should filter by status when provided', async () => {
       mockDb.select.mockReturnValue(buildChain([reportFixture]));
 
-      const result = await service.list({ page: 1, limit: 20, offset: 0 }, 'pending' as any);
+      const result = await service.list(
+        { page: 1, limit: 20, offset: 0 },
+        'pending' as any,
+      );
       expect(result).toBeDefined();
     });
   });
@@ -99,7 +123,9 @@ describe('ReportService', () => {
       mockDb.select.mockReturnValue(buildChain([reportFixture]));
       mockDb.update.mockReturnValue(buildChain([updated]));
 
-      const result = await service.updateStatus(1, { status: 'resolved' as any });
+      const result = await service.updateStatus(1, {
+        status: 'resolved' as any,
+      });
       expect(result.status).toBe('resolved');
     });
   });

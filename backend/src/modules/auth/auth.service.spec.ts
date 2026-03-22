@@ -228,7 +228,7 @@ describe('AuthService', () => {
 
       mockDb.query.users.findFirst.mockResolvedValue(user);
       // Simulate bcrypt.compare returning false
-      (mockBcrypt.compare as any).mockResolvedValue(false);
+      mockBcrypt.compare.mockResolvedValue(false);
 
       await expect(service.login(dto)).rejects.toThrow(
         new UnauthorizedException('Invalid credentials'),
@@ -256,7 +256,7 @@ describe('AuthService', () => {
       mockRedis.setex.mockResolvedValue('OK');
 
       // Mock bcrypt.compare
-      (mockBcrypt.compare as any).mockResolvedValue(true);
+      mockBcrypt.compare.mockResolvedValue(true);
 
       const result = await service.login(dto);
 

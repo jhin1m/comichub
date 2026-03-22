@@ -64,7 +64,10 @@ export class ArtistController {
   @ApiOperation({ summary: 'Update artist (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Artist updated' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTaxonomyDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTaxonomyDto,
+  ) {
     return this.taxonomyService.update('artists', id, dto);
   }
 

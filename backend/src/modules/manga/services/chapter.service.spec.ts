@@ -8,10 +8,21 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
   const methods = [
-    'select', 'from', 'where', 'limit', 'offset',
-    'orderBy', 'set', 'update', 'insert', 'values', 'delete',
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'set',
+    'update',
+    'insert',
+    'values',
+    'delete',
   ];
-  methods.forEach((m) => { chain[m] = vi.fn().mockReturnValue(chain); });
+  methods.forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
@@ -41,7 +52,9 @@ describe('ChapterService', () => {
     service = module.get<ChapterService>(ChapterService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── findByManga ───────────────────────────────────────────────────
 
@@ -55,7 +68,14 @@ describe('ChapterService', () => {
 
     it('should return chapter list for a manga', async () => {
       const chapters = [
-        { id: 1, number: '1', title: 'Ch 1', slug: 'chapter-1', viewCount: 0, order: 10 },
+        {
+          id: 1,
+          number: '1',
+          title: 'Ch 1',
+          slug: 'chapter-1',
+          viewCount: 0,
+          order: 10,
+        },
       ];
       mockDb.select.mockReturnValue(buildChain(chapters));
 
@@ -75,8 +95,16 @@ describe('ChapterService', () => {
     });
 
     it('should return chapter with images when found', async () => {
-      const chapter = { id: 1, mangaId: 1, number: '1', slug: 'chapter-1', deletedAt: null };
-      const images = [{ id: 1, chapterId: 1, url: 'https://example.com/page1.jpg', order: 1 }];
+      const chapter = {
+        id: 1,
+        mangaId: 1,
+        number: '1',
+        slug: 'chapter-1',
+        deletedAt: null,
+      };
+      const images = [
+        { id: 1, chapterId: 1, url: 'https://example.com/page1.jpg', order: 1 },
+      ];
 
       let callCount = 0;
       mockDb.select.mockImplementation(() => {
@@ -116,13 +144,19 @@ describe('ChapterService', () => {
     });
 
     it('should create chapter when manga exists and slug is free', async () => {
-      const created = { id: 5, mangaId: 1, number: '2', slug: 'chapter-2', order: 20 };
+      const created = {
+        id: 5,
+        mangaId: 1,
+        number: '2',
+        slug: 'chapter-2',
+        order: 20,
+      };
 
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([{ id: 1 }]); // manga exists
-        return buildChain([]);                                  // slug not taken
+        return buildChain([]); // slug not taken
       });
 
       mockDb.insert.mockReturnValue(buildChain([created]));
@@ -156,18 +190,28 @@ describe('ChapterService', () => {
   describe('update()', () => {
     it('should throw NotFoundException when chapter not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.update(999, { title: 'X' })).rejects.toThrow(NotFoundException);
+      await expect(service.update(999, { title: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should update chapter title and return result', async () => {
-      const chapter = { id: 1, mangaId: 1, number: '1', slug: 'chapter-1', deletedAt: null };
+      const chapter = {
+        id: 1,
+        mangaId: 1,
+        number: '1',
+        slug: 'chapter-1',
+        deletedAt: null,
+      };
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([chapter]); // findOne → chapter
-        return buildChain([]);                              // findOne → images
+        return buildChain([]); // findOne → images
       });
-      mockDb.update.mockReturnValue(buildChain([{ ...chapter, title: 'Updated' }]));
+      mockDb.update.mockReturnValue(
+        buildChain([{ ...chapter, title: 'Updated' }]),
+      );
 
       const result = await service.update(1, { title: 'Updated' });
       expect(result).toMatchObject({ id: 1 });
@@ -181,7 +225,9 @@ describe('ChapterService', () => {
     it('should throw NotFoundException when chapter not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.getNavigation(999)).rejects.toThrow(NotFoundException);
+      await expect(service.getNavigation(999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return null prev/next for a standalone chapter', async () => {
@@ -191,7 +237,7 @@ describe('ChapterService', () => {
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([chapter]); // current chapter
-        return buildChain([]);                              // no prev, no next
+        return buildChain([]); // no prev, no next
       });
 
       const result = await service.getNavigation(1);

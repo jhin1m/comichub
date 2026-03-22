@@ -28,7 +28,10 @@ export class RankingService {
     return rows;
   }
 
-  async getHotManga(page: number, limit: number): Promise<PaginatedResult<MangaListItem>> {
+  async getHotManga(
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResult<MangaListItem>> {
     const offset = (page - 1) * limit;
     const cacheKey = `rankings:hot:${page}:${limit}`;
     const cached = await this.redis.get(cacheKey);
@@ -80,7 +83,10 @@ export class RankingService {
     }
 
     const newIsHot = !existing.isHot;
-    await this.db.update(manga).set({ isHot: newIsHot }).where(eq(manga.id, id));
+    await this.db
+      .update(manga)
+      .set({ isHot: newIsHot })
+      .where(eq(manga.id, id));
 
     // Invalidate hot cache
     const keys = await this.redis.keys('rankings:hot:*');

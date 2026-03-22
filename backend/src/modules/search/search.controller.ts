@@ -31,7 +31,11 @@ export class SearchController {
   @Public()
   @Get('suggest')
   @ApiOperation({ summary: 'Autocomplete suggestions (top 5)' })
-  @ApiQuery({ name: 'q', required: true, description: 'Partial title to autocomplete' })
+  @ApiQuery({
+    name: 'q',
+    required: true,
+    description: 'Partial title to autocomplete',
+  })
   @ApiResponse({ status: 200, description: 'List of matching manga titles' })
   suggest(@Query() query: SuggestQueryDto) {
     return this.searchService.suggest(query.q ?? '');

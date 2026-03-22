@@ -33,7 +33,9 @@ describe('ViewCounterResetJob', () => {
     job = module.get<ViewCounterResetJob>(ViewCounterResetJob);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('resetDailyViews()', () => {
     it('should reset viewsDay column without throwing', async () => {
@@ -47,7 +49,10 @@ describe('ViewCounterResetJob', () => {
       await job.resetDailyViews();
 
       expect(mockRedis.keys).toHaveBeenCalledWith('rankings:*');
-      expect(mockRedis.del).toHaveBeenCalledWith('rankings:day', 'rankings:week');
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'rankings:day',
+        'rankings:week',
+      );
     });
 
     it('should skip del when no ranking cache keys exist', async () => {

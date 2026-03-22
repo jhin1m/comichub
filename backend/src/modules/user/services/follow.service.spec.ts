@@ -6,8 +6,20 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert',
-    'values', 'update', 'set', 'delete', 'innerJoin'].forEach((m) => {
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+    'innerJoin',
+  ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
@@ -33,23 +45,24 @@ describe('FollowService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FollowService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [FollowService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<FollowService>(FollowService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── toggleFollow ─────────────────────────────────────────────────────
 
   describe('toggleFollow()', () => {
     it('should throw NotFoundException when manga not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.toggleFollow(10, 999)).rejects.toThrow(NotFoundException);
+      await expect(service.toggleFollow(10, 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should unfollow when already following', async () => {
@@ -97,7 +110,9 @@ describe('FollowService', () => {
 
   describe('getFollowedIds()', () => {
     it('should return array of manga IDs', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ mangaId: 1 }, { mangaId: 2 }]));
+      mockDb.select.mockReturnValue(
+        buildChain([{ mangaId: 1 }, { mangaId: 2 }]),
+      );
       const result = await service.getFollowedIds(10);
       expect(result).toEqual([1, 2]);
     });
@@ -117,10 +132,16 @@ describe('FollowService', () => {
       mockDb.select.mockImplementation(() => {
         call++;
         if (call === 1) return buildChain([{ cnt: 1 }]);
-        return buildChain([{ id: 1, mangaId: 1, createdAt: new Date(), manga: mangaFixture }]);
+        return buildChain([
+          { id: 1, mangaId: 1, createdAt: new Date(), manga: mangaFixture },
+        ]);
       });
 
-      const result = await service.getFollows(10, { page: 1, limit: 20, offset: 0 } as any);
+      const result = await service.getFollows(10, {
+        page: 1,
+        limit: 20,
+        offset: 0,
+      } as any);
       expect(result.total).toBe(1);
       expect(result.page).toBe(1);
     });
@@ -128,7 +149,11 @@ describe('FollowService', () => {
     it('should return empty list when user follows nothing', async () => {
       mockDb.select.mockReturnValue(buildChain([{ cnt: 0 }]));
 
-      const result = await service.getFollows(10, { page: 1, limit: 20, offset: 0 } as any);
+      const result = await service.getFollows(10, {
+        page: 1,
+        limit: 20,
+        offset: 0,
+      } as any);
       expect(result.total).toBe(0);
     });
   });

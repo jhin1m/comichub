@@ -27,16 +27,106 @@ const authorsData = [
 
 // [title, slug, type, status, description, genreNames, artistIdx, authorIdx]
 const mangaDefs = [
-  ['One Piece', 'one-piece', 'manga', 'ongoing', 'Luffy dreams of becoming King of the Pirates.', ['Action', 'Adventure', 'Comedy'], 0, 0],
-  ['Naruto', 'naruto', 'manga', 'completed', 'A young ninja seeks recognition and the title of Hokage.', ['Action', 'Shounen', 'Fantasy'], 1, 1],
-  ['Attack on Titan', 'attack-on-titan', 'manga', 'completed', 'Humanity fights for survival against Titans.', ['Action', 'Mystery', 'Drama'], 2, 2],
-  ['Bleach', 'bleach', 'manga', 'completed', 'Ichigo gains Soul Reaper powers and defends the living world.', ['Action', 'Supernatural', 'Shounen'], 3, 3],
-  ['Dragon Ball', 'dragon-ball', 'manga', 'completed', 'Son Goku adventures from childhood through adulthood.', ['Action', 'Adventure', 'Comedy'], 4, 4],
-  ['Berserk', 'berserk', 'manga', 'hiatus', 'Guts, a lone mercenary, battles demons in a dark fantasy world.', ['Action', 'Horror', 'Fantasy'], 5, 5],
-  ['Hunter x Hunter', 'hunter-x-hunter', 'manga', 'hiatus', 'Gon seeks his father, the world-class Hunter Ging.', ['Action', 'Adventure', 'Fantasy'], 6, 6],
-  ['Vinland Saga', 'vinland-saga', 'manga', 'ongoing', 'A Viking warrior seeks vengeance across medieval Europe.', ['Historical', 'Action', 'Drama'], 7, 7],
-  ['Demon Slayer', 'demon-slayer', 'manga', 'completed', 'Tanjiro fights demons to cure his sister Nezuko.', ['Action', 'Supernatural', 'Shounen'], 0, 0],
-  ['Jujutsu Kaisen', 'jujutsu-kaisen', 'manga', 'ongoing', 'Yuji Itadori joins a secret school to fight Curses.', ['Action', 'Supernatural', 'Shounen'], 1, 1],
+  [
+    'One Piece',
+    'one-piece',
+    'manga',
+    'ongoing',
+    'Luffy dreams of becoming King of the Pirates.',
+    ['Action', 'Adventure', 'Comedy'],
+    0,
+    0,
+  ],
+  [
+    'Naruto',
+    'naruto',
+    'manga',
+    'completed',
+    'A young ninja seeks recognition and the title of Hokage.',
+    ['Action', 'Shounen', 'Fantasy'],
+    1,
+    1,
+  ],
+  [
+    'Attack on Titan',
+    'attack-on-titan',
+    'manga',
+    'completed',
+    'Humanity fights for survival against Titans.',
+    ['Action', 'Mystery', 'Drama'],
+    2,
+    2,
+  ],
+  [
+    'Bleach',
+    'bleach',
+    'manga',
+    'completed',
+    'Ichigo gains Soul Reaper powers and defends the living world.',
+    ['Action', 'Supernatural', 'Shounen'],
+    3,
+    3,
+  ],
+  [
+    'Dragon Ball',
+    'dragon-ball',
+    'manga',
+    'completed',
+    'Son Goku adventures from childhood through adulthood.',
+    ['Action', 'Adventure', 'Comedy'],
+    4,
+    4,
+  ],
+  [
+    'Berserk',
+    'berserk',
+    'manga',
+    'hiatus',
+    'Guts, a lone mercenary, battles demons in a dark fantasy world.',
+    ['Action', 'Horror', 'Fantasy'],
+    5,
+    5,
+  ],
+  [
+    'Hunter x Hunter',
+    'hunter-x-hunter',
+    'manga',
+    'hiatus',
+    'Gon seeks his father, the world-class Hunter Ging.',
+    ['Action', 'Adventure', 'Fantasy'],
+    6,
+    6,
+  ],
+  [
+    'Vinland Saga',
+    'vinland-saga',
+    'manga',
+    'ongoing',
+    'A Viking warrior seeks vengeance across medieval Europe.',
+    ['Historical', 'Action', 'Drama'],
+    7,
+    7,
+  ],
+  [
+    'Demon Slayer',
+    'demon-slayer',
+    'manga',
+    'completed',
+    'Tanjiro fights demons to cure his sister Nezuko.',
+    ['Action', 'Supernatural', 'Shounen'],
+    0,
+    0,
+  ],
+  [
+    'Jujutsu Kaisen',
+    'jujutsu-kaisen',
+    'manga',
+    'ongoing',
+    'Yuji Itadori joins a secret school to fight Curses.',
+    ['Action', 'Supernatural', 'Shounen'],
+    1,
+    1,
+  ],
 ] as const;
 
 export async function seedManga(
@@ -62,7 +152,16 @@ export async function seedManga(
 
   const insertedManga: SeededManga[] = [];
 
-  for (const [title, slug, type, status, description, genreNames, artistIdx, authorIdx] of mangaDefs) {
+  for (const [
+    title,
+    slug,
+    type,
+    status,
+    description,
+    genreNames,
+    artistIdx,
+    authorIdx,
+  ] of mangaDefs) {
     const [m] = await db
       .insert(schema.manga)
       .values({
@@ -93,15 +192,24 @@ export async function seedManga(
       .filter((id): id is number => id !== undefined)
       .map((genreId) => ({ mangaId: m.id, genreId }));
     if (genrePivots.length) {
-      await db.insert(schema.mangaGenres).values(genrePivots).onConflictDoNothing();
+      await db
+        .insert(schema.mangaGenres)
+        .values(genrePivots)
+        .onConflictDoNothing();
     }
 
     // Pivot: artist + author
     if (artists[artistIdx]) {
-      await db.insert(schema.mangaArtists).values({ mangaId: m.id, artistId: artists[artistIdx].id }).onConflictDoNothing();
+      await db
+        .insert(schema.mangaArtists)
+        .values({ mangaId: m.id, artistId: artists[artistIdx].id })
+        .onConflictDoNothing();
     }
     if (authors[authorIdx]) {
-      await db.insert(schema.mangaAuthors).values({ mangaId: m.id, authorId: authors[authorIdx].id }).onConflictDoNothing();
+      await db
+        .insert(schema.mangaAuthors)
+        .values({ mangaId: m.id, authorId: authors[authorIdx].id })
+        .onConflictDoNothing();
     }
   }
 

@@ -14,9 +14,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
   ) {
     super({
-      clientID: configService.get<string>('google.clientId') || 'not-configured',
-      clientSecret: configService.get<string>('google.clientSecret') || 'not-configured',
-      callbackURL: configService.get<string>('google.callbackUrl') || 'http://localhost:3000/api/v1/auth/google/callback',
+      clientID:
+        configService.get<string>('google.clientId') || 'not-configured',
+      clientSecret:
+        configService.get<string>('google.clientSecret') || 'not-configured',
+      callbackURL:
+        configService.get<string>('google.callbackUrl') ||
+        'http://localhost:3000/api/v1/auth/google/callback',
       scope: ['email', 'profile'],
     });
   }

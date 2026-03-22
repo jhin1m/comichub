@@ -10,11 +10,19 @@ import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
-import { users, userProfiles, follows } from '../../../database/schema/index.js';
+import {
+  users,
+  userProfiles,
+  follows,
+} from '../../../database/schema/index.js';
 import type { UpdateProfileDto } from '../dto/update-profile.dto.js';
 import type { BanUserDto } from '../dto/ban-user.dto.js';
 import type { UserQueryDto } from '../dto/user-query.dto.js';
-import type { MyProfile, PublicUserProfile, PaginatedResult } from '../types/user.types.js';
+import type {
+  MyProfile,
+  PublicUserProfile,
+  PaginatedResult,
+} from '../types/user.types.js';
 
 @Injectable()
 export class UserService {
@@ -42,7 +50,7 @@ export class UserService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    const { password: _pw, ...safe } = user;
+    const { password: _password, ...safe } = user;
     return {
       ...safe,
       profile: user.profile
@@ -78,7 +86,10 @@ export class UserService {
     };
   }
 
-  async updateProfile(userId: number, dto: UpdateProfileDto): Promise<MyProfile> {
+  async updateProfile(
+    userId: number,
+    dto: UpdateProfileDto,
+  ): Promise<MyProfile> {
     const user = await this.db.query.users.findFirst({
       where: eq(users.id, userId),
     });
@@ -91,7 +102,9 @@ export class UserService {
     }
 
     const profileFields = { bio, website, twitter, discord };
-    const hasProfileUpdate = Object.values(profileFields).some((v) => v !== undefined);
+    const hasProfileUpdate = Object.values(profileFields).some(
+      (v) => v !== undefined,
+    );
 
     if (hasProfileUpdate) {
       const existing = await this.db.query.userProfiles.findFirst({
@@ -134,13 +147,18 @@ export class UserService {
     const region = this.config.get<string>('s3.region', 'ap-southeast-1');
     const avatarUrl = `https://${this.bucket}.s3.${region}.amazonaws.com/${key}`;
 
-    await this.db.update(users).set({ avatar: avatarUrl }).where(eq(users.id, userId));
+    await this.db
+      .update(users)
+      .set({ avatar: avatarUrl })
+      .where(eq(users.id, userId));
 
     return { avatar: avatarUrl };
   }
 
   // Admin methods
-  async listUsers(query: UserQueryDto): Promise<PaginatedResult<Omit<typeof users.$inferSelect, 'password'>>> {
+  async listUsers(
+    query: UserQueryDto,
+  ): Promise<PaginatedResult<Omit<typeof users.$inferSelect, 'password'>>> {
     const { page, limit, offset, search } = query;
 
     const where = search
@@ -182,31 +200,46 @@ export class UserService {
     };
   }
 
-  async getUserById(id: number): Promise<Omit<typeof users.$inferSelect, 'password'> & { profile: typeof userProfiles.$inferSelect | null }> {
+  async getUserById(id: number): Promise<
+    Omit<typeof users.$inferSelect, 'password'> & {
+      profile: typeof userProfiles.$inferSelect | null;
+    }
+  > {
     const user = await this.db.query.users.findFirst({
       where: eq(users.id, id),
       with: { profile: true },
     });
     if (!user) throw new NotFoundException('User not found');
-    const { password: _pw, ...safe } = user;
+    const { password: _password, ...safe } = user;
     return { ...safe, profile: user.profile ?? null };
   }
 
   async banUser(id: number, dto: BanUserDto): Promise<{ message: string }> {
-    const user = await this.db.query.users.findFirst({ where: eq(users.id, id) });
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.id, id),
+    });
     if (!user) throw new NotFoundException('User not found');
 
     const bannedUntil = dto.bannedUntil ? new Date(dto.bannedUntil) : null;
     await this.db.update(users).set({ bannedUntil }).where(eq(users.id, id));
 
-    return { message: bannedUntil ? `User banned until ${bannedUntil.toISOString()}` : 'User unbanned' };
+    return {
+      message: bannedUntil
+        ? `User banned until ${bannedUntil.toISOString()}`
+        : 'User unbanned',
+    };
   }
 
   async deleteUser(id: number): Promise<{ message: string }> {
-    const user = await this.db.query.users.findFirst({ where: eq(users.id, id) });
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.id, id),
+    });
     if (!user) throw new NotFoundException('User not found');
 
-    await this.db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id));
+    await this.db
+      .update(users)
+      .set({ deletedAt: new Date() })
+      .where(eq(users.id, id));
     return { message: 'User deleted' };
   }
 }

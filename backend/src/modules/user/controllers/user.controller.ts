@@ -66,7 +66,8 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   uploadAvatar(
     @CurrentUser() user: JwtPayload,
-    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string },
+    @UploadedFile()
+    file: { buffer: Buffer; mimetype: string; originalname: string },
   ) {
     return this.userService.uploadAvatar(user.sub, file);
   }
@@ -74,7 +75,10 @@ export class UserController {
   @Get('me/follows')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List followed manga (paginated)' })
-  getFollows(@CurrentUser() user: JwtPayload, @Query() pagination: PaginationDto) {
+  getFollows(
+    @CurrentUser() user: JwtPayload,
+    @Query() pagination: PaginationDto,
+  ) {
     return this.followService.getFollows(user.sub, pagination);
   }
 
@@ -88,7 +92,10 @@ export class UserController {
   @Get('me/history')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get reading history (paginated, recent first)' })
-  getHistory(@CurrentUser() user: JwtPayload, @Query() pagination: PaginationDto) {
+  getHistory(
+    @CurrentUser() user: JwtPayload,
+    @Query() pagination: PaginationDto,
+  ) {
     return this.historyService.getHistory(user.sub, pagination);
   }
 

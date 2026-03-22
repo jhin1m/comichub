@@ -109,7 +109,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current authenticated user' })
   me(@CurrentUser() user: User) {
-    const { password, ...safe } = user;
+    const { password: _password, ...safe } = user;
     return safe;
   }
 }

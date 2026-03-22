@@ -51,7 +51,10 @@ async function seed() {
     { key: 'posts_per_page', value: '20' },
     { key: 'maintenance_mode', value: 'false' },
   ];
-  await db.insert(schema.siteSettings).values(settingsData).onConflictDoNothing();
+  await db
+    .insert(schema.siteSettings)
+    .values(settingsData)
+    .onConflictDoNothing();
   console.log(`  ✓ ${settingsData.length} site settings`);
 
   // Sticker set

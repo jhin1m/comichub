@@ -48,21 +48,22 @@ describe('RedisCacheInterceptor', () => {
     interceptor = module.get<RedisCacheInterceptor>(RedisCacheInterceptor);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('should bypass cache when no TTL is configured', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(undefined);
     const next = buildHandler();
-    const result = await interceptor.intercept(buildContext(), next);
+    await interceptor.intercept(buildContext(), next);
     expect(next.handle).toHaveBeenCalled();
-    mockRedis.get; // not called
     expect(mockRedis.get).not.toHaveBeenCalled();
   });
 
   it('should bypass cache for non-GET requests', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(60);
     const next = buildHandler();
-    const result = await interceptor.intercept(buildContext('POST'), next);
+    await interceptor.intercept(buildContext('POST'), next);
     expect(next.handle).toHaveBeenCalled();
     expect(mockRedis.get).not.toHaveBeenCalled();
   });
@@ -70,7 +71,10 @@ describe('RedisCacheInterceptor', () => {
   it('should bypass cache when Authorization header is present', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(60);
     const next = buildHandler();
-    await interceptor.intercept(buildContext('GET', '/manga', 'Bearer token'), next);
+    await interceptor.intercept(
+      buildContext('GET', '/manga', 'Bearer token'),
+      next,
+    );
     expect(next.handle).toHaveBeenCalled();
     expect(mockRedis.get).not.toHaveBeenCalled();
   });
@@ -84,7 +88,9 @@ describe('RedisCacheInterceptor', () => {
     const obs = await interceptor.intercept(buildContext(), next);
 
     let result: any;
-    obs.subscribe((v) => { result = v; });
+    obs.subscribe((v) => {
+      result = v;
+    });
 
     expect(result).toEqual(cached);
     expect(next.handle).not.toHaveBeenCalled();

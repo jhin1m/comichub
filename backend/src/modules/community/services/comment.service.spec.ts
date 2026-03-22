@@ -12,10 +12,21 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
   const methods = [
-    'select', 'from', 'where', 'limit', 'offset',
-    'orderBy', 'set', 'update', 'insert', 'values', 'delete',
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'set',
+    'update',
+    'insert',
+    'values',
+    'delete',
   ];
-  methods.forEach((m) => { chain[m] = vi.fn().mockReturnValue(chain); });
+  methods.forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
@@ -56,7 +67,9 @@ describe('CommentService', () => {
     service = module.get<CommentService>(CommentService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── create ────────────────────────────────────────────────────────
 
@@ -108,11 +121,13 @@ describe('CommentService', () => {
     });
 
     it('should throw ForbiddenException when user does not own comment', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ ...baseComment, userId: 99 }]));
+      mockDb.select.mockReturnValue(
+        buildChain([{ ...baseComment, userId: 99 }]),
+      );
 
-      await expect(
-        service.update(1, 10, { content: 'edit' }),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, 10, { content: 'edit' })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should update comment content when user owns it', async () => {
@@ -131,13 +146,19 @@ describe('CommentService', () => {
     it('should throw NotFoundException when comment not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.remove(999, 10, 'user')).rejects.toThrow(NotFoundException);
+      await expect(service.remove(999, 10, 'user')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when non-owner non-admin tries to delete', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ ...baseComment, userId: 99 }]));
+      mockDb.select.mockReturnValue(
+        buildChain([{ ...baseComment, userId: 99 }]),
+      );
 
-      await expect(service.remove(1, 10, 'user')).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(1, 10, 'user')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should soft-delete comment when user is owner', async () => {
@@ -149,7 +170,9 @@ describe('CommentService', () => {
     });
 
     it('should allow admin to delete any comment', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ ...baseComment, userId: 99 }]));
+      mockDb.select.mockReturnValue(
+        buildChain([{ ...baseComment, userId: 99 }]),
+      );
       mockDb.update.mockReturnValue(buildChain([]));
 
       await expect(service.remove(1, 10, 'admin')).resolves.not.toThrow();
@@ -162,7 +185,9 @@ describe('CommentService', () => {
     it('should throw NotFoundException when comment does not exist', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.toggleLike(999, 10)).rejects.toThrow(NotFoundException);
+      await expect(service.toggleLike(999, 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should add like when user has not liked yet', async () => {
@@ -170,7 +195,7 @@ describe('CommentService', () => {
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([baseComment]); // findOrFail
-        return buildChain([]);                                  // no existing like
+        return buildChain([]); // no existing like
       });
       mockDb.insert.mockReturnValue(buildChain([]));
       mockDb.update.mockReturnValue(buildChain([{ likesCount: 1 }]));
@@ -186,8 +211,8 @@ describe('CommentService', () => {
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
-        if (selectCall === 1) return buildChain([baseComment]);   // findOrFail
-        return buildChain([existingLike]);                         // existing like
+        if (selectCall === 1) return buildChain([baseComment]); // findOrFail
+        return buildChain([existingLike]); // existing like
       });
       mockDb.delete.mockReturnValue(buildChain([]));
       mockDb.update.mockReturnValue(buildChain([{ likesCount: 0 }]));

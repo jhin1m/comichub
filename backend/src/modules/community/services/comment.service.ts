@@ -6,13 +6,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
   comments,
   commentLikes,
 } from '../../../database/schema/community.schema.js';
+import { users } from '../../../database/schema/user.schema.js';
+import { manga, chapters } from '../../../database/schema/manga.schema.js';
 import type { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import {
   CreateCommentDto,
@@ -30,6 +32,71 @@ export class CommentService {
     @Inject(DRIZZLE) private db: DrizzleDB,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  async getRecent(limit = 10) {
+    const rows = await this.db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        commentableType: comments.commentableType,
+        commentableId: comments.commentableId,
+        userName: users.name,
+        userAvatar: users.avatar,
+        mangaTitle: manga.title,
+        mangaSlug: manga.slug,
+        mangaCover: manga.cover,
+        chapterNumber: chapters.number,
+        chapterMangaId: chapters.mangaId,
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.userId, users.id))
+      .leftJoin(
+        manga,
+        sql`CASE WHEN ${comments.commentableType} = 'manga' THEN ${comments.commentableId} = ${manga.id} ELSE NULL END`,
+      )
+      .leftJoin(
+        chapters,
+        sql`CASE WHEN ${comments.commentableType} = 'chapter' THEN ${comments.commentableId} = ${chapters.id} ELSE NULL END`,
+      )
+      .where(and(isNull(comments.parentId), isNull(comments.deletedAt)))
+      .orderBy(desc(comments.createdAt))
+      .limit(limit);
+
+    // For chapter comments, resolve the manga info
+    const chapterMangaIds = rows
+      .filter((r) => r.commentableType === 'chapter' && r.chapterMangaId)
+      .map((r) => r.chapterMangaId as number);
+
+    let mangaMap = new Map<number, { title: string; slug: string; cover: string | null }>();
+    if (chapterMangaIds.length > 0) {
+      const uniqueIds = [...new Set(chapterMangaIds)];
+      const mangaRows = await this.db
+        .select({ id: manga.id, title: manga.title, slug: manga.slug, cover: manga.cover })
+        .from(manga)
+        .where(sql`${manga.id} IN (${sql.join(uniqueIds.map((id) => sql`${id}`), sql`, `)})`);
+      mangaMap = new Map(mangaRows.map((m) => [m.id, m]));
+    }
+
+    return rows.map((row) => {
+      const isChapter = row.commentableType === 'chapter';
+      const resolvedManga = isChapter && row.chapterMangaId
+        ? mangaMap.get(row.chapterMangaId)
+        : null;
+
+      return {
+        id: row.id,
+        content: row.content,
+        createdAt: row.createdAt,
+        userName: row.userName ?? 'Anonymous',
+        userAvatar: row.userAvatar,
+        mangaTitle: isChapter ? (resolvedManga?.title ?? null) : row.mangaTitle,
+        mangaSlug: isChapter ? (resolvedManga?.slug ?? null) : row.mangaSlug,
+        mangaCover: isChapter ? (resolvedManga?.cover ?? null) : row.mangaCover,
+        chapterNumber: isChapter ? row.chapterNumber : null,
+      };
+    });
+  }
 
   async listForManga(mangaId: number, pagination: PaginationDto) {
     return this.db
@@ -69,12 +136,7 @@ export class CommentService {
     return this.db
       .select()
       .from(comments)
-      .where(
-        and(
-          eq(comments.parentId, commentId),
-          isNull(comments.deletedAt),
-        ),
-      )
+      .where(and(eq(comments.parentId, commentId), isNull(comments.deletedAt)))
       .limit(pagination.limit)
       .offset(pagination.offset)
       .orderBy(comments.createdAt);
@@ -113,7 +175,10 @@ export class CommentService {
         const event = new CommentReplyEvent();
         event.commentId = dto.parentId;
         event.replyAuthorName = userName ?? '';
-        event.mangaId = dto.commentableType === CommentableType.MANGA ? dto.commentableId : null;
+        event.mangaId =
+          dto.commentableType === CommentableType.MANGA
+            ? dto.commentableId
+            : null;
         event.commentOwnerId = parent.userId;
         this.eventEmitter.emit('comment.replied', event);
       }
@@ -125,7 +190,7 @@ export class CommentService {
   async update(commentId: number, userId: number, dto: UpdateCommentDto) {
     const comment = await this.findOrFail(commentId);
     if (comment.userId !== userId) {
-      throw new ForbiddenException('Cannot edit another user\'s comment');
+      throw new ForbiddenException("Cannot edit another user's comment");
     }
 
     const [updated] = await this.db
@@ -226,7 +291,9 @@ export class CommentService {
     }
 
     if (depth > MAX_DEPTH) {
-      throw new BadRequestException(`Max comment depth of ${MAX_DEPTH} exceeded`);
+      throw new BadRequestException(
+        `Max comment depth of ${MAX_DEPTH} exceeded`,
+      );
     }
   }
 }

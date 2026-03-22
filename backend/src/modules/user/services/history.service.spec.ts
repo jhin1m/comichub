@@ -5,8 +5,21 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert',
-    'values', 'update', 'set', 'delete', 'innerJoin', 'leftJoin'].forEach((m) => {
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+    'innerJoin',
+    'leftJoin',
+  ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
@@ -30,16 +43,15 @@ describe('HistoryService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        HistoryService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [HistoryService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<HistoryService>(HistoryService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── upsert ───────────────────────────────────────────────────────────
 
@@ -81,10 +93,16 @@ describe('HistoryService', () => {
       mockDb.select.mockImplementation(() => {
         call++;
         if (call === 1) return buildChain([{ cnt: 2 }]);
-        return buildChain([{ id: 1, mangaId: 1, manga: { id: 1, title: 'Test' } }]);
+        return buildChain([
+          { id: 1, mangaId: 1, manga: { id: 1, title: 'Test' } },
+        ]);
       });
 
-      const result = await service.getHistory(10, { page: 1, limit: 20, offset: 0 } as any);
+      const result = await service.getHistory(10, {
+        page: 1,
+        limit: 20,
+        offset: 0,
+      } as any);
       expect(result.total).toBe(2);
       expect(result.page).toBe(1);
     });
@@ -97,7 +115,11 @@ describe('HistoryService', () => {
         return buildChain([]);
       });
 
-      const result = await service.getHistory(10, { page: 1, limit: 20, offset: 0 } as any);
+      const result = await service.getHistory(10, {
+        page: 1,
+        limit: 20,
+        offset: 0,
+      } as any);
       expect(result.total).toBe(0);
       expect(result.data).toEqual([]);
     });

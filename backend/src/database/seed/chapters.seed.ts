@@ -27,7 +27,10 @@ export async function seedChapters(
           order: chNum,
         })
         .onConflictDoNothing()
-        .returning({ id: schema.chapters.id, mangaId: schema.chapters.mangaId });
+        .returning({
+          id: schema.chapters.id,
+          mangaId: schema.chapters.mangaId,
+        });
 
       if (!ch) continue;
       allChapters.push(ch);
@@ -39,7 +42,10 @@ export async function seedChapters(
         pageNumber: i + 1,
         order: i + 1,
       }));
-      await db.insert(schema.chapterImages).values(images).onConflictDoNothing();
+      await db
+        .insert(schema.chapterImages)
+        .values(images)
+        .onConflictDoNothing();
     }
 
     // Update manga.lastChapterId to the last inserted chapter for this manga
@@ -53,6 +59,8 @@ export async function seedChapters(
   }
 
   const totalImages = allChapters.length * IMAGES_PER_CHAPTER;
-  console.log(`  ✓ ${allChapters.length} chapters, ${totalImages} chapter images`);
+  console.log(
+    `  ✓ ${allChapters.length} chapters, ${totalImages} chapter images`,
+  );
   return allChapters;
 }

@@ -6,7 +6,6 @@ import {
   varchar,
   text,
   integer,
-  boolean,
   timestamp,
 } from 'drizzle-orm/pg-core';
 

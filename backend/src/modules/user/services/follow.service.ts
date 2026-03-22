@@ -2,11 +2,7 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
-import {
-  follows,
-  manga,
-  users,
-} from '../../../database/schema/index.js';
+import { follows, manga } from '../../../database/schema/index.js';
 import type { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import type { FollowItem, PaginatedResult } from '../types/user.types.js';
 
@@ -54,7 +50,10 @@ export class FollowService {
     return { followed: true, followersCount: updated?.followersCount ?? 0 };
   }
 
-  async isFollowed(userId: number, mangaId: number): Promise<{ followed: boolean }> {
+  async isFollowed(
+    userId: number,
+    mangaId: number,
+  ): Promise<{ followed: boolean }> {
     const row = await this.db.query.follows.findFirst({
       where: and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)),
     });

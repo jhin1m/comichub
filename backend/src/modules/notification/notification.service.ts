@@ -76,7 +76,9 @@ export class NotificationService {
     // Batch insert in chunks of 100 to avoid param limits
     const chunkSize = 100;
     for (let i = 0; i < records.length; i += chunkSize) {
-      await this.db.insert(notifications).values(records.slice(i, i + chunkSize));
+      await this.db
+        .insert(notifications)
+        .values(records.slice(i, i + chunkSize));
     }
   }
 

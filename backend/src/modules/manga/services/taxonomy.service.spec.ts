@@ -6,9 +6,20 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'orderBy', 'insert', 'values', 'update', 'set', 'delete'].forEach(
-    (m) => { chain[m] = vi.fn().mockReturnValue(chain); },
-  );
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+  ].forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
@@ -29,22 +40,23 @@ describe('TaxonomyService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TaxonomyService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [TaxonomyService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<TaxonomyService>(TaxonomyService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── getTable ──────────────────────────────────────────────────────
 
   describe('getTable() (via findAll)', () => {
     it('should throw NotFoundException for unknown type', async () => {
-      await expect(service.findAll('invalid')).rejects.toThrow(NotFoundException);
+      await expect(service.findAll('invalid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should resolve genres table without error', async () => {
@@ -74,7 +86,9 @@ describe('TaxonomyService', () => {
   describe('findBySlug()', () => {
     it('should throw NotFoundException when slug not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.findBySlug('genres', 'unknown')).rejects.toThrow(NotFoundException);
+      await expect(service.findBySlug('genres', 'unknown')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return item when slug found', async () => {
@@ -89,7 +103,9 @@ describe('TaxonomyService', () => {
   describe('create()', () => {
     it('should throw ConflictException when name (slug) already exists', async () => {
       mockDb.select.mockReturnValue(buildChain([{ id: 1 }]));
-      await expect(service.create('genres', { name: 'Action' })).rejects.toThrow(ConflictException);
+      await expect(
+        service.create('genres', { name: 'Action' }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should create and return new taxonomy item', async () => {
@@ -110,15 +126,23 @@ describe('TaxonomyService', () => {
   describe('update()', () => {
     it('should throw NotFoundException when item not found for update', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.update('genres', 999, { name: 'New' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update('genres', 999, { name: 'New' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should update and return updated item', async () => {
-      const updated = { ...genreItem, name: 'Updated Action', slug: 'updated-action' };
+      const updated = {
+        ...genreItem,
+        name: 'Updated Action',
+        slug: 'updated-action',
+      };
       mockDb.select.mockReturnValue(buildChain([genreItem]));
       mockDb.update.mockReturnValue(buildChain([updated]));
 
-      const result = await service.update('genres', 1, { name: 'Updated Action' });
+      const result = await service.update('genres', 1, {
+        name: 'Updated Action',
+      });
       expect(result.name).toBe('Updated Action');
     });
   });
@@ -128,7 +152,9 @@ describe('TaxonomyService', () => {
   describe('remove()', () => {
     it('should throw NotFoundException when item not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.remove('genres', 999)).rejects.toThrow(NotFoundException);
+      await expect(service.remove('genres', 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should delete item when found', async () => {
@@ -143,8 +169,8 @@ describe('TaxonomyService', () => {
   // ─── getMangaByTaxonomy ────────────────────────────────────────────
 
   describe('getMangaByTaxonomy()', () => {
-    it('should return empty data set', async () => {
-      const result = await service.getMangaByTaxonomy('genres', 1, 1, 20);
+    it('should return empty data set', () => {
+      const result = service.getMangaByTaxonomy('genres', 1, 1, 20);
       expect(result).toEqual({ data: [], total: 0 });
     });
   });

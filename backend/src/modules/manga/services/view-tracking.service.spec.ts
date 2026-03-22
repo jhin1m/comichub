@@ -35,7 +35,9 @@ describe('ViewTrackingService', () => {
     service = module.get<ViewTrackingService>(ViewTrackingService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('trackChapterView()', () => {
     it('should return early when Redis dedup key already exists', async () => {
@@ -63,7 +65,11 @@ describe('ViewTrackingService', () => {
       await service.trackChapterView(2, undefined, '192.168.1.1');
 
       expect(mockRedis.get).toHaveBeenCalledWith('view:2:ip:192.168.1.1');
-      expect(mockRedis.setex).toHaveBeenCalledWith('view:2:ip:192.168.1.1', 5, '1');
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'view:2:ip:192.168.1.1',
+        5,
+        '1',
+      );
     });
 
     it('should fall back to "unknown" when neither userId nor ip is provided', async () => {
@@ -107,7 +113,7 @@ describe('ViewTrackingService', () => {
       await service.trackChapterView(1, 10);
       const incrAfterFirst = mockRedis.incr.mock.calls.length;
 
-      mockRedis.get.mockResolvedValueOnce('1');  // second call: already seen
+      mockRedis.get.mockResolvedValueOnce('1'); // second call: already seen
       await service.trackChapterView(1, 10);
 
       // incr should not have been called again
@@ -121,8 +127,18 @@ describe('ViewTrackingService', () => {
       await service.trackChapterView(1, 20);
 
       expect(mockRedis.setex).toHaveBeenCalledTimes(2);
-      expect(mockRedis.setex).toHaveBeenNthCalledWith(1, 'view:1:user:10', 5, '1');
-      expect(mockRedis.setex).toHaveBeenNthCalledWith(2, 'view:1:user:20', 5, '1');
+      expect(mockRedis.setex).toHaveBeenNthCalledWith(
+        1,
+        'view:1:user:10',
+        5,
+        '1',
+      );
+      expect(mockRedis.setex).toHaveBeenNthCalledWith(
+        2,
+        'view:1:user:20',
+        5,
+        '1',
+      );
     });
   });
 });

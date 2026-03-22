@@ -1,13 +1,27 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
-import { genres, artists, authors, groups } from '../../../database/schema/index.js';
+import {
+  genres,
+  artists,
+  authors,
+  groups,
+} from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
 import { CreateTaxonomyDto } from '../dto/taxonomy.dto.js';
 import type { TaxonomyItem } from '../types/manga.types.js';
 
-type TaxonomyTable = typeof genres | typeof artists | typeof authors | typeof groups;
+type TaxonomyTable =
+  | typeof genres
+  | typeof artists
+  | typeof authors
+  | typeof groups;
 
 @Injectable()
 export class TaxonomyService {
@@ -15,29 +29,44 @@ export class TaxonomyService {
 
   private getTable(type: string): TaxonomyTable {
     switch (type) {
-      case 'genres': return genres;
-      case 'artists': return artists;
-      case 'authors': return authors;
-      case 'groups': return groups;
-      default: throw new NotFoundException(`Unknown taxonomy type: ${type}`);
+      case 'genres':
+        return genres;
+      case 'artists':
+        return artists;
+      case 'authors':
+        return authors;
+      case 'groups':
+        return groups;
+      default:
+        throw new NotFoundException(`Unknown taxonomy type: ${type}`);
     }
   }
 
   async findAll(type: string): Promise<TaxonomyItem[]> {
     const table = this.getTable(type);
-    return this.db.select().from(table).orderBy(table.name) as Promise<TaxonomyItem[]>;
+    return this.db.select().from(table).orderBy(table.name) as Promise<
+      TaxonomyItem[]
+    >;
   }
 
   async findBySlug(type: string, slug: string): Promise<TaxonomyItem> {
     const table = this.getTable(type);
-    const [item] = await this.db.select().from(table).where(eq(table.slug, slug)).limit(1);
+    const [item] = await this.db
+      .select()
+      .from(table)
+      .where(eq(table.slug, slug))
+      .limit(1);
     if (!item) throw new NotFoundException(`${type} not found`);
     return item as TaxonomyItem;
   }
 
   async findById(type: string, id: number): Promise<TaxonomyItem> {
     const table = this.getTable(type);
-    const [item] = await this.db.select().from(table).where(eq(table.id, id)).limit(1);
+    const [item] = await this.db
+      .select()
+      .from(table)
+      .where(eq(table.id, id))
+      .limit(1);
     if (!item) throw new NotFoundException(`${type} not found`);
     return item as TaxonomyItem;
   }
@@ -46,22 +75,32 @@ export class TaxonomyService {
     const table = this.getTable(type);
     const slug = slugify(dto.name);
 
-    const [existing] = await this.db.select({ id: table.id })
+    const [existing] = await this.db
+      .select({ id: table.id })
       .from(table)
       .where(eq(table.slug, slug))
       .limit(1);
-    if (existing) throw new ConflictException(`${type} with this name already exists`);
+    if (existing)
+      throw new ConflictException(`${type} with this name already exists`);
 
-    const [created] = await this.db.insert(table).values({ name: dto.name, slug }).returning();
+    const [created] = await this.db
+      .insert(table)
+      .values({ name: dto.name, slug })
+      .returning();
     return created as TaxonomyItem;
   }
 
-  async update(type: string, id: number, dto: CreateTaxonomyDto): Promise<TaxonomyItem> {
+  async update(
+    type: string,
+    id: number,
+    dto: CreateTaxonomyDto,
+  ): Promise<TaxonomyItem> {
     const table = this.getTable(type);
     await this.findById(type, id);
 
     const slug = slugify(dto.name);
-    const [updated] = await this.db.update(table)
+    const [updated] = await this.db
+      .update(table)
       .set({ name: dto.name, slug })
       .where(eq(table.id, id))
       .returning();
@@ -75,14 +114,13 @@ export class TaxonomyService {
   }
 
   // Utility: get manga list by taxonomy (used by taxonomy detail endpoints)
-  async getMangaByTaxonomy(
-    type: string,
-    taxonomyId: number,
-    page: number,
-    limit: number,
-  ): Promise<{ data: unknown[]; total: number }> {
-    // Delegate to manga query — return basic info for now
-    // This is called from controllers that need manga list for a taxonomy
+  getMangaByTaxonomy(
+    _type: string,
+    _taxonomyId: number,
+    _page: number,
+    _limit: number,
+  ): { data: unknown[]; total: number } {
+    // TODO: delegate to manga query — return basic info for now
     return { data: [], total: 0 };
   }
 }

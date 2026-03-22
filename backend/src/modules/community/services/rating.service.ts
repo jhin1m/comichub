@@ -37,7 +37,9 @@ export class RatingService {
     const [userRating] = await this.db
       .select()
       .from(ratings)
-      .where(sql`${ratings.userId} = ${userId} AND ${ratings.mangaId} = ${mangaId}`)
+      .where(
+        sql`${ratings.userId} = ${userId} AND ${ratings.mangaId} = ${mangaId}`,
+      )
       .limit(1);
 
     void rating;
@@ -48,14 +50,18 @@ export class RatingService {
     const [existing] = await this.db
       .select()
       .from(ratings)
-      .where(sql`${ratings.userId} = ${userId} AND ${ratings.mangaId} = ${mangaId}`)
+      .where(
+        sql`${ratings.userId} = ${userId} AND ${ratings.mangaId} = ${mangaId}`,
+      )
       .limit(1);
 
     if (!existing) throw new NotFoundException('Rating not found');
 
     await this.db
       .delete(ratings)
-      .where(sql`${ratings.userId} = ${userId} AND ${ratings.mangaId} = ${mangaId}`);
+      .where(
+        sql`${ratings.userId} = ${userId} AND ${ratings.mangaId} = ${mangaId}`,
+      );
 
     await this.recalcAverage(mangaId);
   }

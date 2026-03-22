@@ -32,17 +32,18 @@ export class SitemapService {
   async generateStaticFiles(): Promise<void> {
     try {
       await mkdir(this.outputDir, { recursive: true });
-      const [sitemapXml, robotsTxt] = await Promise.all([
-        this.buildSitemapXml(),
-        this.buildRobotsTxt(),
-      ]);
+      const sitemapXml = await this.buildSitemapXml();
+      const robotsTxt = this.buildRobotsTxt();
       await Promise.all([
         writeFile(join(this.outputDir, 'sitemap.xml'), sitemapXml, 'utf-8'),
         writeFile(join(this.outputDir, 'robots.txt'), robotsTxt, 'utf-8'),
       ]);
       this.logger.log('Sitemap + robots.txt written to frontend/public/');
     } catch (err) {
-      this.logger.error('Failed to generate sitemap files', (err as Error).message);
+      this.logger.error(
+        'Failed to generate sitemap files',
+        (err as Error).message,
+      );
     }
   }
 

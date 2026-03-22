@@ -43,7 +43,10 @@ export class MangaQueryDto extends PaginationDto {
   @IsInt()
   author?: number;
 
-  @ApiPropertyOptional({ enum: MangaSortField, default: MangaSortField.UPDATED_AT })
+  @ApiPropertyOptional({
+    enum: MangaSortField,
+    default: MangaSortField.UPDATED_AT,
+  })
   @IsOptional()
   @IsEnum(MangaSortField)
   sort?: MangaSortField;

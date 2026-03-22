@@ -8,11 +8,23 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
   const methods = [
-    'select', 'from', 'where', 'limit', 'offset', 'orderBy',
-    'leftJoin', 'innerJoin', 'set', 'update', 'insert',
-    'values', 'delete',
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'leftJoin',
+    'innerJoin',
+    'set',
+    'update',
+    'insert',
+    'values',
+    'delete',
   ];
-  methods.forEach((m) => { chain[m] = vi.fn().mockReturnValue(chain); });
+  methods.forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   // Make the chain itself thenable so `await chain.from(...)` works
   chain.then = (resolve: any) => resolve(resolvedValue);
@@ -33,16 +45,15 @@ describe('MangaService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MangaService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [MangaService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<MangaService>(MangaService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── findAll ───────────────────────────────────────────────────────
 
@@ -51,7 +62,11 @@ describe('MangaService', () => {
       mockDb.select.mockReturnValue(buildChain([{ id: 1, title: 'Naruto' }]));
       mockDb.$count.mockResolvedValue(1);
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0 } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+      } as any);
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
     });
@@ -60,7 +75,11 @@ describe('MangaService', () => {
       mockDb.select.mockReturnValue(buildChain([]));
       mockDb.$count.mockResolvedValue(0);
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0 } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+      } as any);
       expect(result.total).toBe(0);
     });
 
@@ -68,14 +87,24 @@ describe('MangaService', () => {
       mockDb.select.mockReturnValue(buildChain([]));
       mockDb.$count.mockResolvedValue(0);
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0, status: 'ongoing' } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        status: 'ongoing',
+      } as any);
       expect(result.data).toEqual([]);
     });
 
     it('should early-return empty when genre slug not found', async () => {
       mockDb.select.mockReturnValue(buildChain([])); // genre lookup returns nothing
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0, genre: 'action' } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        genre: 'action',
+      } as any);
       expect(result.data).toEqual([]);
       expect(result.total).toBe(0);
     });
@@ -85,25 +114,40 @@ describe('MangaService', () => {
       mockDb.select.mockImplementation(() => {
         call++;
         if (call === 1) return buildChain([{ id: 5 }]); // genre row found
-        if (call === 2) return buildChain([]);           // no manga IDs with genre → early return
+        if (call === 2) return buildChain([]); // no manga IDs with genre → early return
         return buildChain([]);
       });
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0, genre: 'action' } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        genre: 'action',
+      } as any);
       expect(result.data).toEqual([]);
     });
 
     it('should early-return empty when artist has no manga', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0, artist: 1 } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        artist: 1,
+      } as any);
       expect(result.data).toEqual([]);
     });
 
     it('should early-return empty when author has no manga', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      const result = await service.findAll({ page: 1, limit: 20, offset: 0, author: 1 } as any);
+      const result = await service.findAll({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        author: 1,
+      } as any);
       expect(result.data).toEqual([]);
     });
 
@@ -112,7 +156,13 @@ describe('MangaService', () => {
       mockDb.$count.mockResolvedValue(0);
 
       await expect(
-        service.findAll({ page: 1, limit: 20, offset: 0, sort: 'views', order: 'asc' } as any),
+        service.findAll({
+          page: 1,
+          limit: 20,
+          offset: 0,
+          sort: 'views',
+          order: 'asc',
+        } as any),
       ).resolves.not.toThrow();
     });
 
@@ -121,7 +171,12 @@ describe('MangaService', () => {
       mockDb.$count.mockResolvedValue(0);
 
       await expect(
-        service.findAll({ page: 1, limit: 20, offset: 0, sort: 'created_at' } as any),
+        service.findAll({
+          page: 1,
+          limit: 20,
+          offset: 0,
+          sort: 'created_at',
+        } as any),
       ).resolves.not.toThrow();
     });
   });
@@ -133,13 +188,17 @@ describe('MangaService', () => {
       // First select returns empty array (manga not found)
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.findBySlug('nonexistent-slug'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.findBySlug('nonexistent-slug')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return manga with relations when found', async () => {
       const mangaRow = {
-        id: 1, title: 'One Piece', slug: 'one-piece', deletedAt: null,
+        id: 1,
+        title: 'One Piece',
+        slug: 'one-piece',
+        deletedAt: null,
       };
       // First call: find manga; subsequent calls: relations
       let callCount = 0;
@@ -164,7 +223,11 @@ describe('MangaService', () => {
       mockDb.select.mockReturnValue(buildChain([{ id: 1 }]));
 
       await expect(
-        service.create({ title: 'One Piece', status: 'ongoing' as any, type: 'manga' as any }),
+        service.create({
+          title: 'One Piece',
+          status: 'ongoing' as any,
+          type: 'manga' as any,
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -177,7 +240,8 @@ describe('MangaService', () => {
         // 1st: slug check (empty = not taken)
         if (selectCall === 1) return buildChain([]);
         // 2nd: findBySlug → manga row
-        if (selectCall === 2) return buildChain([{ ...created, deletedAt: null }]);
+        if (selectCall === 2)
+          return buildChain([{ ...created, deletedAt: null }]);
         return buildChain([]); // relations
       });
 
@@ -221,8 +285,9 @@ describe('MangaService', () => {
     it('should throw NotFoundException when manga not found for update', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.update(999, { title: 'New Title' }))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.update(999, { title: 'New Title' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should update manga and return detail', async () => {
@@ -232,8 +297,9 @@ describe('MangaService', () => {
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
-        if (selectCall === 1) return buildChain([existing]);              // existence check
-        if (selectCall === 2) return buildChain([{ ...updated, deletedAt: null }]); // findBySlug
+        if (selectCall === 1) return buildChain([existing]); // existence check
+        if (selectCall === 2)
+          return buildChain([{ ...updated, deletedAt: null }]); // findBySlug
         return buildChain([]); // relations
       });
 
@@ -252,7 +318,8 @@ describe('MangaService', () => {
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([existing]);
-        if (selectCall === 2) return buildChain([{ ...updated, deletedAt: null }]);
+        if (selectCall === 2)
+          return buildChain([{ ...updated, deletedAt: null }]);
         return buildChain([]);
       });
 

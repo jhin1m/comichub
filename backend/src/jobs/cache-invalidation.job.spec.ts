@@ -22,14 +22,21 @@ describe('CacheInvalidationJob', () => {
     job = module.get<CacheInvalidationJob>(CacheInvalidationJob);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('onChapterCreated()', () => {
     it('should scan and delete manga + ranking caches', async () => {
       mockRedis.scan.mockResolvedValue(['0', []]);
 
       await expect(
-        job.onChapterCreated({ mangaId: 1, chapterId: 5, mangaTitle: 'Test', chapterNumber: '1' }),
+        job.onChapterCreated({
+          mangaId: 1,
+          chapterId: 5,
+          mangaTitle: 'Test',
+          chapterNumber: '1',
+        }),
       ).resolves.not.toThrow();
 
       // Called twice: once for manga pattern, once for rankings pattern
@@ -38,10 +45,15 @@ describe('CacheInvalidationJob', () => {
 
     it('should delete matched keys when scan returns them', async () => {
       mockRedis.scan
-        .mockResolvedValueOnce(['0', ['cache:/api/v1/manga?page=1']])  // first pattern
+        .mockResolvedValueOnce(['0', ['cache:/api/v1/manga?page=1']]) // first pattern
         .mockResolvedValueOnce(['0', ['cache:/api/v1/rankings?sort=day']]); // second pattern
 
-      await job.onChapterCreated({ mangaId: 1, chapterId: 5, mangaTitle: 'T', chapterNumber: '1' });
+      await job.onChapterCreated({
+        mangaId: 1,
+        chapterId: 5,
+        mangaTitle: 'T',
+        chapterNumber: '1',
+      });
 
       expect(mockRedis.del).toHaveBeenCalledTimes(2);
     });
@@ -51,13 +63,20 @@ describe('CacheInvalidationJob', () => {
     it('should delete specific slug key and scan list pattern', async () => {
       mockRedis.scan.mockResolvedValue(['0', []]);
 
-      await expect(job.onMangaUpdated({ slug: 'one-piece' })).resolves.not.toThrow();
+      await expect(
+        job.onMangaUpdated({ slug: 'one-piece' }),
+      ).resolves.not.toThrow();
 
-      expect(mockRedis.del).toHaveBeenCalledWith('cache:/api/v1/manga/one-piece');
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'cache:/api/v1/manga/one-piece',
+      );
     });
 
     it('should also invalidate manga list cache', async () => {
-      mockRedis.scan.mockResolvedValueOnce(['0', ['cache:/api/v1/manga?page=1']]);
+      mockRedis.scan.mockResolvedValueOnce([
+        '0',
+        ['cache:/api/v1/manga?page=1'],
+      ]);
 
       await job.onMangaUpdated({ slug: 'naruto' });
 

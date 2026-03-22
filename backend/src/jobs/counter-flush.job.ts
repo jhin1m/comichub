@@ -39,7 +39,8 @@ export class CounterFlushJob {
         if (!value || value === '0') continue;
         const id = this.extractId(key, 'chapter');
         if (!id) continue;
-        await this.db.update(chapters)
+        await this.db
+          .update(chapters)
           .set({ viewCount: sql`view_count + ${Number(value)}` })
           .where(eq(chapters.id, id));
       } catch (err) {
@@ -60,7 +61,10 @@ export class CounterFlushJob {
     await this.flushMangaColumn('counter:manga:*:views_week', 'views_week');
   }
 
-  private async flushMangaColumn(pattern: string, dbColumn: string): Promise<void> {
+  private async flushMangaColumn(
+    pattern: string,
+    dbColumn: string,
+  ): Promise<void> {
     const keys = await this.scanKeys(pattern);
     for (const key of keys) {
       try {
@@ -68,8 +72,11 @@ export class CounterFlushJob {
         if (!value || value === '0') continue;
         const id = this.extractId(key, 'manga');
         if (!id) continue;
-        await this.db.update(manga)
-          .set({ [dbColumn]: sql`${sql.identifier(dbColumn)} + ${Number(value)}` } as Record<string, unknown>)
+        await this.db
+          .update(manga)
+          .set({
+            [dbColumn]: sql`${sql.identifier(dbColumn)} + ${Number(value)}`,
+          } as Record<string, unknown>)
           .where(eq(manga.id, id));
       } catch (err) {
         this.logger.error(`Failed to flush ${key}`, err);
@@ -82,7 +89,13 @@ export class CounterFlushJob {
     const keys: string[] = [];
     let cursor = '0';
     do {
-      const [next, batch] = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const [next, batch] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
       cursor = next;
       keys.push(...batch);
     } while (cursor !== '0');

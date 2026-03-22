@@ -38,10 +38,7 @@ export class AdminUserController {
   @Patch(':id/ban')
   @ApiOperation({ summary: 'Ban or unban a user' })
   @HttpCode(HttpStatus.OK)
-  banUser(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: BanUserDto,
-  ) {
+  banUser(@Param('id', ParseIntPipe) id: number, @Body() dto: BanUserDto) {
     return this.userService.banUser(id, dto);
   }
 

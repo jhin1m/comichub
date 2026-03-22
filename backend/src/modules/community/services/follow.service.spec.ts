@@ -23,10 +23,7 @@ describe('FollowService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FollowService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [FollowService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<FollowService>(FollowService);
@@ -297,7 +294,9 @@ describe('FollowService', () => {
       const mangaId2 = 20;
 
       // Check follow status on mangaId1 - following
-      mockDb.limit.mockResolvedValueOnce([{ id: 100, userId, mangaId: mangaId1 }]);
+      mockDb.limit.mockResolvedValueOnce([
+        { id: 100, userId, mangaId: mangaId1 },
+      ]);
       const result1 = await service.isFollowing(mangaId1, userId);
       expect(result1.following).toBe(true);
 

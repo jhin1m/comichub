@@ -64,7 +64,10 @@ export class AuthorController {
   @ApiOperation({ summary: 'Update author (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Author updated' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTaxonomyDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTaxonomyDto,
+  ) {
     return this.taxonomyService.update('authors', id, dto);
   }
 

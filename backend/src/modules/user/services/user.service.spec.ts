@@ -25,8 +25,20 @@ vi.mock('@aws-sdk/client-s3', () => ({
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert',
-    'values', 'update', 'set', 'delete', 'innerJoin'].forEach((m) => {
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+    'innerJoin',
+  ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
@@ -71,7 +83,9 @@ describe('UserService', () => {
     };
 
     mockConfig = {
-      get: vi.fn().mockImplementation((key: string, fallback?: any) => fallback ?? ''),
+      get: vi
+        .fn()
+        .mockImplementation((key: string, fallback?: any) => fallback ?? ''),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -85,7 +99,9 @@ describe('UserService', () => {
     service = module.get<UserService>(UserService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── getMe ───────────────────────────────────────────────────────────
 
@@ -118,12 +134,19 @@ describe('UserService', () => {
   describe('getPublicProfile()', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.users.findFirst.mockResolvedValue(null);
-      await expect(service.getPublicProfile('uuid-x')).rejects.toThrow(NotFoundException);
+      await expect(service.getPublicProfile('uuid-x')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when user is deleted', async () => {
-      mockDb.query.users.findFirst.mockResolvedValue({ ...userFixture, deletedAt: new Date() });
-      await expect(service.getPublicProfile('uuid-user')).rejects.toThrow(NotFoundException);
+      mockDb.query.users.findFirst.mockResolvedValue({
+        ...userFixture,
+        deletedAt: new Date(),
+      });
+      await expect(service.getPublicProfile('uuid-user')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return public profile with followsCount', async () => {
@@ -141,13 +164,15 @@ describe('UserService', () => {
   describe('updateProfile()', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.users.findFirst.mockResolvedValue(null);
-      await expect(service.updateProfile(10, { name: 'New' })).rejects.toThrow(NotFoundException);
+      await expect(service.updateProfile(10, { name: 'New' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should update name when provided', async () => {
       mockDb.query.users.findFirst
-        .mockResolvedValueOnce(userFixture)   // existence check
-        .mockResolvedValueOnce(userFixture);  // getMe call
+        .mockResolvedValueOnce(userFixture) // existence check
+        .mockResolvedValueOnce(userFixture); // getMe call
       mockDb.update.mockReturnValue(buildChain([]));
 
       await service.updateProfile(10, { name: 'New Name' });
@@ -156,9 +181,11 @@ describe('UserService', () => {
 
     it('should insert profile when no existing profile', async () => {
       mockDb.query.users.findFirst
-        .mockResolvedValueOnce(userFixture)   // existence check
-        .mockResolvedValueOnce(userFixture);  // getMe call at end
-      mockDb.query.userProfiles = { findFirst: vi.fn().mockResolvedValue(null) };
+        .mockResolvedValueOnce(userFixture) // existence check
+        .mockResolvedValueOnce(userFixture); // getMe call at end
+      mockDb.query.userProfiles = {
+        findFirst: vi.fn().mockResolvedValue(null),
+      };
       mockDb.insert.mockReturnValue(buildChain([]));
 
       await service.updateProfile(10, { bio: 'Hello world' });
@@ -170,7 +197,9 @@ describe('UserService', () => {
       mockDb.query.users.findFirst
         .mockResolvedValueOnce(userFixture)
         .mockResolvedValueOnce(userFixture);
-      mockDb.query.userProfiles = { findFirst: vi.fn().mockResolvedValue(existingProfile) };
+      mockDb.query.userProfiles = {
+        findFirst: vi.fn().mockResolvedValue(existingProfile),
+      };
       mockDb.update.mockReturnValue(buildChain([]));
 
       await service.updateProfile(10, { bio: 'New bio' });
@@ -185,7 +214,12 @@ describe('UserService', () => {
       mockDb.select.mockReturnValue(buildChain([{ id: 1 }]));
       mockDb.$count.mockResolvedValue(1);
 
-      const result = await service.listUsers({ page: 1, limit: 20, offset: 0, search: '' } as any);
+      const result = await service.listUsers({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        search: '',
+      } as any);
       expect(result.data).toBeDefined();
       expect(result.page).toBe(1);
     });
@@ -194,7 +228,12 @@ describe('UserService', () => {
       mockDb.select.mockReturnValue(buildChain([]));
       mockDb.$count.mockResolvedValue(0);
 
-      const result = await service.listUsers({ page: 1, limit: 20, offset: 0, search: 'john' } as any);
+      const result = await service.listUsers({
+        page: 1,
+        limit: 20,
+        offset: 0,
+        search: 'john',
+      } as any);
       expect(result.total).toBe(0);
     });
   });
@@ -219,14 +258,18 @@ describe('UserService', () => {
   describe('banUser()', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.users.findFirst.mockResolvedValue(null);
-      await expect(service.banUser(999, { bannedUntil: '2030-01-01' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.banUser(999, { bannedUntil: '2030-01-01' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should ban user until given date', async () => {
       mockDb.query.users.findFirst.mockResolvedValue(userFixture);
       mockDb.update.mockReturnValue(buildChain([]));
 
-      const result = await service.banUser(10, { bannedUntil: '2030-01-01T00:00:00.000Z' });
+      const result = await service.banUser(10, {
+        bannedUntil: '2030-01-01T00:00:00.000Z',
+      });
       expect(result.message).toMatch(/banned until/);
     });
 

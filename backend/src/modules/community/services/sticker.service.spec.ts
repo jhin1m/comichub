@@ -6,8 +6,19 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'offset', 'orderBy', 'insert',
-    'values', 'update', 'set', 'delete'].forEach((m) => {
+  [
+    'select',
+    'from',
+    'where',
+    'limit',
+    'offset',
+    'orderBy',
+    'insert',
+    'values',
+    'update',
+    'set',
+    'delete',
+  ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
@@ -15,8 +26,19 @@ function buildChain(resolvedValue: any = []) {
   return chain;
 }
 
-const setFixture = { id: 1, name: 'Emoji Pack', isActive: true, createdAt: new Date() };
-const stickerFixture = { id: 1, stickerSetId: 1, name: 'smile', imageUrl: '/smile.png', order: 0 };
+const setFixture = {
+  id: 1,
+  name: 'Emoji Pack',
+  isActive: true,
+  createdAt: new Date(),
+};
+const stickerFixture = {
+  id: 1,
+  stickerSetId: 1,
+  name: 'smile',
+  imageUrl: '/smile.png',
+  order: 0,
+};
 
 describe('StickerService', () => {
   let service: StickerService;
@@ -31,16 +53,15 @@ describe('StickerService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        StickerService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [StickerService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<StickerService>(StickerService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── listSets ─────────────────────────────────────────────────────────
 
@@ -104,7 +125,9 @@ describe('StickerService', () => {
   describe('updateSet()', () => {
     it('should throw NotFoundException when set not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.updateSet(999, { name: 'New' })).rejects.toThrow(NotFoundException);
+      await expect(service.updateSet(999, { name: 'New' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should update name and return updated set', async () => {
@@ -158,11 +181,14 @@ describe('StickerService', () => {
       mockDb.select.mockImplementation(() => {
         call++;
         if (call === 1) return buildChain([setFixture]); // getSet → set exists
-        return buildChain([stickerFixture]);              // getSet → stickers list
+        return buildChain([stickerFixture]); // getSet → stickers list
       });
       mockDb.insert.mockReturnValue(buildChain([stickerFixture]));
 
-      const result = await service.addSticker(1, { name: 'smile', imageUrl: '/smile.png' });
+      const result = await service.addSticker(1, {
+        name: 'smile',
+        imageUrl: '/smile.png',
+      });
       expect(result.name).toBe('smile');
       expect(mockDb.insert).toHaveBeenCalled();
     });
@@ -173,7 +199,9 @@ describe('StickerService', () => {
   describe('removeSticker()', () => {
     it('should throw NotFoundException when sticker not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
-      await expect(service.removeSticker(999)).rejects.toThrow(NotFoundException);
+      await expect(service.removeSticker(999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should delete sticker when it exists', async () => {

@@ -15,7 +15,11 @@ export class ViewTrackingService {
   ) {}
 
   /** Buffer view in Redis (flushed to DB by CounterFlushJob every 5 min) */
-  async trackChapterView(chapterId: number, userId?: number, ip?: string): Promise<void> {
+  async trackChapterView(
+    chapterId: number,
+    userId?: number,
+    ip?: string,
+  ): Promise<void> {
     const identifier = userId ? `user:${userId}` : `ip:${ip ?? 'unknown'}`;
     const dedupKey = `view:${chapterId}:${identifier}`;
 

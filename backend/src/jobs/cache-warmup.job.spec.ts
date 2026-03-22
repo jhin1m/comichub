@@ -24,7 +24,9 @@ describe('CacheWarmupJob', () => {
     job = module.get<CacheWarmupJob>(CacheWarmupJob);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('onApplicationBootstrap()', () => {
     it('should warm all ranking types and genres without throwing', async () => {
@@ -38,7 +40,9 @@ describe('CacheWarmupJob', () => {
     });
 
     it('should not throw when a dependency fails (non-blocking warmup)', async () => {
-      mockRankingService.getRanking.mockRejectedValue(new Error('Redis unavailable'));
+      mockRankingService.getRanking.mockRejectedValue(
+        new Error('Redis unavailable'),
+      );
 
       await expect(job.onApplicationBootstrap()).resolves.not.toThrow();
     });

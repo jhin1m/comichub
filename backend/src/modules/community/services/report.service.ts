@@ -1,11 +1,14 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { chapterReports } from '../../../database/schema/community.schema.js';
 import { chapters } from '../../../database/schema/manga.schema.js';
 import { CreateReportDto } from '../dto/create-report.dto.js';
-import { UpdateReportStatusDto, ReportStatus } from '../dto/update-report-status.dto.js';
+import {
+  UpdateReportStatusDto,
+  ReportStatus,
+} from '../dto/update-report-status.dto.js';
 import type { PaginationDto } from '../../../common/dto/pagination.dto.js';
 
 @Injectable()
@@ -79,8 +82,6 @@ export class ReportService {
 
     if (!existing) throw new NotFoundException('Report not found');
 
-    await this.db
-      .delete(chapterReports)
-      .where(eq(chapterReports.id, reportId));
+    await this.db.delete(chapterReports).where(eq(chapterReports.id, reportId));
   }
 }

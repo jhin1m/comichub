@@ -15,13 +15,13 @@ export class FollowService {
     const [existing] = await this.db
       .select()
       .from(follows)
-      .where(sql`${follows.userId} = ${userId} AND ${follows.mangaId} = ${mangaId}`)
+      .where(
+        sql`${follows.userId} = ${userId} AND ${follows.mangaId} = ${mangaId}`,
+      )
       .limit(1);
 
     if (existing) {
-      await this.db
-        .delete(follows)
-        .where(eq(follows.id, existing.id));
+      await this.db.delete(follows).where(eq(follows.id, existing.id));
 
       await this.db
         .update(manga)
@@ -45,7 +45,9 @@ export class FollowService {
     const [existing] = await this.db
       .select()
       .from(follows)
-      .where(sql`${follows.userId} = ${userId} AND ${follows.mangaId} = ${mangaId}`)
+      .where(
+        sql`${follows.userId} = ${userId} AND ${follows.mangaId} = ${mangaId}`,
+      )
       .limit(1);
 
     return { following: !!existing };

@@ -80,7 +80,9 @@ export class ChapterImageService {
     }
 
     // Persist records (replace existing for same chapter)
-    await this.db.delete(chapterImages).where(eq(chapterImages.chapterId, chapterId));
+    await this.db
+      .delete(chapterImages)
+      .where(eq(chapterImages.chapterId, chapterId));
 
     const records = uploaded.map((img, idx) => ({
       chapterId,
@@ -111,7 +113,9 @@ export class ChapterImageService {
         }),
       );
 
-      await this.db.delete(chapterImages).where(eq(chapterImages.chapterId, chapterId));
+      await this.db
+        .delete(chapterImages)
+        .where(eq(chapterImages.chapterId, chapterId));
     }
   }
 
@@ -122,7 +126,9 @@ export class ChapterImageService {
       );
     }
     if (file.size > MAX_FILE_SIZE) {
-      throw new BadRequestException(`File ${file.originalname} exceeds 5MB limit`);
+      throw new BadRequestException(
+        `File ${file.originalname} exceeds 5MB limit`,
+      );
     }
   }
 
@@ -137,14 +143,22 @@ export class ChapterImageService {
 
   private getExtension(mimetype: string): string {
     switch (mimetype) {
-      case 'image/jpeg': return 'jpg';
-      case 'image/png': return 'png';
-      case 'image/webp': return 'webp';
-      default: return 'jpg';
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      default:
+        return 'jpg';
     }
   }
 
-  private extractS3Key(imageUrl: string, mangaId: number, chapterId: number): string {
+  private extractS3Key(
+    imageUrl: string,
+    _mangaId: number,
+    _chapterId: number,
+  ): string {
     // Extract key from URL: https://bucket.s3.region.amazonaws.com/KEY
     const url = new URL(imageUrl);
     return url.pathname.slice(1); // remove leading /

@@ -15,7 +15,10 @@ import type { HistoryItem, PaginatedResult } from '../types/user.types.js';
 export class HistoryService {
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
 
-  async upsert(userId: number, dto: UpsertHistoryDto): Promise<{ message: string }> {
+  async upsert(
+    userId: number,
+    dto: UpsertHistoryDto,
+  ): Promise<{ message: string }> {
     const existing = await this.db.query.readingHistory.findFirst({
       where: and(
         eq(readingHistory.userId, userId),
@@ -91,7 +94,10 @@ export class HistoryService {
     };
   }
 
-  async removeEntry(userId: number, mangaId: number): Promise<{ message: string }> {
+  async removeEntry(
+    userId: number,
+    mangaId: number,
+  ): Promise<{ message: string }> {
     await this.db
       .delete(readingHistory)
       .where(

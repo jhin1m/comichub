@@ -5,17 +5,24 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildSelectChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'orderBy', 'limit', 'offset'].forEach(
-    (m) => { chain[m] = vi.fn().mockReturnValue(chain); },
-  );
+  ['select', 'from', 'where', 'orderBy', 'limit', 'offset'].forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
 }
 
 const mangaRow = {
-  id: 1, title: 'One Piece', slug: 'one-piece', cover: null,
-  status: 'ongoing', type: 'manga', views: 1000,
-  chaptersCount: 100, averageRating: '4.5', updatedAt: new Date(),
+  id: 1,
+  title: 'One Piece',
+  slug: 'one-piece',
+  cover: null,
+  status: 'ongoing',
+  type: 'manga',
+  views: 1000,
+  chaptersCount: 100,
+  averageRating: '4.5',
+  updatedAt: new Date(),
 };
 
 describe('RankingService', () => {
@@ -46,7 +53,9 @@ describe('RankingService', () => {
     service = module.get<RankingService>(RankingService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── getRanking ────────────────────────────────────────────────────
 
@@ -68,7 +77,11 @@ describe('RankingService', () => {
       const result = await service.getRanking('daily');
 
       expect(mockDb.select).toHaveBeenCalled();
-      expect(mockRedis.setex).toHaveBeenCalledWith('rankings:daily', 600, expect.any(String));
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'rankings:daily',
+        600,
+        expect.any(String),
+      );
       expect(result).toHaveLength(1);
     });
 
@@ -77,7 +90,11 @@ describe('RankingService', () => {
 
       await service.getRanking('weekly');
 
-      expect(mockRedis.setex).toHaveBeenCalledWith('rankings:weekly', 600, expect.any(String));
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'rankings:weekly',
+        600,
+        expect.any(String),
+      );
     });
 
     it('should query DB for alltime ranking', async () => {
@@ -85,7 +102,11 @@ describe('RankingService', () => {
 
       await service.getRanking('alltime');
 
-      expect(mockRedis.setex).toHaveBeenCalledWith('rankings:alltime', 600, expect.any(String));
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'rankings:alltime',
+        600,
+        expect.any(String),
+      );
     });
 
     it('should query DB for toprated ranking', async () => {
@@ -93,7 +114,11 @@ describe('RankingService', () => {
 
       await service.getRanking('toprated');
 
-      expect(mockRedis.setex).toHaveBeenCalledWith('rankings:toprated', 600, expect.any(String));
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'rankings:toprated',
+        600,
+        expect.any(String),
+      );
     });
   });
 
@@ -118,7 +143,9 @@ describe('RankingService', () => {
 
       expect(mockDb.select).toHaveBeenCalled();
       expect(mockRedis.setex).toHaveBeenCalledWith(
-        'rankings:hot:1:10', 3600, expect.any(String),
+        'rankings:hot:1:10',
+        3600,
+        expect.any(String),
       );
       expect(result.page).toBe(1);
     });

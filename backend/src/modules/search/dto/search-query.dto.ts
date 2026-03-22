@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsEnum, IsString, IsArray, MinLength, MaxLength } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsString,
+  IsArray,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { MangaStatus, MangaType } from '../../manga/dto/create-manga.dto.js';
@@ -12,7 +19,11 @@ export enum SearchSortField {
 }
 
 export class SearchQueryDto extends PaginationDto {
-  @ApiPropertyOptional({ description: 'Search query string', minLength: 1, maxLength: 200 })
+  @ApiPropertyOptional({
+    description: 'Search query string',
+    minLength: 1,
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @MinLength(1)
@@ -41,7 +52,10 @@ export class SearchQueryDto extends PaginationDto {
   @IsEnum(MangaType)
   type?: MangaType;
 
-  @ApiPropertyOptional({ enum: SearchSortField, default: SearchSortField.VIEWS })
+  @ApiPropertyOptional({
+    enum: SearchSortField,
+    default: SearchSortField.VIEWS,
+  })
   @IsOptional()
   @IsEnum(SearchSortField)
   sort?: SearchSortField;

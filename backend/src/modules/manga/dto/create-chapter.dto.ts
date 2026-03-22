@@ -1,8 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateChapterDto {
-  @ApiProperty({ example: 1.5, description: 'Chapter number (supports decimals like 1.5)' })
+  @ApiProperty({
+    example: 1.5,
+    description: 'Chapter number (supports decimals like 1.5)',
+  })
   @IsNumber()
   @Min(0)
   @Max(99999)
@@ -15,7 +26,10 @@ export class CreateChapterDto {
   @MaxLength(500)
   title?: string;
 
-  @ApiPropertyOptional({ example: 1, description: 'Display order (defaults to number * 10)' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Display order (defaults to number * 10)',
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

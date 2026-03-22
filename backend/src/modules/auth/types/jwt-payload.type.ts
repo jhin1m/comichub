@@ -5,6 +5,5 @@ export interface JwtPayload {
   role: 'admin' | 'user';
 }
 
-export interface JwtRefreshPayload extends JwtPayload {
-  // same shape, differentiated by secret
-}
+// Same shape as JwtPayload — differentiated by signing secret
+export type JwtRefreshPayload = JwtPayload;

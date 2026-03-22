@@ -1,14 +1,27 @@
-import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, isNull, and, gt, lt, asc, desc } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
-import { chapters, chapterImages, manga } from '../../../database/schema/index.js';
-import { slugify } from '../../../common/utils/slug.util.js';
+import {
+  chapters,
+  chapterImages,
+  manga,
+} from '../../../database/schema/index.js';
+// slugify import removed — slug generation handled by DB or caller
 import { CreateChapterDto } from '../dto/create-chapter.dto.js';
 import { UpdateChapterDto } from '../dto/update-chapter.dto.js';
 import { NewChapterEvent } from '../../notification/events/new-chapter.event.js';
-import type { ChapterWithImages, ChapterNavigation, ChapterListItem } from '../types/manga.types.js';
+import type {
+  ChapterWithImages,
+  ChapterNavigation,
+  ChapterListItem,
+} from '../types/manga.types.js';
 
 @Injectable()
 export class ChapterService {
@@ -53,7 +66,11 @@ export class ChapterService {
 
   async getNavigation(id: number): Promise<ChapterNavigation> {
     const [chapter] = await this.db
-      .select({ id: chapters.id, mangaId: chapters.mangaId, order: chapters.order })
+      .select({
+        id: chapters.id,
+        mangaId: chapters.mangaId,
+        order: chapters.order,
+      })
       .from(chapters)
       .where(and(eq(chapters.id, id), isNull(chapters.deletedAt)))
       .limit(1);
@@ -92,7 +109,10 @@ export class ChapterService {
     };
   }
 
-  async create(mangaId: number, dto: CreateChapterDto): Promise<ChapterListItem> {
+  async create(
+    mangaId: number,
+    dto: CreateChapterDto,
+  ): Promise<ChapterListItem> {
     const [mangaRow] = await this.db
       .select({ id: manga.id, title: manga.title, cover: manga.cover })
       .from(manga)
@@ -106,7 +126,8 @@ export class ChapterService {
       .from(chapters)
       .where(and(eq(chapters.mangaId, mangaId), eq(chapters.slug, slug)))
       .limit(1);
-    if (existing) throw new ConflictException(`Chapter ${dto.number} already exists`);
+    if (existing)
+      throw new ConflictException(`Chapter ${dto.number} already exists`);
 
     const order = dto.order ?? Math.round(dto.number * 10);
 
@@ -124,7 +145,12 @@ export class ChapterService {
     // Update manga chaptersCount
     await this.db
       .update(manga)
-      .set({ chaptersCount: this.db.$count(chapters, and(eq(chapters.mangaId, mangaId), isNull(chapters.deletedAt))) as unknown as number })
+      .set({
+        chaptersCount: this.db.$count(
+          chapters,
+          and(eq(chapters.mangaId, mangaId), isNull(chapters.deletedAt)),
+        ) as unknown as number,
+      })
       .where(eq(manga.id, mangaId));
 
     // Emit event for notifications + cache invalidation

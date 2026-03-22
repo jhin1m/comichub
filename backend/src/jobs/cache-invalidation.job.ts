@@ -10,7 +10,7 @@ export class CacheInvalidationJob {
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
   @OnEvent('chapter.created')
-  async onChapterCreated(_event: NewChapterEvent): Promise<void> {
+  async onChapterCreated(_event?: NewChapterEvent): Promise<void> {
     await this.deleteByPattern('cache:/api/v1/manga*');
     await this.deleteByPattern('cache:/api/v1/rankings*');
     this.logger.debug('Invalidated manga + ranking caches (new chapter)');
@@ -27,7 +27,13 @@ export class CacheInvalidationJob {
   private async deleteByPattern(pattern: string): Promise<void> {
     let cursor = '0';
     do {
-      const [next, keys] = await this.redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const [next, keys] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
       cursor = next;
       if (keys.length) await this.redis.del(...keys);
     } while (cursor !== '0');

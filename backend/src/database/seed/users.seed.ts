@@ -11,7 +11,12 @@ export async function seedUsers(
   const adminPw = await bcrypt.hash('Admin123!', 12);
 
   const usersData = [
-    { name: 'Admin', email: 'admin@comichub.com', password: adminPw, role: 'admin' as const },
+    {
+      name: 'Admin',
+      email: 'admin@comichub.com',
+      password: adminPw,
+      role: 'admin' as const,
+    },
     { name: 'TanNguyen', email: 'tan@example.com', password: pw },
     { name: 'MinhTran', email: 'minh@example.com', password: pw },
     { name: 'HungLe', email: 'hung@example.com', password: pw },

@@ -64,7 +64,10 @@ export class GenreController {
   @ApiOperation({ summary: 'Update genre (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Genre updated' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTaxonomyDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTaxonomyDto,
+  ) {
     return this.taxonomyService.update('genres', id, dto);
   }
 

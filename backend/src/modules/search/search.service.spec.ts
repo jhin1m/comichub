@@ -5,9 +5,17 @@ import { DRIZZLE } from '../../database/drizzle.provider.js';
 
 function buildSelectChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'orderBy', 'limit', 'offset', 'innerJoin'].forEach(
-    (m) => { chain[m] = vi.fn().mockReturnValue(chain); },
-  );
+  [
+    'select',
+    'from',
+    'where',
+    'orderBy',
+    'limit',
+    'offset',
+    'innerJoin',
+  ].forEach((m) => {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  });
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
 }
@@ -39,7 +47,9 @@ describe('SearchService', () => {
     service = module.get<SearchService>(SearchService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── search ────────────────────────────────────────────────────────
 
@@ -49,7 +59,12 @@ describe('SearchService', () => {
       mockDb.select.mockReturnValue(buildSelectChain(manga));
       mockDb.$count.mockResolvedValue(1);
 
-      const result = await service.search({ q: 'naruto', page: 1, limit: 10, offset: 0 });
+      const result = await service.search({
+        q: 'naruto',
+        page: 1,
+        limit: 10,
+        offset: 0,
+      });
 
       expect(result.data).toBeDefined();
       expect(result.page).toBe(1);
@@ -59,7 +74,12 @@ describe('SearchService', () => {
       mockDb.select.mockReturnValue(buildSelectChain([]));
       mockDb.$count.mockResolvedValue(0);
 
-      const result = await service.search({ q: 'zzzzz', page: 1, limit: 10, offset: 0 });
+      const result = await service.search({
+        q: 'zzzzz',
+        page: 1,
+        limit: 10,
+        offset: 0,
+      });
 
       expect(result.total).toBe(0);
     });
@@ -69,7 +89,11 @@ describe('SearchService', () => {
       mockDb.select.mockReturnValue(buildSelectChain([]));
 
       const result = await service.search({
-        q: 'test', genre: 'action', page: 1, limit: 10, offset: 0,
+        q: 'test',
+        genre: 'action',
+        page: 1,
+        limit: 10,
+        offset: 0,
       });
 
       expect(result.data).toEqual([]);
@@ -80,7 +104,11 @@ describe('SearchService', () => {
       mockDb.$count.mockResolvedValue(0);
 
       const result = await service.search({
-        q: 'test', status: 'ongoing' as any, page: 1, limit: 10, offset: 0,
+        q: 'test',
+        status: 'ongoing' as any,
+        page: 1,
+        limit: 10,
+        offset: 0,
       });
 
       expect(result.total).toBe(0);
@@ -91,7 +119,13 @@ describe('SearchService', () => {
       mockDb.$count.mockResolvedValue(0);
 
       await expect(
-        service.search({ q: 'test', sort: 'views' as any, page: 1, limit: 10, offset: 0 }),
+        service.search({
+          q: 'test',
+          sort: 'views' as any,
+          page: 1,
+          limit: 10,
+          offset: 0,
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -100,7 +134,13 @@ describe('SearchService', () => {
       mockDb.$count.mockResolvedValue(0);
 
       await expect(
-        service.search({ q: 'test', sort: 'rating' as any, page: 1, limit: 10, offset: 0 }),
+        service.search({
+          q: 'test',
+          sort: 'rating' as any,
+          page: 1,
+          limit: 10,
+          offset: 0,
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -109,7 +149,13 @@ describe('SearchService', () => {
       mockDb.$count.mockResolvedValue(0);
 
       await expect(
-        service.search({ q: 'test', sort: 'created_at' as any, page: 1, limit: 10, offset: 0 }),
+        service.search({
+          q: 'test',
+          sort: 'created_at' as any,
+          page: 1,
+          limit: 10,
+          offset: 0,
+        }),
       ).resolves.not.toThrow();
     });
   });
@@ -124,7 +170,9 @@ describe('SearchService', () => {
     });
 
     it('should return cached suggestions on cache hit', async () => {
-      const suggestions = [{ id: 1, title: 'One Piece', slug: 'one-piece', cover: null }];
+      const suggestions = [
+        { id: 1, title: 'One Piece', slug: 'one-piece', cover: null },
+      ];
       mockRedis.get.mockResolvedValue(JSON.stringify(suggestions));
 
       const result = await service.suggest('one');
@@ -134,13 +182,19 @@ describe('SearchService', () => {
     });
 
     it('should query DB and cache on cache miss', async () => {
-      const rows = [{ id: 1, title: 'One Piece', slug: 'one-piece', cover: null }];
+      const rows = [
+        { id: 1, title: 'One Piece', slug: 'one-piece', cover: null },
+      ];
       mockDb.select.mockReturnValue(buildSelectChain(rows));
 
       const result = await service.suggest('one');
 
       expect(mockDb.select).toHaveBeenCalled();
-      expect(mockRedis.setex).toHaveBeenCalledWith('suggest:one', 300, expect.any(String));
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'suggest:one',
+        300,
+        expect.any(String),
+      );
       expect(result).toHaveLength(1);
     });
 

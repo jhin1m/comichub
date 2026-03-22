@@ -12,13 +12,12 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommentService } from '../services/comment.service.js';
-import { CreateCommentDto, UpdateCommentDto } from '../dto/create-comment.dto.js';
+import {
+  CreateCommentDto,
+  UpdateCommentDto,
+} from '../dto/create-comment.dto.js';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
@@ -29,6 +28,13 @@ import type { User } from '../../../database/schema/index.js';
 @Controller()
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
+
+  @Public()
+  @Get('comments/recent')
+  @ApiOperation({ summary: 'Get recent comments across all manga/chapters' })
+  getRecent(@Query('limit', new ParseIntPipe({ optional: true })) limit?: number) {
+    return this.commentService.getRecent(limit ?? 10);
+  }
 
   @Public()
   @Get('manga/:id/comments')
@@ -63,10 +69,7 @@ export class CommentController {
   @Get('users/me/comments')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List own comments' })
-  getMyComments(
-    @CurrentUser() user: User,
-    @Query() pagination: PaginationDto,
-  ) {
+  getMyComments(@CurrentUser() user: User, @Query() pagination: PaginationDto) {
     return this.commentService.getMyComments(user.id, pagination);
   }
 
@@ -105,10 +108,7 @@ export class CommentController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle like on comment' })
-  toggleLike(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: User,
-  ) {
+  toggleLike(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
     return this.commentService.toggleLike(id, user.id, user.name);
   }
 }

@@ -45,8 +45,8 @@ export class RedisCacheInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      tap(async (data: unknown) => {
-        await this.redis.setex(key, ttl, JSON.stringify(data));
+      tap((data: unknown) => {
+        void this.redis.setex(key, ttl, JSON.stringify(data));
       }),
     );
   }

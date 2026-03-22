@@ -64,7 +64,10 @@ export class GroupController {
   @ApiOperation({ summary: 'Update group (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Group updated' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTaxonomyDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTaxonomyDto,
+  ) {
     return this.taxonomyService.update('groups', id, dto);
   }
 

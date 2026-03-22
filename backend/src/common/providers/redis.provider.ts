@@ -35,24 +35,34 @@ export function createResilientRedis(config: ConfigService): Redis {
 
 /** Override read/write methods so they silently no-op */
 function stubRedisClient(client: Redis): void {
-  const noop = async () => null;
+  const noop = () => Promise.resolve(null);
   client.get = noop as never;
   client.set = noop as never;
   client.setex = noop as never;
   client.del = noop as never;
-  client.keys = (async () => []) as never;
-  client.incr = (async () => 0) as never;
-  client.incrby = (async () => 0) as never;
+  client.keys = (() => Promise.resolve([])) as never;
+  client.incr = (() => Promise.resolve(0)) as never;
+  client.incrby = (() => Promise.resolve(0)) as never;
   client.expire = noop as never;
-  client.ttl = (async () => -2) as never;
-  client.exists = (async () => 0) as never;
-  client.scan = (async () => ['0', []]) as never;
+  client.ttl = (() => Promise.resolve(-2)) as never;
+  client.exists = (() => Promise.resolve(0)) as never;
+  client.scan = (() => Promise.resolve(['0', []])) as never;
   client.pipeline = (() => ({
-    exec: async () => [],
-    get: function () { return this; },
-    del: function () { return this; },
-    incrby: function () { return this; },
-    set: function () { return this; },
-    setex: function () { return this; },
+    exec: () => Promise.resolve([]),
+    get: function () {
+      return this;
+    },
+    del: function () {
+      return this;
+    },
+    incrby: function () {
+      return this;
+    },
+    set: function () {
+      return this;
+    },
+    setex: function () {
+      return this;
+    },
   })) as never;
 }

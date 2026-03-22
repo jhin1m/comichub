@@ -4,7 +4,10 @@ import type Redis from 'ioredis';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { manga, genres, mangaGenres } from '../../database/schema/index.js';
-import type { MangaListItem, PaginatedResult } from '../manga/types/manga.types.js';
+import type {
+  MangaListItem,
+  PaginatedResult,
+} from '../manga/types/manga.types.js';
 import { SearchQueryDto, SearchSortField } from './dto/search-query.dto.js';
 
 const SUGGEST_TTL = 300; // 5 minutes
@@ -30,7 +33,10 @@ export class SearchService {
 
     if (q) {
       conditions.push(
-        or(ilike(manga.title, `%${q}%`), ilike(manga.titleAlt, `%${q}%`)) as SQL,
+        or(
+          ilike(manga.title, `%${q}%`),
+          ilike(manga.titleAlt, `%${q}%`),
+        ) as SQL,
       );
     }
 

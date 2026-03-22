@@ -29,15 +29,19 @@ vi.mock('sharp', () => {
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'limit', 'insert', 'values', 'delete'].forEach((m) => {
-    chain[m] = vi.fn().mockReturnValue(chain);
-  });
+  ['select', 'from', 'where', 'limit', 'insert', 'values', 'delete'].forEach(
+    (m) => {
+      chain[m] = vi.fn().mockReturnValue(chain);
+    },
+  );
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
 }
 
-function makeFile(overrides: Partial<Express.Multer.File> = {}): Express.Multer.File {
+function makeFile(
+  overrides: Partial<Express.Multer.File> = {},
+): Express.Multer.File {
   return {
     fieldname: 'file',
     originalname: 'page.jpg',
@@ -89,21 +93,25 @@ describe('ChapterImageService', () => {
     service = module.get<ChapterImageService>(ChapterImageService);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ─── uploadImages ─────────────────────────────────────────────────
 
   describe('uploadImages()', () => {
     it('should throw BadRequestException when no files provided', async () => {
-      await expect(service.uploadImages(1, 1, [])).rejects.toThrow(BadRequestException);
+      await expect(service.uploadImages(1, 1, [])).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw NotFoundException when chapter not found', async () => {
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(
-        service.uploadImages(999, 1, [makeFile()]),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.uploadImages(999, 1, [makeFile()])).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException for invalid mime type', async () => {
@@ -144,7 +152,9 @@ describe('ChapterImageService', () => {
       mockDb.delete.mockReturnValue(buildChain([]));
       mockDb.insert.mockReturnValue(buildChain([]));
 
-      const result = await service.uploadImages(1, 1, [makeFile({ mimetype: 'image/webp' })]);
+      const result = await service.uploadImages(1, 1, [
+        makeFile({ mimetype: 'image/webp' }),
+      ]);
       expect(result[0].imageUrl).toContain('.webp');
     });
   });
@@ -161,7 +171,11 @@ describe('ChapterImageService', () => {
 
     it('should delete S3 objects and DB records when images exist', async () => {
       const images = [
-        { id: 1, imageUrl: 'https://test-bucket.s3.ap-southeast-1.amazonaws.com/manga/1/chapters/1/1.jpg' },
+        {
+          id: 1,
+          imageUrl:
+            'https://test-bucket.s3.ap-southeast-1.amazonaws.com/manga/1/chapters/1/1.jpg',
+        },
       ];
       mockDb.select.mockReturnValue(buildChain(images));
       mockDb.delete.mockReturnValue(buildChain([]));

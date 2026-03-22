@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { HistoryService } from '../services/history.service.js';
@@ -20,10 +14,7 @@ export class HistoryController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Upsert reading history (manga_id + chapter_id)' })
   @HttpCode(HttpStatus.OK)
-  upsert(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: UpsertHistoryDto,
-  ) {
+  upsert(@CurrentUser() user: JwtPayload, @Body() dto: UpsertHistoryDto) {
     return this.historyService.upsert(user.sub, dto);
   }
 }

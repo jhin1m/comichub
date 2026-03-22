@@ -66,7 +66,8 @@ export class ChapterController {
     @CurrentUser() user?: JwtPayload,
   ) {
     const chapter = await this.chapterService.findOne(id);
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip;
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] ?? req.ip;
     await this.viewTrackingService.trackChapterView(id, user?.sub, ip);
     return chapter;
   }
@@ -101,10 +102,7 @@ export class ChapterController {
   @ApiOperation({ summary: 'Update chapter (admin only)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Chapter updated' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateChapterDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateChapterDto) {
     return this.chapterService.update(id, dto);
   }
 

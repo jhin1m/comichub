@@ -33,7 +33,9 @@ describe('CounterFlushJob', () => {
     job = module.get<CounterFlushJob>(CounterFlushJob);
   });
 
-  afterEach(() => { vi.clearAllMocks(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('flush()', () => {
     it('should complete without error when no keys exist', async () => {
@@ -46,8 +48,8 @@ describe('CounterFlushJob', () => {
     it('should flush chapter view counter to DB', async () => {
       // SCAN returns one key then stops
       mockRedis.scan
-        .mockResolvedValueOnce(['0', ['counter:chapter:42:views']])  // chapter scan
-        .mockResolvedValue(['0', []]);                                // other scans
+        .mockResolvedValueOnce(['0', ['counter:chapter:42:views']]) // chapter scan
+        .mockResolvedValue(['0', []]); // other scans
 
       mockRedis.getdel.mockResolvedValue('5');
 
@@ -84,8 +86,8 @@ describe('CounterFlushJob', () => {
 
     it('should flush manga view counter to DB', async () => {
       mockRedis.scan
-        .mockResolvedValueOnce(['0', []])                               // chapter
-        .mockResolvedValueOnce(['0', ['counter:manga:7:views']])        // manga views
+        .mockResolvedValueOnce(['0', []]) // chapter
+        .mockResolvedValueOnce(['0', ['counter:manga:7:views']]) // manga views
         .mockResolvedValue(['0', []]);
 
       mockRedis.getdel.mockResolvedValue('10');
@@ -110,7 +112,7 @@ describe('CounterFlushJob', () => {
       // Simulate multi-page SCAN
       mockRedis.scan
         .mockResolvedValueOnce(['42', ['counter:chapter:1:views']]) // cursor not 0 yet
-        .mockResolvedValueOnce(['0', ['counter:chapter:2:views']])  // final page
+        .mockResolvedValueOnce(['0', ['counter:chapter:2:views']]) // final page
         .mockResolvedValue(['0', []]);
 
       mockRedis.getdel.mockResolvedValue('1');
