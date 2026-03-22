@@ -55,6 +55,11 @@ export function FilterDropdown({
         <button
           type="button"
           onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setIsOpen(false);
+          }}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
           className="flex items-center justify-between w-full min-w-[140px] px-3 py-2 bg-hover border border-hover rounded text-sm text-primary hover:border-muted transition-colors cursor-pointer"
         >
           <span className={value ? 'text-primary' : 'text-muted'}>
@@ -77,7 +82,7 @@ export function FilterDropdown({
                 />
               </div>
             )}
-            <div className="overflow-y-auto max-h-48">
+            <div className="overflow-y-auto max-h-48" role="listbox" aria-label={label}>
               <button
                 type="button"
                 onClick={() => { onChange(''); setIsOpen(false); }}

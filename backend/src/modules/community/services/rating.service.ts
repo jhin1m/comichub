@@ -27,13 +27,6 @@ export class RatingService {
   }
 
   async getUserRating(mangaId: number, userId: number) {
-    const [rating] = await this.db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.mangaId, mangaId))
-      .limit(1);
-
-    // filter by userId using and()
     const [userRating] = await this.db
       .select()
       .from(ratings)
@@ -42,7 +35,6 @@ export class RatingService {
       )
       .limit(1);
 
-    void rating;
     return userRating ?? null;
   }
 

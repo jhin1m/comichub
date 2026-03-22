@@ -131,9 +131,7 @@ describe('RatingService', () => {
 
       // Mock manga exists
       mockDb.limit.mockResolvedValueOnce([{ id: mangaId }]);
-      // Mock no existing rating
-      mockDb.limit.mockResolvedValueOnce([]);
-      // Mock getUserRating returns the new rating
+      // Mock getUserRating returns the new rating (dead query removed)
       mockDb.limit.mockResolvedValueOnce([expectedRating]);
 
       const result = await service.upsert(mangaId, userId, dto);
@@ -186,8 +184,7 @@ describe('RatingService', () => {
       const userId = 5;
       const expectedRating = { id: 1, userId, mangaId, score: '4.5' };
 
-      mockDb.limit.mockResolvedValueOnce([{ id: 1 }]); // First query in method
-      mockDb.limit.mockResolvedValueOnce([expectedRating]); // Second query for user rating
+      mockDb.limit.mockResolvedValueOnce([expectedRating]);
 
       const result = await service.getUserRating(mangaId, userId);
 
@@ -198,8 +195,7 @@ describe('RatingService', () => {
       const mangaId = 1;
       const userId = 999;
 
-      mockDb.limit.mockResolvedValueOnce([{ id: 1 }]); // Manga exists
-      mockDb.limit.mockResolvedValueOnce([]); // No user rating
+      mockDb.limit.mockResolvedValueOnce([]);
 
       const result = await service.getUserRating(mangaId, userId);
 

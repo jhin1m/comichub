@@ -40,18 +40,29 @@ export function FilterSidebar({ currentParams, onFilter }: FilterSidebarProps) {
           {genres.map((genre) => (
             <label key={genre.id} className="flex items-center gap-2 cursor-pointer group">
               <input
-                type="checkbox"
+                type="radio"
+                name="genre"
                 className="accent-accent"
                 checked={currentParams.genre === genre.slug}
-                onChange={(e) =>
-                  onFilter({ genre: e.target.checked ? genre.slug : null })
-                }
+                onChange={() => onFilter({ genre: genre.slug })}
               />
               <span className="text-sm text-secondary group-hover:text-primary transition-colors">
                 {genre.name}
               </span>
             </label>
           ))}
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input
+              type="radio"
+              name="genre"
+              className="accent-accent"
+              checked={!currentParams.genre}
+              onChange={() => onFilter({ genre: null })}
+            />
+            <span className="text-sm text-secondary group-hover:text-primary transition-colors">
+              All
+            </span>
+          </label>
         </div>
       </div>
 

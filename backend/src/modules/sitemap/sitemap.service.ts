@@ -20,7 +20,10 @@ export class SitemapService {
     private readonly configService: ConfigService,
   ) {
     this.appUrl = this.configService.get('app.url', 'https://comichub.app');
-    this.outputDir = join(process.cwd(), '..', 'frontend', 'public');
+    this.outputDir = this.configService.get<string>(
+      'SITEMAP_OUTPUT_DIR',
+      join(process.cwd(), '..', 'frontend', 'public'),
+    );
   }
 
   /** Generate sitemap + robots.txt on startup and every 6 hours */

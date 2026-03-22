@@ -1,6 +1,9 @@
 /**
  * Integration tests for Follow endpoints.
  * Route: POST/GET /manga/:id/follow
+ *
+ * Note: community FollowService delegates to user FollowService which uses
+ * db.query.follows.findFirst and db.select() with destructuring.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { CommunityModule } from '../../src/modules/community/community.module.js';
@@ -28,12 +31,10 @@ describe('Follows Integration', () => {
 
     it('404 — returns not found when manga does not exist', async () => {
       ctx.db.query.users.findFirst.mockResolvedValue(factory.user());
-      // assertMangaExists: manga select returns empty
+      // UserFollowService.toggleFollow: select manga returns empty
       ctx.db.select.mockImplementation(() => ({
         from: () => ({
-          where: () => ({
-            limit: () => Promise.resolve([]),
-          }),
+          where: () => Promise.resolve([]),
         }),
       }));
 
@@ -46,28 +47,26 @@ describe('Follows Integration', () => {
 
     it('200 — returns following:true when following for first time', async () => {
       ctx.db.query.users.findFirst.mockResolvedValue(factory.user());
+      ctx.db.query.follows.findFirst.mockResolvedValue(null); // not following
 
-      let selectCall = 0;
       ctx.db.select.mockImplementation(() => ({
         from: () => ({
-          where: () => ({
-            limit: () =>
-              Promise.resolve(
-                selectCall++ === 0
-                  ? [factory.manga()]  // manga exists
-                  : [],               // not yet following
-              ),
-          }),
+          where: () => Promise.resolve([{ id: 1, followersCount: 0 }]),
         }),
       }));
       ctx.db.insert.mockReturnValue({ values: () => Promise.resolve() });
-      ctx.db.update.mockReturnValue({ set: () => ({ where: () => Promise.resolve() }) });
+      ctx.db.update.mockReturnValue({
+        set: () => ({
+          where: () => ({
+            returning: () => Promise.resolve([{ followersCount: 1 }]),
+          }),
+        }),
+      });
 
       const res = await ctx.req
         .post('/manga/1/follow')
         .set('Authorization', bearerToken());
 
-      // 200 with following true, or 404 if mock chain resolves differently
       expect([200, 404]).toContain(res.status);
       if (res.status === 200) {
         expect(res.body.data).toHaveProperty('following');
@@ -76,22 +75,23 @@ describe('Follows Integration', () => {
 
     it('200 — returns following:false when toggling off', async () => {
       ctx.db.query.users.findFirst.mockResolvedValue(factory.user());
+      ctx.db.query.follows.findFirst.mockResolvedValue({ id: 5, userId: 1, mangaId: 1 });
 
-      let selectCall = 0;
       ctx.db.select.mockImplementation(() => ({
         from: () => ({
-          where: () => ({
-            limit: () =>
-              Promise.resolve(
-                selectCall++ === 0
-                  ? [factory.manga()]                          // manga exists
-                  : [{ id: 5, userId: 1, mangaId: 1 }],       // existing follow
-              ),
-          }),
+          where: () => Promise.resolve([{ id: 1, followersCount: 1 }]),
         }),
       }));
-      ctx.db.delete.mockReturnValue({ where: () => Promise.resolve() });
-      ctx.db.update.mockReturnValue({ set: () => ({ where: () => Promise.resolve() }) });
+      ctx.db.delete.mockReturnValue({
+        where: () => Promise.resolve(),
+      });
+      ctx.db.update.mockReturnValue({
+        set: () => ({
+          where: () => ({
+            returning: () => Promise.resolve([{ followersCount: 0 }]),
+          }),
+        }),
+      });
 
       const res = await ctx.req
         .post('/manga/1/follow')
@@ -114,11 +114,7 @@ describe('Follows Integration', () => {
 
     it('200 — returns follow status for authenticated user', async () => {
       ctx.db.query.users.findFirst.mockResolvedValue(factory.user());
-      ctx.db.select.mockImplementation(() => ({
-        from: () => ({
-          where: () => ({ limit: () => Promise.resolve([]) }),
-        }),
-      }));
+      ctx.db.query.follows.findFirst.mockResolvedValue(null);
 
       const res = await ctx.req
         .get('/manga/1/follow')

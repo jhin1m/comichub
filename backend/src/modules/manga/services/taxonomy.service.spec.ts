@@ -166,12 +166,4 @@ describe('TaxonomyService', () => {
     });
   });
 
-  // ─── getMangaByTaxonomy ────────────────────────────────────────────
-
-  describe('getMangaByTaxonomy()', () => {
-    it('should return empty data set', () => {
-      const result = service.getMangaByTaxonomy('genres', 1, 1, 20);
-      expect(result).toEqual({ data: [], total: 0 });
-    });
-  });
 });

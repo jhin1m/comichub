@@ -11,6 +11,8 @@ export function createMockDb() {
       manga: { findFirst: vi.fn(), findMany: vi.fn() },
       chapters: { findFirst: vi.fn(), findMany: vi.fn() },
       notifications: { findFirst: vi.fn(), findMany: vi.fn() },
+      follows: { findFirst: vi.fn(), findMany: vi.fn() },
+      readingHistory: { findFirst: vi.fn(), findMany: vi.fn() },
     },
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
@@ -28,6 +30,8 @@ export function createMockDb() {
     set: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     execute: vi.fn().mockResolvedValue([]),
+    $count: vi.fn().mockResolvedValue(0),
+    transaction: vi.fn().mockImplementation(async (fn: any) => fn(mock)),
   };
 
   // Allow chained .where() to resolve

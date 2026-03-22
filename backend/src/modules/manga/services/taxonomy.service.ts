@@ -113,14 +113,4 @@ export class TaxonomyService {
     await this.db.delete(table).where(eq(table.id, id));
   }
 
-  // Utility: get manga list by taxonomy (used by taxonomy detail endpoints)
-  getMangaByTaxonomy(
-    _type: string,
-    _taxonomyId: number,
-    _page: number,
-    _limit: number,
-  ): { data: unknown[]; total: number } {
-    // TODO: delegate to manga query — return basic info for now
-    return { data: [], total: 0 };
-  }
 }

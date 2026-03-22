@@ -42,6 +42,10 @@ describe('MangaService', () => {
       update: vi.fn(),
       delete: vi.fn(),
       $count: vi.fn().mockResolvedValue(0),
+      transaction: vi.fn().mockImplementation(async (fn: any) => {
+        // Pass mockDb as the transaction context so inner calls work
+        return fn(mockDb);
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { UserModule } from '../user/user.module.js';
 import { CommentController } from './controllers/comment.controller.js';
 import { RatingController } from './controllers/rating.controller.js';
 import { FollowController } from './controllers/follow.controller.js';
@@ -13,6 +14,7 @@ import { ReportService } from './services/report.service.js';
 import { StickerService } from './services/sticker.service.js';
 
 @Module({
+  imports: [UserModule],
   controllers: [
     CommentController,
     RatingController,

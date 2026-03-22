@@ -261,41 +261,43 @@ export class MangaService {
     mangaId: number,
     dto: CreateMangaDto | UpdateMangaDto,
   ): Promise<void> {
-    if (dto.genreIds !== undefined) {
-      await this.db.delete(mangaGenres).where(eq(mangaGenres.mangaId, mangaId));
-      if (dto.genreIds.length) {
-        await this.db
-          .insert(mangaGenres)
-          .values(dto.genreIds.map((genreId) => ({ mangaId, genreId })));
+    await this.db.transaction(async (tx) => {
+      if (dto.genreIds !== undefined) {
+        await tx.delete(mangaGenres).where(eq(mangaGenres.mangaId, mangaId));
+        if (dto.genreIds.length) {
+          await tx
+            .insert(mangaGenres)
+            .values(dto.genreIds.map((genreId) => ({ mangaId, genreId })));
+        }
       }
-    }
-    if (dto.artistIds !== undefined) {
-      await this.db
-        .delete(mangaArtists)
-        .where(eq(mangaArtists.mangaId, mangaId));
-      if (dto.artistIds.length) {
-        await this.db
-          .insert(mangaArtists)
-          .values(dto.artistIds.map((artistId) => ({ mangaId, artistId })));
+      if (dto.artistIds !== undefined) {
+        await tx
+          .delete(mangaArtists)
+          .where(eq(mangaArtists.mangaId, mangaId));
+        if (dto.artistIds.length) {
+          await tx
+            .insert(mangaArtists)
+            .values(dto.artistIds.map((artistId) => ({ mangaId, artistId })));
+        }
       }
-    }
-    if (dto.authorIds !== undefined) {
-      await this.db
-        .delete(mangaAuthors)
-        .where(eq(mangaAuthors.mangaId, mangaId));
-      if (dto.authorIds.length) {
-        await this.db
-          .insert(mangaAuthors)
-          .values(dto.authorIds.map((authorId) => ({ mangaId, authorId })));
+      if (dto.authorIds !== undefined) {
+        await tx
+          .delete(mangaAuthors)
+          .where(eq(mangaAuthors.mangaId, mangaId));
+        if (dto.authorIds.length) {
+          await tx
+            .insert(mangaAuthors)
+            .values(dto.authorIds.map((authorId) => ({ mangaId, authorId })));
+        }
       }
-    }
-    if (dto.groupIds !== undefined) {
-      await this.db.delete(mangaGroups).where(eq(mangaGroups.mangaId, mangaId));
-      if (dto.groupIds.length) {
-        await this.db
-          .insert(mangaGroups)
-          .values(dto.groupIds.map((groupId) => ({ mangaId, groupId })));
+      if (dto.groupIds !== undefined) {
+        await tx.delete(mangaGroups).where(eq(mangaGroups.mangaId, mangaId));
+        if (dto.groupIds.length) {
+          await tx
+            .insert(mangaGroups)
+            .values(dto.groupIds.map((groupId) => ({ mangaId, groupId })));
+        }
       }
-    }
+    });
   }
 }

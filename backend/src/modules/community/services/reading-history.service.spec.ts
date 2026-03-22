@@ -1,123 +1,55 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReadingHistoryService } from './reading-history.service.js';
-import { DRIZZLE } from '../../../database/drizzle.provider.js';
+import { HistoryService } from '../../user/services/history.service.js';
 
-function buildChain(resolvedValue: any = []) {
-  const chain: any = {};
-  [
-    'select',
-    'from',
-    'where',
-    'limit',
-    'offset',
-    'orderBy',
-    'insert',
-    'values',
-    'delete',
-  ].forEach((m) => {
-    chain[m] = vi.fn().mockReturnValue(chain);
-  });
-  chain.returning = vi.fn().mockResolvedValue(resolvedValue);
-  chain.onConflictDoUpdate = vi.fn().mockReturnValue(chain);
-  chain.then = (resolve: any) => resolve(resolvedValue);
-  return chain;
-}
-
-describe('ReadingHistoryService', () => {
+describe('ReadingHistoryService (community delegate)', () => {
   let service: ReadingHistoryService;
-  let mockDb: any;
+  let mockHistoryService: any;
 
   beforeEach(async () => {
-    mockDb = {
-      insert: vi.fn(),
-      select: vi.fn(),
-      delete: vi.fn(),
+    mockHistoryService = {
+      upsert: vi.fn().mockResolvedValue({ message: 'History updated' }),
+      getHistory: vi.fn().mockResolvedValue({ data: [], total: 0, page: 1, limit: 20, totalPages: 0 }),
+      removeEntry: vi.fn().mockResolvedValue({ message: 'History entry removed' }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReadingHistoryService,
-        { provide: DRIZZLE, useValue: mockDb },
+        { provide: HistoryService, useValue: mockHistoryService },
       ],
     }).compile();
 
     service = module.get<ReadingHistoryService>(ReadingHistoryService);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  // ─── upsert ────────────────────────────────────────────────────────
-
   describe('upsert()', () => {
-    it('should insert and return reading history entry', async () => {
-      const entry = {
-        id: 1,
-        userId: 10,
-        mangaId: 5,
-        chapterId: 2,
-        lastReadAt: new Date(),
-      };
-      mockDb.insert.mockReturnValue(buildChain([entry]));
-
-      const result = await service.upsert(10, { mangaId: 5, chapterId: 2 });
-
-      expect(result).toMatchObject({ userId: 10, mangaId: 5 });
-      expect(mockDb.insert).toHaveBeenCalledOnce();
+    it('should delegate to historyService.upsert', async () => {
+      const dto = { mangaId: 1, chapterId: 5 };
+      await service.upsert(10, dto);
+      expect(mockHistoryService.upsert).toHaveBeenCalledWith(10, { mangaId: 1, chapterId: 5 });
     });
 
-    it('should upsert without chapterId (null)', async () => {
-      const entry = { id: 2, userId: 10, mangaId: 5, chapterId: null };
-      mockDb.insert.mockReturnValue(buildChain([entry]));
-
-      const result = await service.upsert(10, { mangaId: 5 });
-
-      expect(result.chapterId).toBeNull();
+    it('should handle missing chapterId', async () => {
+      await service.upsert(10, { mangaId: 1 });
+      expect(mockHistoryService.upsert).toHaveBeenCalledWith(10, { mangaId: 1, chapterId: undefined });
     });
   });
-
-  // ─── getHistory ────────────────────────────────────────────────────
 
   describe('getHistory()', () => {
-    it('should return empty array when no history', async () => {
-      mockDb.select.mockReturnValue(buildChain([]));
-
-      const result = await service.getHistory(10, {
-        page: 1,
-        limit: 20,
-        offset: 0,
-      });
-
-      expect(result).toEqual([]);
-    });
-
-    it('should return paginated history ordered by lastReadAt', async () => {
-      const entries = [
-        { id: 1, userId: 10, mangaId: 3, lastReadAt: new Date('2024-02-01') },
-        { id: 2, userId: 10, mangaId: 5, lastReadAt: new Date('2024-01-01') },
-      ];
-      mockDb.select.mockReturnValue(buildChain(entries));
-
-      const result = await service.getHistory(10, {
-        page: 1,
-        limit: 20,
-        offset: 0,
-      });
-
-      expect(result).toHaveLength(2);
+    it('should delegate to historyService.getHistory', async () => {
+      const pagination = { page: 1, limit: 20, offset: 0 };
+      const result = await service.getHistory(10, pagination);
+      expect(mockHistoryService.getHistory).toHaveBeenCalledWith(10, pagination);
+      expect(result).toEqual({ data: [], total: 0, page: 1, limit: 20, totalPages: 0 });
     });
   });
 
-  // ─── removeEntry ───────────────────────────────────────────────────
-
   describe('removeEntry()', () => {
-    it('should delete the reading history entry without throwing', async () => {
-      mockDb.delete.mockReturnValue(buildChain([]));
-
-      await expect(service.removeEntry(10, 5)).resolves.not.toThrow();
-      expect(mockDb.delete).toHaveBeenCalledOnce();
+    it('should delegate to historyService.removeEntry', async () => {
+      await service.removeEntry(10, 1);
+      expect(mockHistoryService.removeEntry).toHaveBeenCalledWith(10, 1);
     });
   });
 });

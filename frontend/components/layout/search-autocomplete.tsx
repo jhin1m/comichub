@@ -225,56 +225,9 @@ export function SearchAutocomplete() {
               <X size={18} />
             </button>
           </div>
-          {/* Mobile results */}
+          {/* Mobile results — reuse shared dropdown */}
           <div className="relative px-3 pb-2">
-            {open && (
-              <div className="bg-surface border border-default rounded shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
-                {results.map((item, i) => (
-                  <button
-                    key={item.id}
-                    onClick={() => selectItem(item)}
-                    onMouseEnter={() => setActiveIndex(i)}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${
-                      i === activeIndex ? 'bg-hover' : 'hover:bg-elevated'
-                    }`}
-                  >
-                    <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated border border-default">
-                      {item.cover ? (
-                        <Image
-                          src={item.cover}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                          sizes="40px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted text-[8px]">
-                          N/A
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-sm text-primary truncate leading-snug">
-                      {item.title}
-                    </span>
-                  </button>
-                ))}
-                <Link
-                  href={`/browse?search=${encodeURIComponent(query.trim())}`}
-                  onClick={() => { setOpen(false); setMobileOpen(false); }}
-                  className="block px-3.5 py-2.5 text-xs text-secondary hover:text-accent border-t border-default text-center transition-colors"
-                >
-                  View all results for &quot;{query.trim()}&quot;
-                </Link>
-              </div>
-            )}
-            {loading && !open && (
-              <div className="bg-surface border border-default rounded px-3.5 py-3">
-                <div className="flex gap-2 items-center text-muted text-xs">
-                  <div className="w-3.5 h-3.5 border-2 border-muted border-t-transparent rounded-full animate-spin" />
-                  Searching...
-                </div>
-              </div>
-            )}
+            {dropdown}
           </div>
         </div>
       )}

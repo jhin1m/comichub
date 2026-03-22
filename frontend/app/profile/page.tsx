@@ -36,7 +36,27 @@ export default function ProfilePage() {
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || !profile) return null;
+  if (authLoading || !profile) {
+    return (
+      <PageWrapper className="py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-hover" />
+            <div className="space-y-2">
+              <div className="h-5 w-32 bg-hover rounded" />
+              <div className="h-4 w-48 bg-hover rounded" />
+            </div>
+          </div>
+          <div className="h-10 w-64 bg-hover rounded mt-8" />
+          <div className="space-y-3 mt-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-16 bg-hover rounded" />
+            ))}
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   return (
     <PageWrapper className="py-8">
