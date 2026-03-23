@@ -1,30 +1,54 @@
 # ComicHub Design Guidelines
 
 ## Overview
-Dark-first manga reader UI using Next.js 15 + @pxlkit/ui-kit (Tailwind CSS).
-Pixel/retro aesthetic meets clean minimalism — built for long reading sessions.
+
+Dark-only manga reader UI — Next.js 16 + Radix UI primitives + Tailwind CSS v4.
+Clean dark aesthetic for long reading sessions. No light mode.
+
+**Stack:** Next.js 16 | TypeScript | Tailwind CSS v4 | Radix UI | Lucide React | sonner | zod + react-hook-form | axios
 
 ---
 
 ## Color Tokens
 
-| Token | Hex | Usage |
-|---|---|---|
-| `--bg-base` | `#0f0f0f` | Page background |
-| `--bg-surface` | `#1a1a1a` | Cards, panels |
-| `--bg-elevated` | `#242424` | Dropdowns, modals |
-| `--bg-hover` | `#2e2e2e` | Hover states |
-| `--accent` | `#e63946` | CTAs, highlights, active states |
-| `--accent-hover` | `#c1121f` | Accent hover |
-| `--accent-muted` | `#e6394620` | Accent backgrounds (badges) |
-| `--text-primary` | `#f5f5f5` | Headings, primary text |
-| `--text-secondary` | `#a0a0a0` | Meta, captions |
-| `--text-muted` | `#5a5a5a` | Placeholders, disabled |
-| `--border` | `#2a2a2a` | Card/input borders |
-| `--border-accent` | `#e63946` | Active/focus borders |
-| `--success` | `#2dc653` | Ongoing status |
-| `--warning` | `#f4a261` | Hiatus status |
-| `--info` | `#4895ef` | Info badges |
+**RULE: Always use CSS variables or Tailwind theme classes. Never hardcode hex values in components.**
+
+| Token | Hex | Tailwind Class | Usage |
+|---|---|---|---|
+| `--bg-base` | `#0f0f0f` | `bg-base` | Page background |
+| `--bg-surface` | `#1a1a1a` | `bg-surface` | Cards, panels |
+| `--bg-elevated` | `#242424` | `bg-elevated` | Dropdowns, modals |
+| `--bg-hover` | `#2e2e2e` | `bg-hover` | Hover states |
+| `--accent` | `#e63946` | `bg-accent` / `text-accent` | CTAs, highlights, active states |
+| `--accent-hover` | `#c1121f` | `bg-accent-hover` | Accent hover |
+| `--accent-muted` | `#e6394620` | `bg-accent-muted` | Accent backgrounds (badges) |
+| `--text-primary` | `#f5f5f5` | `text-primary` | Headings, primary text |
+| `--text-secondary` | `#a0a0a0` | `text-secondary` | Meta, captions |
+| `--text-muted` | `#5a5a5a` | `text-muted` | Placeholders, disabled |
+| `--border` | `#2a2a2a` | `border-default` | Card/input borders |
+| `--border-accent` | `#e63946` | `border-accent` | Active/focus borders |
+| `--success` | `#2dc653` | `text-success` / `bg-success` | Ongoing status |
+| `--warning` | `#f4a261` | `text-warning` / `bg-warning` | Hiatus status |
+| `--info` | `#4895ef` | `text-info` / `bg-info` | Info badges |
+
+**Tailwind theme setup** in `globals.css`:
+```css
+@theme inline {
+  --color-base: #0f0f0f;
+  --color-surface: #1a1a1a;
+  --color-elevated: #242424;
+  --color-hover: #2e2e2e;
+  --color-accent: #e63946;
+  --color-accent-hover: #c1121f;
+  --color-accent-muted: #e6394620;
+  --color-primary: #f5f5f5;
+  --color-secondary: #a0a0a0;
+  --color-muted: #5a5a5a;
+  --color-success: #2dc653;
+  --color-warning: #f4a261;
+  --color-info: #4895ef;
+}
+```
 
 ---
 
@@ -58,45 +82,226 @@ Card grid gap: `gap-4` (mobile) / `gap-6` (desktop).
 
 ---
 
-## Manga Cover Cards (2:3 ratio)
+## Icon Standards (Lucide React)
 
-```css
-.manga-card {
-  aspect-ratio: 2/3;          /* Standard manga cover */
-  border-radius: 4px;          /* Subtle, not pill */
-  overflow: hidden;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  transition: transform 150ms ease, border-color 150ms ease;
-}
-.manga-card:hover {
-  transform: translateY(-4px);
-  border-color: #e63946;
-}
-```
+Stroke weight: 1.5px (Lucide default). Three standard sizes:
 
-Grid columns: 2 (mobile 320px) → 3 (480px) → 4 (768px) → 5 (1024px) → 6 (1280px).
+| Size | px | Tailwind | Usage |
+|---|---|---|---|
+| `sm` | 14 | `size={14}` | Inline with text, badges, metadata |
+| `md` | 18 | `size={18}` | Buttons, toolbar actions, nav items |
+| `lg` | 24 | `size={24}` | Standalone, empty states, hero elements |
+
+**Rules:**
+- Icon-only buttons MUST have `aria-label`
+- Always pair icon + text for primary actions; icon-only for secondary/toolbar
+- Color inherits from parent text color — don't set icon color separately
 
 ---
 
-## @pxlkit/ui-kit Component Mapping
+## UI Components (Radix UI + Tailwind)
 
-| Use Case | Component | Tone |
+### Philosophy
+Use **Radix UI primitives** for behavior (accessibility, keyboard nav, focus management).
+Style with **Tailwind CSS classes**. No CSS-in-JS, no component libraries.
+
+### Component Directory
+All shared UI components live in `frontend/components/ui/`. Each wraps a Radix primitive with project styling.
+
+| Component | Radix Primitive | Purpose |
 |---|---|---|
-| Primary CTA | PixelButton | `tone="danger"` |
-| Secondary action | PixelButton | `tone="ghost"` |
-| Chapter item | PixelCard | default dark |
-| Genre tags | PixelBadge | `tone="default"` |
-| Status (Ongoing) | PixelBadge | `tone="success"` |
-| Status (Completed) | PixelBadge | `tone="info"` |
-| Status (Hiatus) | PixelBadge | `tone="warning"` |
-| Page tabs | PixelTabs | — |
-| Chapter list nav | PixelPagination | — |
-| Loading states | PixelSkeleton | — |
-| Search input | PixelInput | — |
-| Login form | PixelInput + PixelButton | — |
-| User avatar | PixelAvatar | — |
-| Confirm dialogs | PixelModal | — |
+| `button.tsx` | — (native) | Primary, secondary, ghost, danger variants |
+| `badge.tsx` | — (native) | Status, genre, info badges |
+| `input.tsx` | — (native) | Text input with label, error state |
+| `select.tsx` | `@radix-ui/react-select` | Styled dropdown select |
+| `dialog.tsx` | `@radix-ui/react-dialog` | Modal dialogs with backdrop |
+| `tabs.tsx` | `@radix-ui/react-tabs` | Tab navigation |
+| `dropdown-menu.tsx` | `@radix-ui/react-dropdown-menu` | Context/action menus |
+| `tooltip.tsx` | `@radix-ui/react-tooltip` | Hover tooltips |
+| `skeleton.tsx` | — (native) | Loading placeholder with pulse animation |
+| `pagination.tsx` | — (native) | Page navigation |
+| `avatar.tsx` | `@radix-ui/react-avatar` | User avatar with fallback initials |
+
+### Button Variants
+
+```tsx
+// variants: "primary" | "secondary" | "ghost" | "danger"
+// sizes: "sm" | "md" | "lg"
+<Button variant="primary" size="md">Follow</Button>
+<Button variant="ghost" size="sm"><Search size={14} /> Search</Button>
+```
+
+| Variant | Background | Text | Border | Hover |
+|---|---|---|---|---|
+| `primary` | `bg-accent` | `text-white` | none | `bg-accent-hover` |
+| `secondary` | `bg-surface` | `text-primary` | `border-default` | `bg-hover` |
+| `ghost` | transparent | `text-secondary` | none | `bg-hover` |
+| `danger` | `bg-red-600` | `text-white` | none | `bg-red-700` |
+
+All buttons: `font-semibold`, min height 36px (sm) / 40px (md) / 44px (lg), `rounded-md`, disabled state `opacity-40 cursor-not-allowed`.
+
+### Badge Variants
+
+| Variant | Usage | Style |
+|---|---|---|
+| `default` | Genre tags | `bg-surface border-default text-secondary` |
+| `success` | Ongoing status | `bg-success/20 text-success` |
+| `warning` | Hiatus status | `bg-warning/20 text-warning` |
+| `info` | Completed status | `bg-info/20 text-info` |
+| `accent` | Featured/hot | `bg-accent-muted text-accent` |
+
+---
+
+## UX States
+
+### Loading States
+
+| Context | Pattern | Implementation |
+|---|---|---|
+| Grid/list data | Skeleton cards | `<Skeleton className="aspect-2/3 w-full rounded" />` |
+| Inline action | Spinner inside button | `<Loader2 className="animate-spin" size={14} />` |
+| Full page | Skeleton layout matching target | Compose skeletons matching page structure |
+| Button submit | Disable + spinner + text change | `isLoading ? "Saving..." : "Save"` |
+
+**Rules:**
+- Skeletons MUST match target layout shape (aspect ratio, height, spacing)
+- Never show raw spinner for content areas — use skeletons
+- Spinner only for inline/button actions
+
+### Error States
+
+| Context | Pattern |
+|---|---|
+| Form field | Red border + error text below input (from react-hook-form) |
+| Form submit | Inline error message above/below submit button |
+| API failure (transient) | **sonner toast** — `toast.error("message")` |
+| API failure (blocking) | Error component with retry button |
+| 404 / not found | Dedicated error page |
+
+**Rules:**
+- Form errors: show per-field from zod validation, clear on re-type
+- Toast for transient feedback only (saved, copied, followed, error)
+- Never use `alert()` or `window.confirm()`
+
+### Empty States
+
+Consistent pattern for all empty data views:
+
+```tsx
+<div className="flex flex-col items-center justify-center py-16 text-center">
+  <IconComponent size={48} className="text-muted mb-4" />
+  <p className="text-secondary text-sm mb-2">No chapters found</p>
+  <p className="text-muted text-xs">Optional helpful hint</p>
+  {/* Optional CTA button */}
+</div>
+```
+
+**Rules:**
+- Always show an icon (Lucide, `size={48}`, `text-muted`)
+- Primary message in `text-secondary`, hint in `text-muted`
+- Optional CTA button for actionable empty states (e.g., "Browse manga")
+- Never return `null` for empty data — always show empty state
+
+### Success States
+
+- Use **sonner toast**: `toast.success("Followed successfully")`
+- Auto-dismiss after 3s
+- Position: `top-right` on desktop, `top-center` on mobile
+
+---
+
+## Toast Notifications (sonner)
+
+```tsx
+// Setup in layout.tsx
+import { Toaster } from 'sonner';
+<Toaster position="top-right" theme="dark" richColors />
+
+// Usage
+import { toast } from 'sonner';
+toast.success("Added to library");
+toast.error("Failed to follow");
+toast.loading("Uploading...");
+```
+
+**When to toast:**
+- Follow/unfollow, rating, report submit (success/error)
+- Clipboard copy, share actions
+- API errors not tied to a specific form field
+
+**When NOT to toast:**
+- Form validation errors → inline per-field
+- Loading data → skeleton
+- Navigation feedback → page transition
+
+---
+
+## Forms (zod + react-hook-form)
+
+```tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const schema = z.object({
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Min 6 characters"),
+});
+
+const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  resolver: zodResolver(schema),
+});
+```
+
+**Rules:**
+- All forms use zod schemas for validation
+- Show errors on blur + submit (not on every keystroke)
+- Submit button disabled while `isSubmitting`
+- Submit button shows spinner + "Submitting..." text while loading
+- Max form width: `420px`, centered
+- Input height: min `44px` (touch target)
+- Error text: `text-accent text-xs mt-1` below the field
+
+---
+
+## Modal / Dialog (Radix Dialog)
+
+```tsx
+import * as Dialog from '@radix-ui/react-dialog';
+
+<Dialog.Root>
+  <Dialog.Trigger asChild><Button>Report</Button></Dialog.Trigger>
+  <Dialog.Portal>
+    <Dialog.Overlay className="fixed inset-0 bg-black/70 z-50" />
+    <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface border border-default rounded-lg w-full max-w-md mx-4 p-6">
+      <Dialog.Title className="font-rajdhani font-bold text-lg">Title</Dialog.Title>
+      {/* content */}
+      <Dialog.Close asChild><button aria-label="Close">X</button></Dialog.Close>
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
+```
+
+**Rules:**
+- Always use Radix Dialog — never manual fixed divs
+- Overlay: `bg-black/70`
+- Content: `bg-surface border-default rounded-lg`
+- Must have `Dialog.Title` for accessibility
+- Close on overlay click (Radix default)
+- Trap focus inside dialog (Radix default)
+
+---
+
+## Manga Cover Cards (2:3 ratio)
+
+```tsx
+<div className="group relative aspect-2/3 overflow-hidden rounded bg-surface border border-default
+  transition-transform duration-150 ease-out hover:-translate-y-1 hover:border-accent">
+  <Image src={cover} alt={title} fill className="object-cover" sizes="..." loading="lazy" />
+</div>
+```
+
+Grid columns: 2 (mobile 320px) → 3 (480px) → 4 (768px) → 5 (1024px) → 6 (1280px).
 
 ---
 
@@ -115,86 +320,91 @@ Max content width: `1400px`, centered with `mx-auto px-4 md:px-6 lg:px-8`.
 
 ---
 
+## Responsive Behavior
+
+### Navigation
+- **Desktop (md+):** Full navbar with links, search bar, user dropdown
+- **Mobile (<md):** Hamburger → dropdown menu panel. Search icon → full-width search overlay
+
+### Content Layout
+- **Desktop:** Side-by-side layouts (cover + info, sidebar + main)
+- **Mobile:** Stacked, full-width. Sidebar content moves below main
+
+### Interactive Elements
+- **Desktop:** Hover tooltips, dropdown menus on click
+- **Mobile:** No hover states. Tap-only. Modals instead of dropdowns where needed
+- Touch targets: min 44×44px on all interactive elements
+
+---
+
 ## Component Patterns
 
 ### Navbar
-- Height: 64px desktop / 56px mobile
-- Background: `#0f0f0f` + `border-bottom: 1px solid #2a2a2a`
-- Logo: Rajdhani 700, `#e63946` accent color on "Hub"
-- Sticky on desktop, hide-on-scroll on mobile
+- Height: 56px (h-14)
+- Background: `bg-base` + `border-b border-default`
+- Logo: Rajdhani 700, accent color on "Hub"
+- Sticky on all viewports
 
 ### Hero Banner
-- Full-width, height 480px desktop / 260px mobile
-- Blurred cover image background + dark overlay `rgba(0,0,0,0.7)`
-- Featured manga info overlay (bottom-left)
+- Full-width, 480px desktop / 260px mobile
+- Blurred cover image + dark overlay `bg-black/70`
 - Gradient: `linear-gradient(to right, rgba(0,0,0,0.9) 40%, transparent)`
 
 ### Chapter Reader
 - Max width: 800px centered
-- Background: `#000000` (pure black for immersion)
-- Images: `width: 100%`, lazy loaded, no gaps between pages
-- Controls: floating top bar, opacity 0 → 1 on hover/tap
-- Long-press / tap-right: next chapter
+- Background: `#000000` (pure black)
+- Images: `width: 100%`, lazy loaded, no gaps
+- Controls: floating top bar, fade on hover/tap
+- Image load: fade-in `opacity-0 → opacity-100` over `300ms`
 
-### Forms (Auth)
-- Max width: 420px card, centered on page
-- Input height: 44px (min touch target)
-- Error states: `#e63946` border + message below
+---
+
+## Image Handling
+
+| Context | Pattern |
+|---|---|
+| Manga covers | `<Image fill sizes="..." loading="lazy" />` with aspect-2/3 container |
+| Reader pages | `<img>` with `unoptimized`, fade-in on load |
+| Missing cover | Fallback div: `bg-surface text-muted text-sm` centered "No Cover" |
+| Avatar | Radix Avatar with fallback initials |
+
+**Rules:**
+- Always provide `sizes` attribute for responsive images
+- Always provide meaningful `alt` text
+- Use Next.js `<Image>` for covers/thumbnails, native `<img>` only for reader (unoptimized)
+- Fallback: never show broken image icon — always a styled placeholder
 
 ---
 
 ## Motion & Micro-interactions
 
-- Card hover: `transform translateY(-4px)` + border accent, `150ms ease`
+- Card hover: `-translate-y-1` + `border-accent`, `150ms ease-out`
 - Page transitions: fade `200ms`
-- Skeleton: `animate-pulse` via pxlkit PixelSkeleton
-- Button active: `scale(0.97)` `100ms`
+- Skeleton: `animate-pulse` (Tailwind built-in)
+- Button active: `active:scale-[0.97]` `100ms`
 - Chapter image load: fade-in `300ms`
-- Respect `prefers-reduced-motion: reduce` — disable transforms
+- Toast: slide-in from top-right (sonner default)
+- `prefers-reduced-motion: reduce` — disable transforms, keep opacity transitions
 
 ---
 
 ## Accessibility
 
-- Color contrast: all text meets WCAG AA (4.5:1 normal, 3:1 large)
-- Focus rings: `outline: 2px solid #e63946; outline-offset: 2px`
+- Color contrast: WCAG AA (4.5:1 normal, 3:1 large)
+- Focus rings: `outline-2 outline-accent outline-offset-2`
 - Touch targets: min 44×44px
-- Images: `alt` text always provided
-- Keyboard nav: all interactive elements reachable
-- ARIA labels on icon-only buttons
+- Images: `alt` text required
+- Keyboard nav: all interactive elements focusable + operable
+- Icon-only buttons: `aria-label` required
+- Modals: focus trap + `aria-labelledby` (Radix handles this)
+- Form errors: `aria-invalid` + `aria-describedby` linking to error message
 
 ---
 
 ## Asset Conventions
 
-- Cover images: WebP, max 300KB, lazy loaded, `srcset` for retina
-- Icons: Lucide React (consistent stroke weight 1.5px)
+- Cover images: WebP, max 300KB, lazy loaded
+- Icons: Lucide React, stroke 1.5px, 3 sizes (14/18/24)
 - SVG favicons + OG images per manga
 
 ---
-
-## Frontend Implementation Status
-
-**Completed:** Next.js 16 frontend with full Tailwind CSS v4 support and @pxlkit/ui-kit components.
-
-**Location:** `/frontend/` directory
-**Tech Stack:** Next.js 16 | TypeScript | Tailwind CSS v4 | @pxlkit/ui-kit | Lucide React | axios
-**Build Status:** `pnpm build` passes with zero errors
-
-**Pages Implemented:**
-- Home (hero + popular + latest + genre filters)
-- Browse (advanced filters, pagination, responsive grid)
-- Manga Detail (cover hero, metadata, chapter list with search)
-- Chapter Reader (vertical image scrolling, progress bar, toolbar, nav)
-- Auth (login, register, Google OAuth callback)
-- Profile (user info, history, follows tabs)
-
-**Key Features:**
-- Server-side rendering for home/detail pages
-- Client-side state management for filters and reader
-- JWT auto-refresh with request queue
-- Optimistic UI for follow toggles
-- S3 image support via remotePatterns config
-- Reading history auto-tracking for authenticated users
-- Responsive mobile-first design (2→6 column grids)
-- Auto-hiding toolbar in reader mode

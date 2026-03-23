@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**.s3.*.amazonaws.com' },
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: 'myanimelist.*' },
+      { protocol: 'https', hostname: 'static.comix.to' },
     ],
   },
 };
