@@ -9,6 +9,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 
 export enum CommentableType {
   MANGA = 'manga',
@@ -46,4 +47,17 @@ export class UpdateCommentDto {
   @IsNotEmpty()
   @MaxLength(2000)
   content!: string;
+}
+
+export enum CommentSort {
+  NEWEST = 'newest',
+  OLDEST = 'oldest',
+  BEST = 'best',
+}
+
+export class CommentQueryDto extends PaginationDto {
+  @ApiPropertyOptional({ enum: CommentSort, default: CommentSort.NEWEST })
+  @IsOptional()
+  @IsEnum(CommentSort)
+  sort?: CommentSort = CommentSort.NEWEST;
 }

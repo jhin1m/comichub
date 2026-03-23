@@ -23,14 +23,31 @@ describe('Comments Integration', () => {
 
   describe('GET /manga/:id/comments', () => {
     it('200 — public endpoint returns comment list', async () => {
-      const comments = [factory.comment(), factory.comment({ id: 2 })];
-      ctx.db.select.mockImplementation(() => ({
-        from: () => ({
-          where: () => ({
-            limit: () => ({ offset: () => ({ orderBy: () => Promise.resolve(comments) }) }),
+      const commentList = [factory.comment(), factory.comment({ id: 2 })];
+      let callCount = 0;
+      ctx.db.select.mockImplementation(() => {
+        callCount++;
+        if (callCount % 2 === 1) {
+          // data query: select().from().leftJoin().where().orderBy().limit().offset()
+          return {
+            from: () => ({
+              leftJoin: () => ({
+                where: () => ({
+                  orderBy: () => ({
+                    limit: () => ({ offset: () => Promise.resolve(commentList) }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        // count query: select().from().where()
+        return {
+          from: () => ({
+            where: () => Promise.resolve([{ total: commentList.length }]),
           }),
-        }),
-      }));
+        };
+      });
 
       const res = await ctx.req.get('/manga/1/comments');
 
@@ -39,13 +56,28 @@ describe('Comments Integration', () => {
     });
 
     it('200 — returns empty array when no comments exist', async () => {
-      ctx.db.select.mockImplementation(() => ({
-        from: () => ({
-          where: () => ({
-            limit: () => ({ offset: () => ({ orderBy: () => Promise.resolve([]) }) }),
+      let callCount = 0;
+      ctx.db.select.mockImplementation(() => {
+        callCount++;
+        if (callCount % 2 === 1) {
+          return {
+            from: () => ({
+              leftJoin: () => ({
+                where: () => ({
+                  orderBy: () => ({
+                    limit: () => ({ offset: () => Promise.resolve([]) }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        return {
+          from: () => ({
+            where: () => Promise.resolve([{ total: 0 }]),
           }),
-        }),
-      }));
+        };
+      });
 
       const res = await ctx.req.get('/manga/1/comments');
 

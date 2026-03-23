@@ -6,7 +6,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import sanitizeHtml from 'sanitize-html';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -20,9 +21,54 @@ import {
   CreateCommentDto,
   UpdateCommentDto,
   CommentableType,
+  CommentSort,
+  type CommentQueryDto,
 } from '../dto/create-comment.dto.js';
 import { CommentReplyEvent } from '../../notification/events/comment-reply.event.js';
 import { CommentLikeEvent } from '../../notification/events/comment-like.event.js';
+
+const ALLOWED_TAGS = ['b', 'i', 'em', 'strong', 'blockquote', 'p', 'br', 'img', 'a', 'span'];
+const ALLOWED_ATTRIBUTES: sanitizeHtml.IOptions['allowedAttributes'] = {
+  a: ['href', 'target', 'rel'],
+  img: ['src', 'alt'],
+  span: ['class'],
+};
+
+function sanitizeContent(content: string): string {
+  return sanitizeHtml(content, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: ALLOWED_ATTRIBUTES,
+    allowedSchemes: ['http', 'https'],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform('a', { target: '_blank', rel: 'noopener nofollow' }),
+    },
+  });
+}
+
+function buildSortClause(sort?: CommentSort) {
+  switch (sort) {
+    case CommentSort.OLDEST:
+      return asc(comments.createdAt);
+    case CommentSort.BEST:
+      return desc(comments.likesCount);
+    case CommentSort.NEWEST:
+    default:
+      return desc(comments.createdAt);
+  }
+}
+
+const COMMENT_USER_SELECT = {
+  id: comments.id,
+  userId: comments.userId,
+  content: comments.content,
+  likesCount: comments.likesCount,
+  parentId: comments.parentId,
+  createdAt: comments.createdAt,
+  updatedAt: comments.updatedAt,
+  userName: users.name,
+  userAvatar: users.avatar,
+  repliesCount: sql<number>`(SELECT count(*) FROM comments c2 WHERE c2.parent_id = ${comments.id} AND c2.deleted_at IS NULL)`.as('replies_count'),
+};
 
 const MAX_DEPTH = 3;
 
@@ -32,6 +78,23 @@ export class CommentService {
     @Inject(DRIZZLE) private db: DrizzleDB,
     private readonly eventEmitter: EventEmitter2,
   ) {}
+
+  /** Attach isLiked boolean to each comment for the given user */
+  private async attachIsLiked<T extends { id: number }>(
+    data: T[],
+    currentUserId?: number,
+  ): Promise<(T & { isLiked: boolean })[]> {
+    if (!currentUserId || data.length === 0) {
+      return data.map((d) => ({ ...d, isLiked: false }));
+    }
+    const commentIds = data.map((d) => d.id);
+    const liked = await this.db
+      .select({ commentId: commentLikes.commentId })
+      .from(commentLikes)
+      .where(and(eq(commentLikes.userId, currentUserId), inArray(commentLikes.commentId, commentIds)));
+    const likedSet = new Set(liked.map((l) => l.commentId));
+    return data.map((d) => ({ ...d, isLiked: likedSet.has(d.id) }));
+  }
 
   async getRecent(limit = 10) {
     const rows = await this.db
@@ -63,7 +126,6 @@ export class CommentService {
       .orderBy(desc(comments.createdAt))
       .limit(limit);
 
-    // For chapter comments, resolve the manga info
     const chapterMangaIds = rows
       .filter((r) => r.commentableType === 'chapter' && r.chapterMangaId)
       .map((r) => r.chapterMangaId as number);
@@ -98,48 +160,54 @@ export class CommentService {
     });
   }
 
-  async listForManga(mangaId: number, pagination: PaginationDto) {
-    return this.db
-      .select()
-      .from(comments)
-      .where(
-        and(
-          eq(comments.commentableType, CommentableType.MANGA),
-          eq(comments.commentableId, mangaId),
-          isNull(comments.parentId),
-          isNull(comments.deletedAt),
-        ),
-      )
-      .limit(pagination.limit)
-      .offset(pagination.offset)
-      .orderBy(comments.createdAt);
+  private async listComments(
+    where: ReturnType<typeof and>,
+    query: CommentQueryDto | PaginationDto,
+    sortClause: ReturnType<typeof buildSortClause>,
+    currentUserId?: number,
+  ) {
+    const [data, [{ total }]] = await Promise.all([
+      this.db
+        .select(COMMENT_USER_SELECT)
+        .from(comments)
+        .leftJoin(users, eq(comments.userId, users.id))
+        .where(where)
+        .orderBy(sortClause)
+        .limit(query.limit)
+        .offset(query.offset),
+      this.db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(comments)
+        .where(where),
+    ]);
+
+    const withLikes = await this.attachIsLiked(data, currentUserId);
+    return { data: withLikes, total, page: query.page, limit: query.limit };
   }
 
-  async listForChapter(chapterId: number, pagination: PaginationDto) {
-    return this.db
-      .select()
-      .from(comments)
-      .where(
-        and(
-          eq(comments.commentableType, CommentableType.CHAPTER),
-          eq(comments.commentableId, chapterId),
-          isNull(comments.parentId),
-          isNull(comments.deletedAt),
-        ),
-      )
-      .limit(pagination.limit)
-      .offset(pagination.offset)
-      .orderBy(comments.createdAt);
+  async listForManga(mangaId: number, query: CommentQueryDto, currentUserId?: number) {
+    const where = and(
+      eq(comments.commentableType, CommentableType.MANGA),
+      eq(comments.commentableId, mangaId),
+      isNull(comments.parentId),
+      isNull(comments.deletedAt),
+    );
+    return this.listComments(where, query, buildSortClause(query.sort), currentUserId);
   }
 
-  async getReplies(commentId: number, pagination: PaginationDto) {
-    return this.db
-      .select()
-      .from(comments)
-      .where(and(eq(comments.parentId, commentId), isNull(comments.deletedAt)))
-      .limit(pagination.limit)
-      .offset(pagination.offset)
-      .orderBy(comments.createdAt);
+  async listForChapter(chapterId: number, query: CommentQueryDto, currentUserId?: number) {
+    const where = and(
+      eq(comments.commentableType, CommentableType.CHAPTER),
+      eq(comments.commentableId, chapterId),
+      isNull(comments.parentId),
+      isNull(comments.deletedAt),
+    );
+    return this.listComments(where, query, buildSortClause(query.sort), currentUserId);
+  }
+
+  async getReplies(commentId: number, pagination: PaginationDto, currentUserId?: number) {
+    const where = and(eq(comments.parentId, commentId), isNull(comments.deletedAt));
+    return this.listComments(where, pagination, asc(comments.createdAt), currentUserId);
   }
 
   async getMyComments(userId: number, pagination: PaginationDto) {
@@ -157,6 +225,8 @@ export class CommentService {
       await this.validateDepth(dto.parentId);
     }
 
+    const cleanContent = sanitizeContent(dto.content);
+
     const [comment] = await this.db
       .insert(comments)
       .values({
@@ -164,11 +234,10 @@ export class CommentService {
         commentableType: dto.commentableType,
         commentableId: dto.commentableId,
         parentId: dto.parentId ?? null,
-        content: dto.content,
+        content: cleanContent,
       })
       .returning();
 
-    // Emit reply notification if this is a reply to another comment
     if (dto.parentId) {
       const parent = await this.findOrFail(dto.parentId);
       if (parent.userId && parent.userId !== userId) {
@@ -195,7 +264,7 @@ export class CommentService {
 
     const [updated] = await this.db
       .update(comments)
-      .set({ content: dto.content })
+      .set({ content: sanitizeContent(dto.content) })
       .where(eq(comments.id, commentId))
       .returning();
 
@@ -235,7 +304,7 @@ export class CommentService {
 
       const [updated] = await this.db
         .update(comments)
-        .set({ likesCount: sql`${comments.likesCount} - 1` })
+        .set({ likesCount: sql`GREATEST(${comments.likesCount} - 1, 0)` })
         .where(eq(comments.id, commentId))
         .returning({ likesCount: comments.likesCount });
 
@@ -250,7 +319,6 @@ export class CommentService {
       .where(eq(comments.id, commentId))
       .returning({ likesCount: comments.likesCount });
 
-    // Emit like notification (don't notify self)
     if (commentData.userId && commentData.userId !== userId) {
       const event = new CommentLikeEvent();
       event.commentId = commentId;

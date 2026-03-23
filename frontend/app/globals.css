@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @source "../components/**/*.{ts,tsx}";
 
@@ -49,4 +50,15 @@ body {
 
 h1, h2, h3, h4 {
   font-family: 'Rajdhani', sans-serif;
+}
+
+/* Comment spoiler tags */
+.spoiler {
+  background-color: currentColor;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.spoiler.revealed {
+  background-color: transparent;
 }

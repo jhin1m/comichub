@@ -12,11 +12,13 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommentService } from '../services/comment.service.js';
 import {
   CreateCommentDto,
   UpdateCommentDto,
+  CommentQueryDto,
 } from '../dto/create-comment.dto.js';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
@@ -33,7 +35,7 @@ export class CommentController {
   @Get('comments/recent')
   @ApiOperation({ summary: 'Get recent comments across all manga/chapters' })
   getRecent(@Query('limit', new ParseIntPipe({ optional: true })) limit?: number) {
-    return this.commentService.getRecent(limit ?? 10);
+    return this.commentService.getRecent(Math.min(limit ?? 10, 50));
   }
 
   @Public()
@@ -41,9 +43,10 @@ export class CommentController {
   @ApiOperation({ summary: 'List manga comments (paginated)' })
   listForManga(
     @Param('id', ParseIntPipe) mangaId: number,
-    @Query() pagination: PaginationDto,
+    @Query() query: CommentQueryDto,
+    @CurrentUser() user?: User,
   ) {
-    return this.commentService.listForManga(mangaId, pagination);
+    return this.commentService.listForManga(mangaId, query, user?.id);
   }
 
   @Public()
@@ -51,9 +54,10 @@ export class CommentController {
   @ApiOperation({ summary: 'List chapter comments (paginated)' })
   listForChapter(
     @Param('id', ParseIntPipe) chapterId: number,
-    @Query() pagination: PaginationDto,
+    @Query() query: CommentQueryDto,
+    @CurrentUser() user?: User,
   ) {
-    return this.commentService.listForChapter(chapterId, pagination);
+    return this.commentService.listForChapter(chapterId, query, user?.id);
   }
 
   @Public()
@@ -62,8 +66,9 @@ export class CommentController {
   getReplies(
     @Param('id', ParseIntPipe) commentId: number,
     @Query() pagination: PaginationDto,
+    @CurrentUser() user?: User,
   ) {
-    return this.commentService.getReplies(commentId, pagination);
+    return this.commentService.getReplies(commentId, pagination, user?.id);
   }
 
   @Get('users/me/comments')
@@ -73,6 +78,7 @@ export class CommentController {
     return this.commentService.getMyComments(user.id, pagination);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('comments')
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()

@@ -9,6 +9,7 @@ import { MangaSidebar } from '@/components/detail/manga-sidebar';
 import { MobileDetailsBar } from '@/components/detail/mobile-details-bar';
 import { ChapterList } from '@/components/detail/chapter-list';
 import { SimilarManga } from '@/components/detail/similar-manga';
+import { CommentSection } from '@/components/comment/comment-section';
 import PageWrapper from '@/components/layout/page-wrapper';
 
 const getManga = cache((slug: string) => mangaApi.detail(slug));
@@ -38,7 +39,10 @@ export default async function MangaDetailPage({ params }: Props) {
 
         {/* Bottom: chapter list left, recommendations right */}
         <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 mt-8">
-          <ChapterList chapters={manga.chapters} mangaSlug={slug} />
+          <div className="space-y-8">
+            <ChapterList chapters={manga.chapters} mangaSlug={slug} />
+            <CommentSection commentableType="manga" commentableId={manga.id} />
+          </div>
           <aside>
             <SimilarManga genres={manga.genres} currentMangaId={manga.id} />
           </aside>
