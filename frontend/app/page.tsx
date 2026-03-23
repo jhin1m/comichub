@@ -3,7 +3,7 @@ export const revalidate = 60;
 import { mangaApi } from '@/lib/api/manga.api';
 import { commentApi, type RecentComment } from '@/lib/api/comment.api';
 import { MangaCarousel } from '@/components/home/manga-carousel';
-import { MangaGrid } from '@/components/home/manga-grid';
+import { LatestUpdatesSection } from '@/components/home/latest-updates-section';
 import { RecentSidebar } from '@/components/home/recent-sidebar';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
 
@@ -11,7 +11,7 @@ export default async function HomePage() {
   let daily: MangaListItem[] = [];
   let weekly: MangaListItem[] = [];
   let alltime: MangaListItem[] = [];
-  let latestUpdates: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 10 };
+  let latestUpdates: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 30 };
   let recentlyAdded: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
   let completeSeries: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
   let recentComments: RecentComment[] = [];
@@ -21,7 +21,7 @@ export default async function HomePage() {
       mangaApi.rankings('daily', 1, 10),
       mangaApi.rankings('weekly', 1, 10),
       mangaApi.rankings('alltime', 1, 10),
-      mangaApi.list({ page: 1, limit: 10, sort: 'updated_at', order: 'desc' }),
+      mangaApi.list({ page: 1, limit: 30, sort: 'updated_at', order: 'desc' }),
       mangaApi.list({ page: 1, limit: 12, sort: 'created_at', order: 'desc' }),
       mangaApi.list({ page: 1, limit: 12, status: 'completed', sort: 'updated_at', order: 'desc' }),
       commentApi.recent(10),
@@ -55,11 +55,7 @@ export default async function HomePage() {
             showRank
             moreHref="/browse?sort=views"
           />
-          <MangaGrid
-            title="Latest Updates"
-            items={latestUpdates.data}
-            moreHref="/browse?sort=updated_at"
-          />
+          <LatestUpdatesSection initialData={latestUpdates} />
         </div>
 
         {/* Right: recently added sidebar */}
