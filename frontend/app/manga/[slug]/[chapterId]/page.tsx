@@ -37,9 +37,10 @@ export default function ChapterReaderPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(true);
 
   // UI state
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [zoom, setZoom] = useState(68);
+  const [isMobile, setIsMobile] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('longstrip');
   const [stripMargin, setStripMargin] = useState(0);
   const [progressPosition, setProgressPosition] = useState<ProgressPosition>('left');
@@ -47,6 +48,16 @@ export default function ChapterReaderPage({ params }: Props) {
   const mangaTitle = formatSlugToTitle(slug);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
+
+  // Detect mobile and set responsive defaults
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    // Open sidebar by default on desktop only
+    if (window.innerWidth >= 768) setSidebarOpen(true);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     setIsLoading(true);
@@ -79,7 +90,7 @@ export default function ChapterReaderPage({ params }: Props) {
             <Skeleton key={i} className="w-[700px] max-w-full h-[900px]" />
           ))}
         </div>
-        <div className="w-[380px] bg-surface border-l border-default" />
+        <div className="hidden md:block w-[380px] bg-surface border-l border-default" />
       </div>
     );
   }
@@ -120,12 +131,12 @@ export default function ChapterReaderPage({ params }: Props) {
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto pt-12 transition-[padding] duration-300 ease-in-out"
-          style={{ paddingRight: sidebarOpen ? 380 : 0 }}
+          style={{ paddingRight: !isMobile && sidebarOpen ? 380 : 0 }}
         >
-          {/* vw-based width = always relative to viewport, never changes with padding */}
+          {/* Mobile: 100% width. Desktop: vw-based zoom */}
           <div
             className="mx-auto"
-            style={{ width: `${zoom}vw`, maxWidth: '100%' }}
+            style={{ width: isMobile ? '100%' : `${zoom}vw`, maxWidth: '100%' }}
           >
             {sortedImages.map((img, i) => (
               <div

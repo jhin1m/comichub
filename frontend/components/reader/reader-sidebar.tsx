@@ -33,7 +33,7 @@ export function ReaderSidebar({ chapter, nav, mangaSlug, mangaTitle, onClose }: 
   const sortedChapters = [...chapters].sort((a, b) => Number(b.number) - Number(a.number));
 
   return (
-    <aside className="w-[380px] min-w-[380px] h-full flex flex-col bg-surface border-l border-default">
+    <aside className="w-[70vw] md:w-[380px] min-w-0 md:min-w-[380px] h-full flex flex-col bg-surface border-l border-default">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-default">
         <Link href="/" className="font-rajdhani font-bold text-lg text-primary">
