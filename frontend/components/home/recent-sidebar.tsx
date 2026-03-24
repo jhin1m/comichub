@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Sparkles, CheckCircle } from 'lucide-react';
 import { formatRelativeDate } from '@/lib/utils';
 import type { MangaListItem, MangaType } from '@/types/manga.types';
 import { LatestComments } from '@/components/home/latest-comments';
@@ -84,19 +85,21 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
       <div className="mb-3 pb-2.5 border-b border-default flex items-baseline gap-1">
         <button
           onClick={() => setActiveTab('recent')}
-          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer ${
+          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer flex items-center gap-1 ${
             activeTab === 'recent' ? 'text-primary' : 'text-muted hover:text-secondary'
           }`}
         >
+          <Sparkles size={15} className={activeTab === 'recent' ? 'text-accent' : ''} />
           Recently Added
         </button>
         <span className="text-muted text-[15px] font-medium">/</span>
         <button
           onClick={() => setActiveTab('complete')}
-          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer ${
+          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer flex items-center gap-1 ${
             activeTab === 'complete' ? 'text-primary' : 'text-muted hover:text-secondary'
           }`}
         >
+          <CheckCircle size={15} className={activeTab === 'complete' ? 'text-accent' : ''} />
           Complete Series
         </button>
       </div>

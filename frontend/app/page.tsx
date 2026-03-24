@@ -37,12 +37,14 @@ export default async function HomePage() {
         <div className="min-w-0">
           <MangaCarousel
             title="Most Recent Popular"
+            iconName="flame"
             items={daily}
             showRank
             moreHref="/browse?sort=views"
           />
           <MangaCarousel
             title="Most Follows New Comics"
+            iconName="heart"
             items={weekly}
             showRank
             moreHref="/browse?sort=views"

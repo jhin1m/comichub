@@ -2,18 +2,22 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Heart, MoreHorizontal, type LucideIcon } from 'lucide-react';
 import { MangaCarouselCard } from './manga-carousel-card';
 import type { MangaListItem } from '@/types/manga.types';
 
+const ICON_MAP: Record<string, LucideIcon> = { flame: Flame, heart: Heart };
+
 interface Props {
   title: string;
+  iconName?: string;
   items: MangaListItem[];
   showRank?: boolean;
   moreHref?: string;
 }
 
-export function MangaCarousel({ title, items = [], showRank = false, moreHref = '/browse' }: Props) {
+export function MangaCarousel({ title, iconName, items = [], showRank = false, moreHref = '/browse' }: Props) {
+  const Icon = iconName ? ICON_MAP[iconName] : undefined;
   const trackRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(items.length > 5);
@@ -80,7 +84,10 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
     <section className="mb-8">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3.5">
-        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1">{title}</h2>
+        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1 flex items-center gap-1.5">
+          {Icon && <Icon size={18} className="text-accent" />}
+          {title}
+        </h2>
 
         <button
           onClick={() => scroll(-1)}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { MangaCarouselCard } from './manga-carousel-card';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
@@ -52,7 +52,10 @@ export function LatestUpdatesSection({ initialData }: Props) {
     <section ref={sectionRef} className="mb-8 scroll-mt-4">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3.5">
-        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1">Latest Updates</h2>
+        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1 flex items-center gap-1.5">
+          <Clock size={18} className="text-accent" />
+          Latest Updates
+        </h2>
         <Link
           href="/browse?sort=updated_at"
           className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
