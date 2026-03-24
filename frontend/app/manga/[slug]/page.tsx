@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { cache } from 'react';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { mangaApi } from '@/lib/api/manga.api';
@@ -10,7 +11,6 @@ import { MobileDetailsBar } from '@/components/detail/mobile-details-bar';
 import { ChapterList } from '@/components/detail/chapter-list';
 import { SimilarManga } from '@/components/detail/similar-manga';
 import { CommentSection } from '@/components/comment/comment-section';
-import PageWrapper from '@/components/layout/page-wrapper';
 
 const getManga = cache((slug: string) => mangaApi.detail(slug));
 
@@ -23,31 +23,51 @@ export default async function MangaDetailPage({ params }: Props) {
   try {
     const manga = await getManga(slug);
     return (
-      <PageWrapper className="py-8">
-        {/* Top: cover+info left, rating+metadata right (desktop) */}
-        <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 pb-8 border-b border-default">
-          <div className="space-y-4">
-            <MangaCoverHero manga={manga} />
-            {/* Mobile: rating bar + collapsible metadata */}
-            <MobileDetailsBar manga={manga} />
-          </div>
-          {/* Desktop sidebar: rating + metadata */}
-          <div className="hidden lg:block">
-            <MangaSidebar manga={manga} />
+      <>
+        {/* ===== HERO SECTION — full-width blurred backdrop ===== */}
+        <section className="relative overflow-hidden border-b border-default">
+          {/* Blurred cover background */}
+          {manga.cover && (
+            <div className="absolute inset-0" aria-hidden="true">
+              <Image
+                src={manga.cover}
+                alt=""
+                fill
+                className="object-cover blur-3xl scale-125 opacity-20"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-base via-base/95 to-base/80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-base via-transparent to-base/60" />
+            </div>
+          )}
+
+          {/* Hero content */}
+          <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-10">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+              <div className="space-y-4">
+                <MangaCoverHero manga={manga} />
+                <MobileDetailsBar manga={manga} />
+              </div>
+              <div className="hidden lg:block">
+                <MangaSidebar manga={manga} />
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Bottom: chapter list left, recommendations right */}
-        <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 mt-8">
-          <div className="space-y-8">
-            <ChapterList chapters={manga.chapters} mangaSlug={slug} />
-            <CommentSection commentableType="manga" commentableId={manga.id} />
-          </div>
-          <aside>
-            <SimilarManga genres={manga.genres} currentMangaId={manga.id} />
-          </aside>
-        </section>
-      </PageWrapper>
+        {/* ===== BELOW HERO — chapters, comments, sidebar ===== */}
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
+          <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+            <div className="space-y-8">
+              <ChapterList chapters={manga.chapters} mangaSlug={slug} />
+              <CommentSection commentableType="manga" commentableId={manga.id} />
+            </div>
+            <aside>
+              <SimilarManga genres={manga.genres} currentMangaId={manga.id} />
+            </aside>
+          </section>
+        </main>
+      </>
     );
   } catch {
     notFound();

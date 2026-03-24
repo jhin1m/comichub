@@ -67,13 +67,9 @@ export function ReportButton({ mangaId: _mangaId, firstChapterId }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <button
-          title="Report"
-          aria-label="Report"
-          className="flex items-center justify-center w-8 h-8 rounded text-muted hover:text-primary hover:bg-elevated transition-colors"
-        >
+        <Button variant="secondary" aria-label="Report" title="Report" className="px-2.5">
           <AlertTriangle size={16} />
-        </button>
+        </Button>
       </DialogTrigger>
 
       <DialogContent>

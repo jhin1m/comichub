@@ -9,10 +9,10 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 const variantClasses: Record<Variant, string> = {
   default: 'bg-surface border border-default text-secondary',
-  success: 'bg-success/20 text-success',
-  warning: 'bg-warning/20 text-warning',
-  info: 'bg-info/20 text-info',
-  accent: 'bg-accent-muted text-accent',
+  success: 'bg-success/10 border border-success/30 text-success',
+  warning: 'bg-warning/10 border border-warning/30 text-warning',
+  info: 'bg-info/10 border border-info/30 text-info',
+  accent: 'bg-accent/10 border border-accent/30 text-accent',
 };
 
 function Badge({ variant = 'default', className, children, ...rest }: BadgeProps) {

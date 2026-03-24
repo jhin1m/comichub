@@ -345,10 +345,21 @@ Max content width: `1400px`, centered with `mx-auto px-4 md:px-6 lg:px-8`.
 - Logo: Rajdhani 700, accent color on "Hub"
 - Sticky on all viewports
 
-### Hero Banner
-- Full-width, 480px desktop / 260px mobile
-- Blurred cover image + dark overlay `bg-black/70`
-- Gradient: `linear-gradient(to right, rgba(0,0,0,0.9) 40%, transparent)`
+### Manga Detail Hero
+- Full-width section with `border-b border-default` separator
+- **Blurred backdrop**: Cover image with `blur-3xl scale-125 opacity-20`, layered gradients:
+  - `bg-gradient-to-r from-base via-base/95 to-base/80`
+  - `bg-gradient-to-t from-base via-transparent to-base/60`
+- Content constrained to `max-w-[1400px]` with standard page padding
+- Layout: `grid grid-cols-1 lg:grid-cols-[1fr_320px]` — cover+info left, sidebar right
+- Cover: `rounded-lg` + `shadow-2xl shadow-black/50` for depth against backdrop
+- **Action buttons**: All use `Button` component, consistent `h-10` height
+  - Start Reading: `variant="primary"` with filled `Play` icon
+  - Follow: `variant="secondary"` with `Bookmark`/`BookmarkCheck` icon
+  - Report: `variant="secondary"` icon-only with `AlertTriangle` icon
+- **Stats row**: Inline icons (Eye, Users, BookOpen) with `text-secondary`, `text-sm`
+- Genre tags displayed in hero via `MangaGenres` component
+- Mobile: centered stacked layout with smaller cover (w-48 h-72)
 
 ### Chapter Reader
 - Max width: 800px centered
