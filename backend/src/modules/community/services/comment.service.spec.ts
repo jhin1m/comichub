@@ -189,10 +189,11 @@ describe('CommentService', () => {
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([baseComment]); // findOrFail
-        return buildChain([]); // no existing like
+        if (selectCall === 2) return buildChain([]); // no existing reaction
+        return buildChain([{ likesCount: 1, dislikesCount: 0 }]); // final counts
       });
       mockDb.insert.mockReturnValue(buildChain([]));
-      mockDb.update.mockReturnValue(buildChain([{ likesCount: 1 }]));
+      mockDb.update.mockReturnValue(buildChain([]));
 
       const result = await service.toggleLike(1, 10);
       expect(result.liked).toBe(true);
@@ -200,16 +201,17 @@ describe('CommentService', () => {
     });
 
     it('should remove like when user has already liked', async () => {
-      const existingLike = { id: 5, userId: 10, commentId: 1 };
+      const existingLike = { id: 5, userId: 10, commentId: 1, isDislike: false };
 
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([baseComment]); // findOrFail
-        return buildChain([existingLike]); // existing like
+        if (selectCall === 2) return buildChain([existingLike]); // existing like
+        return buildChain([{ likesCount: 0, dislikesCount: 0 }]); // final counts
       });
       mockDb.delete.mockReturnValue(buildChain([]));
-      mockDb.update.mockReturnValue(buildChain([{ likesCount: 0 }]));
+      mockDb.update.mockReturnValue(buildChain([]));
 
       const result = await service.toggleLike(1, 10);
       expect(result.liked).toBe(false);

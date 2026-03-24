@@ -57,7 +57,9 @@ export function CommentItem({
   const { user } = useAuth();
   const ref = useRef<HTMLDivElement>(null);
   const [liked, setLiked] = useState(comment.isLiked ?? false);
+  const [disliked, setDisliked] = useState(comment.isDisliked ?? false);
   const [likesCount, setLikesCount] = useState(comment.likesCount);
+  const [dislikesCount, setDislikesCount] = useState(comment.dislikesCount);
   const [showReply, setShowReply] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -80,19 +82,33 @@ export function CommentItem({
     }
   }, [highlighted]);
 
-  const handleLike = async () => {
-    if (!user) { toast.error('Login to like comments'); return; }
-    const prev = { liked, likesCount };
-    setLiked(!liked);
-    setLikesCount(liked ? likesCount - 1 : likesCount + 1);
+  const handleReaction = async (type: 'like' | 'dislike') => {
+    if (!user) { toast.error('Login to react'); return; }
+    const prev = { liked, disliked, likesCount, dislikesCount };
+    // Optimistic update
+    if (type === 'like') {
+      setLiked(!liked);
+      setLikesCount(liked ? likesCount - 1 : likesCount + 1);
+      if (disliked) { setDisliked(false); setDislikesCount(dislikesCount - 1); }
+    } else {
+      setDisliked(!disliked);
+      setDislikesCount(disliked ? dislikesCount - 1 : dislikesCount + 1);
+      if (liked) { setLiked(false); setLikesCount(likesCount - 1); }
+    }
     try {
-      const res = await commentApi.toggleLike(comment.id);
+      const res = type === 'like'
+        ? await commentApi.toggleLike(comment.id)
+        : await commentApi.toggleDislike(comment.id);
       setLiked(res.liked);
+      setDisliked(res.disliked);
       setLikesCount(res.likesCount);
+      setDislikesCount(res.dislikesCount);
     } catch {
       setLiked(prev.liked);
+      setDisliked(prev.disliked);
       setLikesCount(prev.likesCount);
-      toast.error('Failed to update like');
+      setDislikesCount(prev.dislikesCount);
+      toast.error('Failed to update reaction');
     }
   };
 
@@ -181,7 +197,7 @@ export function CommentItem({
               {/* Actions: like, dislike, reply, more */}
               <div className="flex items-center gap-3 mt-1.5">
                 <button
-                  onClick={handleLike}
+                  onClick={() => handleReaction('like')}
                   aria-label={liked ? 'Unlike' : 'Like'}
                   className={cn(
                     'flex items-center gap-1 text-[11px] transition-colors',
@@ -192,10 +208,17 @@ export function CommentItem({
                   <span>{likesCount}</span>
                 </button>
 
-                <span className="flex items-center gap-1 text-[11px] text-muted">
-                  <ThumbsDown size={12} />
-                  <span>0</span>
-                </span>
+                <button
+                  onClick={() => handleReaction('dislike')}
+                  aria-label={disliked ? 'Remove dislike' : 'Dislike'}
+                  className={cn(
+                    'flex items-center gap-1 text-[11px] transition-colors',
+                    disliked ? 'text-accent' : 'text-muted hover:text-primary',
+                  )}
+                >
+                  <ThumbsDown size={12} fill={disliked ? 'currentColor' : 'none'} />
+                  <span>{dislikesCount}</span>
+                </button>
 
                 {depth < 3 && (
                   <button

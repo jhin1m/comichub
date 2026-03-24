@@ -3,12 +3,14 @@ export interface Comment {
   userId: number | null;
   content: string;
   likesCount: number;
+  dislikesCount: number;
   parentId: number | null;
   createdAt: string;
   updatedAt: string;
   userName: string;
   userAvatar: string | null;
   isLiked?: boolean;
+  isDisliked?: boolean;
   repliesCount?: number;
 }
 

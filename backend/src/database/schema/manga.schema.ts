@@ -11,6 +11,7 @@ import {
   numeric,
   index,
   uniqueIndex,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { users } from './user.schema.js';
 
@@ -68,10 +69,11 @@ export const manga = pgTable(
       onDelete: 'set null',
     }),
     title: varchar('title', { length: 500 }).notNull(),
-    titleAlt: varchar('title_alt', { length: 500 }),
+    altTitles: jsonb('alt_titles').$type<string[]>().default([]).notNull(),
     slug: varchar('slug', { length: 520 }).notNull().unique(),
     description: text('description'),
     cover: varchar('cover', { length: 500 }),
+    originalLanguage: varchar('original_language', { length: 10 }),
     status: mangaStatusEnum('status').default('ongoing').notNull(),
     type: mangaTypeEnum('type').default('manga').notNull(),
     views: bigint('views', { mode: 'number' }).default(0).notNull(),
@@ -84,8 +86,11 @@ export const manga = pgTable(
       .notNull(),
     totalRatings: integer('total_ratings').default(0).notNull(),
     isHot: boolean('is_hot').default(false).notNull(),
+    isNsfw: boolean('is_nsfw').default(false).notNull(),
     isReviewed: boolean('is_reviewed').default(false).notNull(),
+    year: integer('year'),
     lastChapterId: integer('last_chapter_id'), // app-managed, no FK (circular)
+    chapterUpdatedAt: timestamp('chapter_updated_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()

@@ -40,7 +40,11 @@ export function CommentEditor({
   const [showImageInput, setShowImageInput] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [charCount, setCharCount] = useState(0);
+  const [focused, setFocused] = useState(false);
   const MAX_CHARS = 2000;
+
+  // Show toolbar when editor is focused OR has content
+  const showToolbar = focused || charCount > 0;
 
   const onUpdate = useCallback(({ editor: e }: { editor: { getText: () => string } }) => {
     setCharCount(e.getText().length);
@@ -56,6 +60,8 @@ export function CommentEditor({
     content: initialContent,
     immediatelyRender: false,
     onUpdate,
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
     editorProps: {
       attributes: {
         class: cn(
@@ -104,96 +110,100 @@ export function CommentEditor({
         <EditorContent editor={editor} />
       </div>
 
-      {showImageInput && (
-        <div className="flex items-center gap-2 mt-1.5">
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://example.com/image.png"
-            className="flex-1 bg-elevated border border-default rounded px-2 py-1 text-xs text-primary placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
-            onKeyDown={(e) => e.key === 'Enter' && handleAddImage()}
-            autoFocus
-          />
-          <button onClick={handleAddImage} disabled={!imageUrl} className="text-xs text-accent hover:text-accent-hover disabled:opacity-40">Add</button>
-          <button onClick={() => { setShowImageInput(false); setImageUrl(''); }} className="text-xs text-secondary hover:text-primary">Cancel</button>
-        </div>
-      )}
+      {showToolbar && (
+        <>
+          {showImageInput && (
+            <div className="flex items-center gap-2 mt-1.5">
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.png"
+                className="flex-1 bg-elevated border border-default rounded px-2 py-1 text-xs text-primary placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddImage()}
+                autoFocus
+              />
+              <button onClick={handleAddImage} disabled={!imageUrl} className="text-xs text-accent hover:text-accent-hover disabled:opacity-40">Add</button>
+              <button onClick={() => { setShowImageInput(false); setImageUrl(''); }} className="text-xs text-secondary hover:text-primary">Cancel</button>
+            </div>
+          )}
 
-      <div className="flex items-center justify-between mt-1.5">
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            aria-label="Bold"
-            className={cn(
-              'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-              editor?.isActive('bold') && 'text-primary',
-            )}
-          >
-            <Bold size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            aria-label="Quote"
-            className={cn(
-              'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-              editor?.isActive('blockquote') && 'text-primary',
-            )}
-          >
-            <Quote size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor?.chain().focus().toggleMark('spoiler').run()}
-            aria-label="Spoiler"
-            className={cn(
-              'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-              editor?.isActive('spoiler') && 'text-primary',
-            )}
-          >
-            <EyeOff size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowImageInput(!showImageInput)}
-            aria-label="Add image"
-            className={cn(
-              'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-              showImageInput && 'text-primary',
-            )}
-          >
-            <ImageIcon size={16} />
-          </button>
-          <button
-            type="button"
-            aria-label="Preview"
-            className="p-1.5 rounded text-secondary hover:text-primary transition-colors"
-          >
-            <Eye size={16} />
-          </button>
-        </div>
-        <div className="flex items-center gap-3">
-          {charCount > 0 && (
-            <span className={cn('text-[10px]', charCount > MAX_CHARS ? 'text-accent' : 'text-muted')}>
-              {charCount}/{MAX_CHARS}
-            </span>
-          )}
-          {onCancel && (
-            <button onClick={onCancel} disabled={submitting} className="text-xs text-secondary hover:text-primary transition-colors">
-              Cancel
-            </button>
-          )}
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || charCount === 0 || charCount > MAX_CHARS}
-            className="px-4 py-1 rounded bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-40 transition-colors"
-          >
-            {submitting ? '...' : 'Save'}
-          </button>
-        </div>
-      </div>
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }}
+                aria-label="Bold"
+                className={cn(
+                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
+                  editor?.isActive('bold') && 'text-primary',
+                )}
+              >
+                <Bold size={16} />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBlockquote().run(); }}
+                aria-label="Quote"
+                className={cn(
+                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
+                  editor?.isActive('blockquote') && 'text-primary',
+                )}
+              >
+                <Quote size={16} />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleMark('spoiler').run(); }}
+                aria-label="Spoiler"
+                className={cn(
+                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
+                  editor?.isActive('spoiler') && 'text-primary',
+                )}
+              >
+                <EyeOff size={16} />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); setShowImageInput(!showImageInput); }}
+                aria-label="Add image"
+                className={cn(
+                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
+                  showImageInput && 'text-primary',
+                )}
+              >
+                <ImageIcon size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label="Preview"
+                className="p-1.5 rounded text-secondary hover:text-primary transition-colors"
+              >
+                <Eye size={16} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              {charCount > 0 && (
+                <span className={cn('text-[10px]', charCount > MAX_CHARS ? 'text-accent' : 'text-muted')}>
+                  {charCount}/{MAX_CHARS}
+                </span>
+              )}
+              {onCancel && (
+                <button onClick={onCancel} disabled={submitting} className="text-xs text-secondary hover:text-primary transition-colors">
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || charCount === 0 || charCount > MAX_CHARS}
+                className="px-4 py-1 rounded bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-40 transition-colors"
+              >
+                {submitting ? '...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

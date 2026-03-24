@@ -45,8 +45,8 @@ export function MangaCoverHero({ manga }: Props) {
           {manga.title}
         </h1>
 
-        {manga.titleAlt && (
-          <p className="text-secondary text-xs leading-relaxed">{manga.titleAlt}</p>
+        {manga.altTitles?.length > 0 && (
+          <p className="text-secondary text-xs leading-relaxed">{manga.altTitles.join(' / ')}</p>
         )}
 
         {/* Action buttons */}
@@ -93,8 +93,8 @@ export function MangaCoverHero({ manga }: Props) {
             {manga.title}
           </h1>
 
-          {manga.titleAlt && (
-            <p className="text-secondary text-sm line-clamp-2">{manga.titleAlt}</p>
+          {manga.altTitles?.length > 0 && (
+            <p className="text-secondary text-sm line-clamp-2">{manga.altTitles.join(' / ')}</p>
           )}
 
           <div className="flex items-center gap-2 flex-wrap pt-1">

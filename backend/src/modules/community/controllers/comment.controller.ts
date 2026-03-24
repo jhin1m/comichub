@@ -117,4 +117,12 @@ export class CommentController {
   toggleLike(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
     return this.commentService.toggleLike(id, user.id, user.name);
   }
+
+  @Post('comments/:id/dislike')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle dislike on comment' })
+  toggleDislike(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    return this.commentService.toggleDislike(id, user.id);
+  }
 }

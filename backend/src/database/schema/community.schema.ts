@@ -43,6 +43,7 @@ export const comments = pgTable(
     parentId: integer('parent_id'),
     content: text('content').notNull(),
     likesCount: integer('likes_count').default(0).notNull(),
+    dislikesCount: integer('dislikes_count').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -71,6 +72,7 @@ export const commentLikes = pgTable(
     commentId: integer('comment_id')
       .notNull()
       .references(() => comments.id, { onDelete: 'cascade' }),
+    isDislike: boolean('is_dislike').default(false).notNull(),
   },
   (table) => [
     uniqueIndex('comment_likes_unique_idx').on(table.userId, table.commentId),

@@ -12,11 +12,15 @@ export interface MangaListItem {
 }
 
 export interface MangaDetail extends MangaListItem {
-  titleAlt: string | null;
+  altTitles: string[];
   description: string | null;
+  originalLanguage: string | null;
   followersCount: number;
   totalRatings: number;
   isHot: boolean;
+  isNsfw: boolean;
+  year: number | null;
+  chapterUpdatedAt: Date | null;
   genres: { id: number; name: string; slug: string }[];
   artists: { id: number; name: string; slug: string }[];
   authors: { id: number; name: string; slug: string }[];

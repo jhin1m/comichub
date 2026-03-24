@@ -5,8 +5,11 @@ import {
   IsEnum,
   IsArray,
   IsInt,
+  IsBoolean,
   MaxLength,
   IsNotEmpty,
+  Max,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -37,11 +40,11 @@ export class CreateMangaDto {
   @MaxLength(520)
   slug?: string;
 
-  @ApiPropertyOptional({ example: 'ワンピース' })
+  @ApiPropertyOptional({ example: ['ワンピース', 'One Piece'], type: [String] })
   @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  titleAlt?: string;
+  @IsArray()
+  @IsString({ each: true })
+  altTitles?: string[];
 
   @ApiPropertyOptional({ example: 'A pirate adventure...' })
   @IsOptional()
@@ -54,6 +57,12 @@ export class CreateMangaDto {
   @MaxLength(500)
   cover?: string;
 
+  @ApiPropertyOptional({ example: 'ja', description: 'ISO 639-1 language code' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  originalLanguage?: string;
+
   @ApiPropertyOptional({ enum: MangaStatus, default: MangaStatus.ONGOING })
   @IsOptional()
   @IsEnum(MangaStatus)
@@ -63,6 +72,19 @@ export class CreateMangaDto {
   @IsOptional()
   @IsEnum(MangaType)
   type?: MangaType;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  isNsfw?: boolean;
+
+  @ApiPropertyOptional({ example: 2020 })
+  @IsOptional()
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
+  @Type(() => Number)
+  year?: number;
 
   @ApiPropertyOptional({ type: [Number], example: [1, 2] })
   @IsOptional()

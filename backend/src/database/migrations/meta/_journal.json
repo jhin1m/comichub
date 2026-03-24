@@ -15,6 +15,20 @@
       "when": 1774007646793,
       "tag": "0001_absent_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774256105653,
+      "tag": "0002_sticky_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774616400000,
+      "tag": "0003_add_manga_metadata_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -47,6 +47,9 @@ export class MangaService {
       genre,
       artist,
       author,
+      language,
+      year,
+      nsfw,
       sort,
       order,
     } = query;
@@ -55,6 +58,9 @@ export class MangaService {
 
     if (status) conditions.push(eq(manga.status, status));
     if (type) conditions.push(eq(manga.type, type));
+    if (language) conditions.push(eq(manga.originalLanguage, language));
+    if (year) conditions.push(eq(manga.year, year));
+    if (nsfw !== undefined) conditions.push(eq(manga.isNsfw, nsfw));
 
     // Genre filter via subquery on pivot
     if (genre) {
@@ -203,12 +209,15 @@ export class MangaService {
       .insert(manga)
       .values({
         title: dto.title,
-        titleAlt: dto.titleAlt,
+        altTitles: dto.altTitles ?? [],
         slug,
         description: dto.description,
         cover: dto.cover,
+        originalLanguage: dto.originalLanguage,
         status: dto.status,
         type: dto.type,
+        isNsfw: dto.isNsfw,
+        year: dto.year,
       })
       .returning();
 
@@ -226,12 +235,16 @@ export class MangaService {
 
     const updates: Partial<typeof manga.$inferInsert> = {};
     if (dto.title !== undefined) updates.title = dto.title;
-    if (dto.titleAlt !== undefined) updates.titleAlt = dto.titleAlt;
+    if (dto.altTitles !== undefined) updates.altTitles = dto.altTitles;
     if (dto.description !== undefined) updates.description = dto.description;
     if (dto.cover !== undefined) updates.cover = dto.cover;
+    if (dto.originalLanguage !== undefined)
+      updates.originalLanguage = dto.originalLanguage;
     if (dto.status !== undefined) updates.status = dto.status;
     if (dto.type !== undefined) updates.type = dto.type;
     if (dto.slug !== undefined) updates.slug = dto.slug;
+    if (dto.isNsfw !== undefined) updates.isNsfw = dto.isNsfw;
+    if (dto.year !== undefined) updates.year = dto.year;
 
     const [updated] = await this.db
       .update(manga)

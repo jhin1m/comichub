@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsEnum, IsInt, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsEnum, IsInt, IsString, IsBoolean } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { MangaStatus, MangaType } from './create-manga.dto.js';
 
@@ -42,6 +42,23 @@ export class MangaQueryDto extends PaginationDto {
   @Type(() => Number)
   @IsInt()
   author?: number;
+
+  @ApiPropertyOptional({ description: 'Original language code (e.g. ja, ko, zh)' })
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @ApiPropertyOptional({ description: 'Publication year' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  year?: number;
+
+  @ApiPropertyOptional({ description: 'Filter NSFW content' })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  nsfw?: boolean;
 
   @ApiPropertyOptional({
     enum: MangaSortField,

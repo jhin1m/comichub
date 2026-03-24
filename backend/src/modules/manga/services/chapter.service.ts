@@ -142,7 +142,7 @@ export class ChapterService {
       })
       .returning();
 
-    // Update manga chaptersCount
+    // Update manga chaptersCount and chapterUpdatedAt
     await this.db
       .update(manga)
       .set({
@@ -150,6 +150,7 @@ export class ChapterService {
           chapters,
           and(eq(chapters.mangaId, mangaId), isNull(chapters.deletedAt)),
         ) as unknown as number,
+        chapterUpdatedAt: new Date(),
       })
       .where(eq(manga.id, mangaId));
 

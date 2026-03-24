@@ -3,12 +3,16 @@ import Link from 'next/link';
 import { formatRelativeDate } from '@/lib/utils';
 import type { RecentComment } from '@/lib/api/comment.api';
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim();
+}
+
 function CommentItem({ comment }: { comment: RecentComment }) {
   const chapterLabel = comment.chapterNumber
     ? `Chapter ${comment.chapterNumber}`
     : null;
   const heading = [chapterLabel, comment.mangaTitle].filter(Boolean).join(' - ');
-  const href = comment.mangaSlug ? `/manga/${comment.mangaSlug}` : '#';
+  const href = comment.mangaSlug ? `/manga/${comment.mangaSlug}?cmid=${comment.id}` : '#';
 
   return (
     <div className="py-2.5 border-b border-default last:border-0">
@@ -39,7 +43,7 @@ function CommentItem({ comment }: { comment: RecentComment }) {
 
       {/* Comment content */}
       <p className="text-[12px] text-primary leading-relaxed line-clamp-2 mb-1">
-        {comment.content}
+        {stripHtml(comment.content)}
       </p>
 
       {/* User info + time */}

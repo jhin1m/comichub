@@ -15,11 +15,15 @@ export interface MangaListItem {
 }
 
 export interface MangaDetail extends MangaListItem {
-  titleAlt: string | null;
+  altTitles: string[];
   description: string | null;
+  originalLanguage: string | null;
   followersCount: number;
   totalRatings: number;
   isHot: boolean;
+  isNsfw: boolean;
+  year: number | null;
+  chapterUpdatedAt: string | null;
   genres: TaxonomyItem[];
   artists: TaxonomyItem[];
   authors: TaxonomyItem[];
@@ -75,6 +79,9 @@ export interface MangaQueryParams {
   genre?: string;
   status?: MangaStatus;
   type?: MangaType;
+  language?: string;
+  year?: number;
+  nsfw?: boolean;
   sort?: 'views' | 'created_at' | 'updated_at';
   order?: 'asc' | 'desc';
   artist?: number;

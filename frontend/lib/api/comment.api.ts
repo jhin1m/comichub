@@ -36,5 +36,8 @@ export const commentApi = {
     apiClient.delete(`/comments/${id}`),
 
   toggleLike: (id: number) =>
-    apiClient.post<{ liked: boolean; likesCount: number }>(`/comments/${id}/like`).then((r) => r.data),
+    apiClient.post<{ liked: boolean; disliked: boolean; likesCount: number; dislikesCount: number }>(`/comments/${id}/like`).then((r) => r.data),
+
+  toggleDislike: (id: number) =>
+    apiClient.post<{ liked: boolean; disliked: boolean; likesCount: number; dislikesCount: number }>(`/comments/${id}/dislike`).then((r) => r.data),
 };

@@ -62,12 +62,13 @@ const COMMENT_USER_SELECT = {
   userId: comments.userId,
   content: comments.content,
   likesCount: comments.likesCount,
+  dislikesCount: comments.dislikesCount,
   parentId: comments.parentId,
   createdAt: comments.createdAt,
   updatedAt: comments.updatedAt,
   userName: users.name,
   userAvatar: users.avatar,
-  repliesCount: sql<number>`(SELECT count(*) FROM comments c2 WHERE c2.parent_id = ${comments.id} AND c2.deleted_at IS NULL)`.as('replies_count'),
+  repliesCount: sql<number>`(SELECT count(*)::int FROM comments c2 WHERE c2.parent_id = ${comments.id} AND c2.deleted_at IS NULL)`.as('replies_count'),
 };
 
 const MAX_DEPTH = 3;
@@ -79,21 +80,22 @@ export class CommentService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  /** Attach isLiked boolean to each comment for the given user */
-  private async attachIsLiked<T extends { id: number }>(
+  /** Attach isLiked/isDisliked to each comment for the given user */
+  private async attachReactions<T extends { id: number }>(
     data: T[],
     currentUserId?: number,
-  ): Promise<(T & { isLiked: boolean })[]> {
+  ): Promise<(T & { isLiked: boolean; isDisliked: boolean })[]> {
     if (!currentUserId || data.length === 0) {
-      return data.map((d) => ({ ...d, isLiked: false }));
+      return data.map((d) => ({ ...d, isLiked: false, isDisliked: false }));
     }
     const commentIds = data.map((d) => d.id);
-    const liked = await this.db
-      .select({ commentId: commentLikes.commentId })
+    const reactions = await this.db
+      .select({ commentId: commentLikes.commentId, isDislike: commentLikes.isDislike })
       .from(commentLikes)
       .where(and(eq(commentLikes.userId, currentUserId), inArray(commentLikes.commentId, commentIds)));
-    const likedSet = new Set(liked.map((l) => l.commentId));
-    return data.map((d) => ({ ...d, isLiked: likedSet.has(d.id) }));
+    const likedSet = new Set(reactions.filter((r) => !r.isDislike).map((r) => r.commentId));
+    const dislikedSet = new Set(reactions.filter((r) => r.isDislike).map((r) => r.commentId));
+    return data.map((d) => ({ ...d, isLiked: likedSet.has(d.id), isDisliked: dislikedSet.has(d.id) }));
   }
 
   async getRecent(limit = 10) {
@@ -181,8 +183,8 @@ export class CommentService {
         .where(where),
     ]);
 
-    const withLikes = await this.attachIsLiked(data, currentUserId);
-    return { data: withLikes, total, page: query.page, limit: query.limit };
+    const withReactions = await this.attachReactions(data, currentUserId);
+    return { data: withReactions, total, page: query.page, limit: query.limit };
   }
 
   async listForManga(mangaId: number, query: CommentQueryDto, currentUserId?: number) {
@@ -283,7 +285,7 @@ export class CommentService {
       .where(eq(comments.id, commentId));
   }
 
-  async toggleLike(commentId: number, userId: number, likerName?: string) {
+  async toggleReaction(commentId: number, userId: number, isDislike: boolean, userName?: string) {
     const commentData = await this.findOrFail(commentId);
 
     const [existing] = await this.db
@@ -297,38 +299,71 @@ export class CommentService {
       )
       .limit(1);
 
+    // If existing reaction: remove it (and if it's the opposite type, we'll insert the new one)
     if (existing) {
-      await this.db
-        .delete(commentLikes)
-        .where(eq(commentLikes.id, existing.id));
+      await this.db.delete(commentLikes).where(eq(commentLikes.id, existing.id));
 
-      const [updated] = await this.db
-        .update(comments)
-        .set({ likesCount: sql`GREATEST(${comments.likesCount} - 1, 0)` })
-        .where(eq(comments.id, commentId))
-        .returning({ likesCount: comments.likesCount });
+      // Decrement the old counter
+      if (existing.isDislike) {
+        await this.db.update(comments)
+          .set({ dislikesCount: sql`GREATEST(${comments.dislikesCount} - 1, 0)` })
+          .where(eq(comments.id, commentId));
+      } else {
+        await this.db.update(comments)
+          .set({ likesCount: sql`GREATEST(${comments.likesCount} - 1, 0)` })
+          .where(eq(comments.id, commentId));
+      }
 
-      return { liked: false, likesCount: updated?.likesCount ?? 0 };
+      // If same type → just un-toggle, return
+      if (existing.isDislike === isDislike) {
+        const [c] = await this.db.select({ likesCount: comments.likesCount, dislikesCount: comments.dislikesCount })
+          .from(comments).where(eq(comments.id, commentId));
+        return {
+          liked: false, disliked: false,
+          likesCount: c?.likesCount ?? 0, dislikesCount: c?.dislikesCount ?? 0,
+        };
+      }
     }
 
-    await this.db.insert(commentLikes).values({ userId, commentId });
+    // Insert new reaction
+    await this.db.insert(commentLikes).values({ userId, commentId, isDislike });
 
-    const [updated] = await this.db
-      .update(comments)
-      .set({ likesCount: sql`${comments.likesCount} + 1` })
-      .where(eq(comments.id, commentId))
-      .returning({ likesCount: comments.likesCount });
+    // Increment the new counter
+    if (isDislike) {
+      await this.db.update(comments)
+        .set({ dislikesCount: sql`${comments.dislikesCount} + 1` })
+        .where(eq(comments.id, commentId));
+    } else {
+      await this.db.update(comments)
+        .set({ likesCount: sql`${comments.likesCount} + 1` })
+        .where(eq(comments.id, commentId));
 
-    if (commentData.userId && commentData.userId !== userId) {
-      const event = new CommentLikeEvent();
-      event.commentId = commentId;
-      event.likerName = likerName ?? '';
-      event.commentOwnerId = commentData.userId;
-      event.commentPreview = (commentData.content ?? '').slice(0, 100);
-      this.eventEmitter.emit('comment.liked', event);
+      // Emit like notification (only for likes, not dislikes)
+      if (commentData.userId && commentData.userId !== userId) {
+        const event = new CommentLikeEvent();
+        event.commentId = commentId;
+        event.likerName = userName ?? '';
+        event.commentOwnerId = commentData.userId;
+        event.commentPreview = (commentData.content ?? '').slice(0, 100);
+        this.eventEmitter.emit('comment.liked', event);
+      }
     }
 
-    return { liked: true, likesCount: updated?.likesCount ?? 0 };
+    const [c] = await this.db.select({ likesCount: comments.likesCount, dislikesCount: comments.dislikesCount })
+      .from(comments).where(eq(comments.id, commentId));
+    return {
+      liked: !isDislike, disliked: isDislike,
+      likesCount: c?.likesCount ?? 0, dislikesCount: c?.dislikesCount ?? 0,
+    };
+  }
+
+  /** Backward-compatible wrapper */
+  async toggleLike(commentId: number, userId: number, likerName?: string) {
+    return this.toggleReaction(commentId, userId, false, likerName);
+  }
+
+  async toggleDislike(commentId: number, userId: number) {
+    return this.toggleReaction(commentId, userId, true);
   }
 
   private async findOrFail(id: number) {
