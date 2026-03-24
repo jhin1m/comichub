@@ -41,6 +41,7 @@ export default async function HomePage() {
             items={daily}
             showRank
             moreHref="/browse?sort=views"
+            defaultPeriod="daily"
           />
           <MangaCarousel
             title="Most Follows New Comics"
@@ -48,6 +49,7 @@ export default async function HomePage() {
             items={weekly}
             showRank
             moreHref="/browse?sort=views"
+            defaultPeriod="weekly"
           />
           <LatestUpdatesSection initialData={latestUpdates} />
         </div>
