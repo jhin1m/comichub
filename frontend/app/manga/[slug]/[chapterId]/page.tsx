@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, MessageSquare, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { CaretLeft, SidebarSimple } from '@phosphor-icons/react';
 import { chapterApi } from '@/lib/api/chapter.api';
 import { userApi } from '@/lib/api/user.api';
 import { useAuth } from '@/contexts/auth.context';
@@ -107,12 +107,12 @@ export default function ChapterReaderPage({ params }: Props) {
       {/* Reader panel — always full viewport width */}
       <div className="absolute inset-0 flex flex-col">
         {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-12 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+        <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-12 bg-base">
           <Link
             href={`/manga/${slug}`}
             className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors"
           >
-            <ChevronLeft size={16} />
+            <CaretLeft size={16} />
             <span className="truncate max-w-[250px]">{mangaTitle}</span>
           </Link>
           <div className="flex items-center gap-3 text-secondary">
@@ -122,7 +122,7 @@ export default function ChapterReaderPage({ params }: Props) {
               aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               className="hover:text-primary transition-colors p-1"
             >
-              {sidebarOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+              {sidebarOpen ? <SidebarSimple size={18} /> : <SidebarSimple size={18} />}
             </button>
           </div>
         </div>

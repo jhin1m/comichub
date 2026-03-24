@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, X } from 'lucide-react';
+import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { searchApi, type SuggestItem } from '@/lib/api/search.api';
 
 export function SearchAutocomplete() {
@@ -181,7 +181,7 @@ export function SearchAutocomplete() {
         className="md:hidden w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors ml-auto"
         aria-label="Open search"
       >
-        <Search size={18} />
+        <MagnifyingGlass size={18} />
       </button>
 
       {/* Mobile: Drop-down search panel (below navbar) */}
@@ -189,7 +189,7 @@ export function SearchAutocomplete() {
         <div className="fixed top-14 left-0 right-0 z-[60] bg-base border-b border-default shadow-lg md:hidden">
           <div className="flex items-center gap-2 px-3 py-2.5">
             <form onSubmit={handleSubmit} className="flex-1 relative">
-              <Search
+              <MagnifyingGlass
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
               />
@@ -244,7 +244,7 @@ export function SearchAutocomplete() {
       <div className="relative w-full max-w-[520px] min-w-0 hidden md:block">
         <form onSubmit={handleSubmit} className="flex">
           <div className="relative flex-1">
-            <Search
+            <MagnifyingGlass
               size={15}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
             />

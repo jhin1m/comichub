@@ -2,13 +2,14 @@
 
 import { useState, useRef, useCallback, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Flame, Heart, MoreHorizontal, type LucideIcon } from 'lucide-react';
+import { CaretLeft, CaretRight, Fire, Heart, DotsThreeOutline } from '@phosphor-icons/react';
+import type { Icon as IconType } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCarouselCard } from './manga-carousel-card';
 import { mangaApi, type RankingPeriod } from '@/lib/api/manga.api';
 import type { MangaListItem } from '@/types/manga.types';
 
-const ICON_MAP: Record<string, LucideIcon> = { flame: Flame, heart: Heart };
+const ICON_MAP: Record<string, IconType> = { flame: Fire, heart: Heart };
 
 const PERIOD_OPTIONS: { value: RankingPeriod; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -124,7 +125,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
           className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
           aria-label="Previous"
         >
-          <ChevronLeft size={13} />
+          <CaretLeft size={13} />
         </button>
         <button
           onClick={() => scroll(1)}
@@ -132,7 +133,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
           className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
           aria-label="Next"
         >
-          <ChevronRight size={13} />
+          <CaretRight size={13} />
         </button>
 
         {defaultPeriod ? (
@@ -142,7 +143,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
                 className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
                 aria-label="Filter period"
               >
-                <MoreHorizontal size={13} />
+                <DotsThreeOutline size={13} />
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
@@ -169,7 +170,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
             className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
             aria-label="See all"
           >
-            <MoreHorizontal size={13} />
+            <DotsThreeOutline size={13} />
           </Link>
         )}
       </div>

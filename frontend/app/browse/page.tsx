@@ -2,7 +2,7 @@
 import { Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { LayoutGrid, LayoutList, SlidersHorizontal } from 'lucide-react';
+import { SquaresFour, ListBullets, SlidersHorizontal } from '@phosphor-icons/react';
 import { mangaApi } from '@/lib/api/manga.api';
 import { AdvancedFilterBar } from '@/components/browse/advanced-filter-bar';
 import { BrowseResults } from '@/components/browse/browse-results';
@@ -103,7 +103,7 @@ function BrowseContent() {
             }`}
             title="List view"
           >
-            <LayoutList size={18} />
+            <ListBullets size={18} />
           </button>
           <button
             type="button"
@@ -113,7 +113,7 @@ function BrowseContent() {
             }`}
             title="Grid view"
           >
-            <LayoutGrid size={18} />
+            <SquaresFour size={18} />
           </button>
         </div>
       </div>

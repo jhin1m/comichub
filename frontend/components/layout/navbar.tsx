@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Menu, X, Bell, LayoutGrid } from 'lucide-react';
+import { List, X, Bell, SquaresFour } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth.context';
@@ -53,7 +53,7 @@ export default function Navbar() {
             className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
             aria-label="Reading list"
           >
-            <LayoutGrid size={18} />
+            <SquaresFour size={18} />
           </Link>
 
           {user && (
@@ -120,7 +120,7 @@ export default function Navbar() {
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          {menuOpen ? <X size={20} /> : <List size={20} />}
         </button>
       </div>
 

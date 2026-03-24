@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react/ssr';
 import type { ChapterNavigation } from '@/types/manga.types';
 
 interface Props {
@@ -19,7 +19,7 @@ export function ChapterNavBottom({ nav, mangaSlug }: Props) {
       {hasPrev ? (
         <Link href={`/manga/${mangaSlug}/${nav!.prev!.id}`} className="flex-1 max-w-[240px]">
           <Button variant="primary" className="w-full flex items-center justify-center gap-2">
-            <ChevronLeft size={18} />
+            <CaretLeft size={18} />
             Ch. {nav!.prev!.number}
           </Button>
         </Link>
@@ -31,7 +31,7 @@ export function ChapterNavBottom({ nav, mangaSlug }: Props) {
         <Link href={`/manga/${mangaSlug}/${nav!.next!.id}`} className="flex-1 max-w-[240px]">
           <Button variant="primary" className="w-full flex items-center justify-center gap-2">
             Ch. {nav!.next!.number}
-            <ChevronRight size={18} />
+            <CaretRight size={18} />
           </Button>
         </Link>
       ) : (

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Eye, Clock } from 'lucide-react';
+import { Eye, Clock } from '@phosphor-icons/react/ssr';
 import { formatRelativeDate, formatCount } from '@/lib/utils';
 import type { ChapterListItem } from '@/types/manga.types';
 

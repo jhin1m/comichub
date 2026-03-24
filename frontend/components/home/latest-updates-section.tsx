@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { ChevronLeft, ChevronRight, Clock, MoreHorizontal } from 'lucide-react';
+import { CaretLeft, CaretRight, Clock, DotsThreeOutline } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCarouselCard } from '@/components/home/manga-carousel-card';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
@@ -89,7 +89,7 @@ export function LatestUpdatesSection({ initialData }: Props) {
               className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
               aria-label="Filter type"
             >
-              <MoreHorizontal size={13} />
+              <DotsThreeOutline size={13} />
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
@@ -133,14 +133,14 @@ export function LatestUpdatesSection({ initialData }: Props) {
             onClick={() => goToPage(page - 1)}
             className="flex items-center justify-center gap-1 h-8 rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={18} />
+            <CaretLeft size={18} />
           </button>
           <button
             disabled={!hasNext || isPending}
             onClick={() => goToPage(page + 1)}
             className="flex items-center justify-center gap-1 h-8 rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <ChevronRight size={18} />
+            <CaretRight size={18} />
           </button>
         </div>
       )}

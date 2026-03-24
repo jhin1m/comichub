@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Layout, ImageIcon, Keyboard } from 'lucide-react';
+import type React from 'react';
+import { X, Layout, Image as ImageIcon, Keyboard } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export type DisplayMode = 'single' | 'double' | 'longstrip';
@@ -20,7 +21,7 @@ interface Props {
 
 type Tab = 'layout' | 'image' | 'shortcuts';
 
-const tabs: { id: Tab; icon: typeof Layout; label: string }[] = [
+const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'layout', icon: Layout, label: 'Layout' },
   { id: 'image', icon: ImageIcon, label: 'Image' },
   { id: 'shortcuts', icon: Keyboard, label: 'Shortcuts' },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { Warning, X } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -68,7 +68,7 @@ export function ReportButton({ mangaId: _mangaId, firstChapterId }: Props) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="secondary" aria-label="Report" title="Report" className="px-2.5">
-          <AlertTriangle size={16} />
+          <Warning size={16} />
         </Button>
       </DialogTrigger>
 

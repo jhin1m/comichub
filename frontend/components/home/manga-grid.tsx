@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MoreHorizontal } from 'lucide-react';
+import { DotsThreeOutline } from '@phosphor-icons/react/ssr';
 import { MangaCarouselCard } from './manga-carousel-card';
 import type { MangaListItem } from '@/types/manga.types';
 
@@ -19,7 +19,7 @@ export function MangaGrid({ title, items = [], moreHref = '/browse' }: Props) {
           className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
           aria-label="See all"
         >
-          <MoreHorizontal size={13} />
+          <DotsThreeOutline size={13} />
         </Link>
       </div>
 

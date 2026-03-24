@@ -6,7 +6,7 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Mark, mergeAttributes } from '@tiptap/core';
 import { useState, useCallback } from 'react';
-import { Bold, Quote, EyeOff, Image as ImageIcon, Eye } from 'lucide-react';
+import { TextBolderIcon, Quotes, EyeSlash, Image as ImageIcon, Eye } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 const Spoiler = Mark.create({
@@ -139,7 +139,7 @@ export function CommentEditor({
                   editor?.isActive('bold') && 'text-primary',
                 )}
               >
-                <Bold size={16} />
+                <TextBolderIcon size={16} />
               </button>
               <button
                 type="button"
@@ -150,7 +150,7 @@ export function CommentEditor({
                   editor?.isActive('blockquote') && 'text-primary',
                 )}
               >
-                <Quote size={16} />
+                <Quotes size={16} />
               </button>
               <button
                 type="button"
@@ -161,7 +161,7 @@ export function CommentEditor({
                   editor?.isActive('spoiler') && 'text-primary',
                 )}
               >
-                <EyeOff size={16} />
+                <EyeSlash size={16} />
               </button>
               <button
                 type="button"

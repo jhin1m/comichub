@@ -1,6 +1,6 @@
 'use client';
 
-import { Minus, Plus, Settings } from 'lucide-react';
+import { Minus, Plus, GearSix } from '@phosphor-icons/react';
 
 interface Props {
   zoom: number;
@@ -47,7 +47,7 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick }: Prop
         aria-label="Reader settings"
         className="pointer-events-auto text-secondary hover:text-primary transition-colors p-2 bg-elevated/80 backdrop-blur-sm rounded-lg"
       >
-        <Settings size={18} />
+        <GearSix size={18} />
       </button>
     </div>
   );

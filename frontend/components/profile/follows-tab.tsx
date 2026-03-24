@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import { Heart } from '@phosphor-icons/react/ssr';
 import { Badge } from '@/components/ui/badge';
 import { statusVariant } from '@/lib/utils';
 import type { FollowItem } from '@/types/user.types';

@@ -1,4 +1,4 @@
-import { Eye, Users, Star } from 'lucide-react';
+import { Eye, Users, Star } from '@phosphor-icons/react/ssr';
 import { formatCount } from '@/lib/utils';
 import type { MangaDetail } from '@/types/manga.types';
 

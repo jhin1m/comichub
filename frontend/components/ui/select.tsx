@@ -1,7 +1,7 @@
 "use client";
 
 import * as RadixSelect from "@radix-ui/react-select";
-import { ChevronDown } from "lucide-react";
+import { CaretDown } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 const Select = RadixSelect.Root;
@@ -25,7 +25,7 @@ function SelectTrigger({
     >
       {children}
       <RadixSelect.Icon asChild>
-        <ChevronDown size={14} className="text-secondary shrink-0" />
+        <CaretDown size={14} className="text-secondary shrink-0" />
       </RadixSelect.Icon>
     </RadixSelect.Trigger>
   );

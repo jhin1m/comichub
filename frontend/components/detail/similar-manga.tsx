@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, Library } from 'lucide-react';
+import { Star, Books } from '@phosphor-icons/react';
 import { mangaApi } from '@/lib/api/manga.api';
 import type { MangaListItem, TaxonomyItem } from '@/types/manga.types';
 
@@ -71,7 +71,7 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
         <Skeleton />
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Library size={48} className="text-muted mb-4" />
+          <Books size={48} className="text-muted mb-4" />
           <p className="text-secondary text-sm mb-2">No recommendations found</p>
           <p className="text-muted text-xs">Try again later</p>
         </div>
@@ -110,7 +110,7 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
                     {item.title}
                   </p>
                   <span className="flex items-center gap-1 text-[10px] text-secondary">
-                    <Star size={10} className="text-yellow-400 fill-yellow-400 shrink-0" />
+                    <Star size={10} weight="fill" className="text-yellow-400 shrink-0" />
                     {Number(item.averageRating).toFixed(1)}
                   </span>
                 </div>

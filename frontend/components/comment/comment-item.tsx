@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { ThumbsUp, ThumbsDown, Reply, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, ArrowBendUpLeft, DotsThreeOutline, PencilSimple, Trash } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Avatar } from '@/components/ui/avatar';
 import { CommentEditor } from './comment-editor';
@@ -204,7 +204,7 @@ export function CommentItem({
                     liked ? 'text-accent' : 'text-muted hover:text-primary',
                   )}
                 >
-                  <ThumbsUp size={12} fill={liked ? 'currentColor' : 'none'} />
+                  <ThumbsUp size={12} weight={liked ? 'fill' : 'regular'} />
                   <span>{likesCount}</span>
                 </button>
 
@@ -216,7 +216,7 @@ export function CommentItem({
                     disliked ? 'text-accent' : 'text-muted hover:text-primary',
                   )}
                 >
-                  <ThumbsDown size={12} fill={disliked ? 'currentColor' : 'none'} />
+                  <ThumbsDown size={12} weight={disliked ? 'fill' : 'regular'} />
                   <span>{dislikesCount}</span>
                 </button>
 
@@ -226,7 +226,7 @@ export function CommentItem({
                     aria-label="Reply"
                     className="flex items-center gap-1 text-[11px] text-muted hover:text-primary transition-colors"
                   >
-                    <Reply size={12} />
+                    <ArrowBendUpLeft size={12} />
                     <span>Reply</span>
                   </button>
                 )}
@@ -238,7 +238,7 @@ export function CommentItem({
                     aria-label="More options"
                     className="flex items-center text-[11px] text-muted hover:text-primary transition-colors"
                   >
-                    <MoreHorizontal size={14} />
+                    <DotsThreeOutline size={14} />
                     <span className="ml-0.5">More</span>
                   </button>
 
@@ -262,7 +262,7 @@ export function CommentItem({
                             onClick={() => { setShowEdit(true); setShowMore(false); }}
                             className="w-full px-3 py-1.5 text-left text-xs text-secondary hover:bg-hover hover:text-primary transition-colors flex items-center gap-1.5"
                           >
-                            <Pencil size={11} /> Edit
+                            <PencilSimple size={11} /> Edit
                           </button>
                         )}
                         {(isOwner || isAdmin) && !confirmingDelete && (
@@ -270,7 +270,7 @@ export function CommentItem({
                             onClick={() => { setConfirmingDelete(true); setShowMore(false); }}
                             className="w-full px-3 py-1.5 text-left text-xs text-accent hover:bg-hover transition-colors flex items-center gap-1.5"
                           >
-                            <Trash2 size={11} /> Delete
+                            <Trash size={11} /> Delete
                           </button>
                         )}
                       </div>

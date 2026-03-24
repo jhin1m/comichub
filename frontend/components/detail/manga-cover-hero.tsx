@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Eye, Users, BookOpen } from 'lucide-react';
+import { Play, Eye, Users, BookOpen } from '@phosphor-icons/react/ssr';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FollowButton } from './follow-button';
@@ -75,7 +75,7 @@ export function MangaCoverHero({ manga }: Props) {
           {firstChapter && (
             <Link href={`/manga/${manga.slug}/${firstChapter.id}`}>
               <Button variant="primary">
-                <Play size={16} fill="currentColor" />
+                <Play size={16} weight="fill" />
                 Start Reading
               </Button>
             </Link>
@@ -148,7 +148,7 @@ export function MangaCoverHero({ manga }: Props) {
             {firstChapter && (
               <Link href={`/manga/${manga.slug}/${firstChapter.id}`}>
                 <Button variant="primary">
-                  <Play size={16} fill="currentColor" />
+                  <Play size={16} weight="fill" />
                   Start Reading
                 </Button>
               </Link>

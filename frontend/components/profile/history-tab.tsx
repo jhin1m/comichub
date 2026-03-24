@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock } from 'lucide-react';
+import { Clock } from '@phosphor-icons/react/ssr';
 import { formatRelativeDate } from '@/lib/utils';
 import type { HistoryItem } from '@/types/user.types';
 

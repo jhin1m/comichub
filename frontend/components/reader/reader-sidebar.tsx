@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { CaretLeft, CaretRight, X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { CommentSection } from '@/components/comment/comment-section';
 import { chapterApi } from '@/lib/api/chapter.api';
@@ -63,12 +63,12 @@ export function ReaderSidebar({ chapter, nav, mangaSlug, mangaTitle, onClose }: 
         {nav?.prev ? (
           <Link href={`/manga/${mangaSlug}/${nav.prev.id}`}>
             <Button variant="secondary" size="sm" aria-label="Previous chapter" className="px-3">
-              <ChevronLeft size={18} />
+              <CaretLeft size={18} />
             </Button>
           </Link>
         ) : (
           <Button variant="secondary" size="sm" disabled className="px-3">
-            <ChevronLeft size={18} />
+            <CaretLeft size={18} />
           </Button>
         )}
 
@@ -90,12 +90,12 @@ export function ReaderSidebar({ chapter, nav, mangaSlug, mangaTitle, onClose }: 
         {nav?.next ? (
           <Link href={`/manga/${mangaSlug}/${nav.next.id}`}>
             <Button variant="secondary" size="sm" aria-label="Next chapter" className="px-3">
-              <ChevronRight size={18} />
+              <CaretRight size={18} />
             </Button>
           </Link>
         ) : (
           <Button variant="secondary" size="sm" disabled className="px-3">
-            <ChevronRight size={18} />
+            <CaretRight size={18} />
           </Button>
         )}
       </div>

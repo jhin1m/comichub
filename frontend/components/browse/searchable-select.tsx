@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { CaretDown, X } from '@phosphor-icons/react';
 
 interface SearchableSelectProps {
   label: string;
@@ -89,7 +89,7 @@ export function SearchableSelect({
                 placeholder={value ? selectedLabel : placeholder}
                 className="flex-1 bg-transparent text-primary placeholder:text-muted focus:outline-none text-sm"
               />
-              <ChevronDown
+              <CaretDown
                 size={14}
                 className={`ml-1 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
               />

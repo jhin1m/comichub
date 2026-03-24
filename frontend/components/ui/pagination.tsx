@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react/ssr';
 import { cn } from '@/lib/utils';
 
 interface PaginationProps {
@@ -33,7 +33,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         aria-label="Previous page"
         className={cn(btnBase, 'bg-surface text-secondary hover:bg-hover', isPrevDisabled && 'opacity-40 cursor-not-allowed pointer-events-none')}
       >
-        <ChevronLeft size={18} />
+        <CaretLeft size={18} />
       </button>
 
       {pages.map((page, i) =>
@@ -64,7 +64,7 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
         aria-label="Next page"
         className={cn(btnBase, 'bg-surface text-secondary hover:bg-hover', isNextDisabled && 'opacity-40 cursor-not-allowed pointer-events-none')}
       >
-        <ChevronRight size={18} />
+        <CaretRight size={18} />
       </button>
     </nav>
   );

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { ChapterWithImages, ChapterNavigation } from '@/types/manga.types';
 
@@ -35,7 +35,7 @@ export function ReaderToolbar({ chapter, nav, mangaSlug }: Props) {
         <div className="flex items-center gap-2">
           <Link href={`/manga/${mangaSlug}`}>
             <Button variant="secondary" size="sm" aria-label="Back to manga">
-              <ChevronLeft size={18} />
+              <CaretLeft size={18} />
             </Button>
           </Link>
           <span className="text-sm text-secondary truncate max-w-[200px]">
@@ -46,14 +46,14 @@ export function ReaderToolbar({ chapter, nav, mangaSlug }: Props) {
           {nav?.prev && (
             <Link href={`/manga/${mangaSlug}/${nav.prev.id}`}>
               <Button variant="secondary" size="sm" aria-label="Previous chapter">
-                <ChevronLeft size={18} />
+                <CaretLeft size={18} />
               </Button>
             </Link>
           )}
           {nav?.next && (
             <Link href={`/manga/${mangaSlug}/${nav.next.id}`}>
               <Button variant="secondary" size="sm" aria-label="Next chapter">
-                <ChevronRight size={18} />
+                <CaretRight size={18} />
               </Button>
             </Link>
           )}

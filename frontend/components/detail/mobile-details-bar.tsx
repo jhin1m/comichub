@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import StarRating from './star-rating';
 import { MangaMetadata } from './manga-metadata';
 import type { MangaDetail } from '@/types/manga.types';
@@ -30,7 +30,7 @@ export function MobileDetailsBar({ manga }: Props) {
           aria-label="Toggle manga details"
         >
           Details
-          <ChevronDown
+          <CaretDown
             size={16}
             className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           />

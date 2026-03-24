@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { MessageCircle } from 'lucide-react';
+import { ChatCircle } from '@phosphor-icons/react/ssr';
 import { formatRelativeDate } from '@/lib/utils';
 import type { RecentComment } from '@/lib/api/comment.api';
 
@@ -71,7 +71,7 @@ export function LatestComments({ comments }: Props) {
     <div className="mt-6">
       <div className="mb-3 pb-2.5 border-b border-default">
         <h2 className="font-rajdhani font-bold text-[17px] text-primary flex items-center gap-1.5">
-          <MessageCircle size={15} className="text-accent" />
+          <ChatCircle size={15} className="text-accent" />
           Latest Comments
         </h2>
       </div>
