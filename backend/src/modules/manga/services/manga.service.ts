@@ -32,7 +32,7 @@ import {
   chapters,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
-import { CreateMangaDto } from '../dto/create-manga.dto.js';
+import { CreateMangaDto, MangaType } from '../dto/create-manga.dto.js';
 import { UpdateMangaDto } from '../dto/update-manga.dto.js';
 import {
   MangaQueryDto,
@@ -71,6 +71,8 @@ export class MangaService {
       yearTo,
       minChapter,
       minRating,
+      excludeTypes,
+      excludeDemographics,
     } = query;
 
     const conditions: SQL[] = [isNull(manga.deletedAt)];
@@ -181,12 +183,25 @@ export class MangaService {
       }
     }
 
+    if (excludeTypes) {
+      const types = excludeTypes.split(',').map((s) => s.trim()).filter(Boolean) as MangaType[];
+      if (types.length) conditions.push(notInArray(manga.type, types));
+    }
+
+    if (excludeDemographics) {
+      const demos = excludeDemographics.split(',').map((s) => s.trim()).filter(Boolean);
+      if (demos.length) conditions.push(notInArray(manga.demographic, demos));
+    }
+
     const where = and(...conditions);
     const sortDir = order === SortOrder.ASC ? asc : desc;
     let orderBy;
     switch (sort) {
       case MangaSortField.VIEWS:
         orderBy = sortDir(manga.views);
+        break;
+      case MangaSortField.TRENDING:
+        orderBy = sortDir(manga.viewsWeek);
         break;
       case MangaSortField.CREATED_AT:
         orderBy = sortDir(manga.createdAt);

@@ -82,13 +82,15 @@ export interface MangaQueryParams {
   language?: string;
   year?: number;
   nsfw?: boolean;
-  sort?: 'views' | 'created_at' | 'updated_at';
+  sort?: 'views' | 'trending' | 'created_at' | 'updated_at';
   order?: 'asc' | 'desc';
   artist?: number;
   author?: number;
   // Advanced filters
   includeGenres?: string;
   excludeGenres?: string;
+  excludeTypes?: string;
+  excludeDemographics?: string;
   demographic?: string;
   yearFrom?: number;
   yearTo?: number;

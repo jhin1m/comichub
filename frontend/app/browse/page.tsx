@@ -2,12 +2,13 @@
 import { Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { SquaresFour, ListBullets, SlidersHorizontal } from '@phosphor-icons/react';
+import { SquaresFourIcon, ListBulletsIcon, SlidersHorizontalIcon } from '@phosphor-icons/react';
 import { mangaApi } from '@/lib/api/manga.api';
 import { AdvancedFilterBar } from '@/components/browse/advanced-filter-bar';
 import { BrowseResults } from '@/components/browse/browse-results';
 import { SearchBar } from '@/components/browse/search-bar';
 import PageWrapper from '@/components/layout/page-wrapper';
+import { usePreferencesParams } from '@/hooks/use-preferences-params';
 import type { PaginatedResult, MangaListItem, MangaQueryParams } from '@/types/manga.types';
 
 function BrowseContent() {
@@ -18,6 +19,7 @@ function BrowseContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const { params: prefParams, isLoaded: prefsLoaded } = usePreferencesParams();
 
   const params: MangaQueryParams = {
     page: Number(searchParams.get('page') ?? 1),
@@ -31,20 +33,25 @@ function BrowseContent() {
     artist: searchParams.get('artist') ? Number(searchParams.get('artist')) : undefined,
     author: searchParams.get('author') ? Number(searchParams.get('author')) : undefined,
     includeGenres: searchParams.get('includeGenres') ?? searchParams.get('genre') ?? undefined,
-    excludeGenres: searchParams.get('excludeGenres') ?? undefined,
+    // URL excludeGenres takes priority; fall back to preferences
+    excludeGenres: searchParams.get('excludeGenres') ?? prefParams.excludeGenres ?? undefined,
     demographic: searchParams.get('demographic') ?? undefined,
     yearFrom: searchParams.get('yearFrom') ? Number(searchParams.get('yearFrom')) : undefined,
     yearTo: searchParams.get('yearTo') ? Number(searchParams.get('yearTo')) : undefined,
     minChapter: searchParams.get('minChapter') ? Number(searchParams.get('minChapter')) : undefined,
     minRating: searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
-    nsfw: searchParams.get('nsfw') === 'true' ? true : undefined,
+    // URL nsfw=true overrides the preference hide; otherwise apply preference
+    nsfw: searchParams.get('nsfw') === 'true' ? true : prefParams.nsfw,
+    excludeTypes: prefParams.excludeTypes,
+    excludeDemographics: prefParams.excludeDemographics,
   };
 
   useEffect(() => {
+    if (!prefsLoaded) return;
     setIsLoading(true);
     mangaApi.list(params).then(setResult).finally(() => setIsLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString()]);
+  }, [searchParams.toString(), prefsLoaded, prefParams.excludeTypes, prefParams.excludeDemographics, prefParams.excludeGenres, prefParams.nsfw]);
 
   const updateParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -75,7 +82,7 @@ function BrowseContent() {
               : 'border-hover text-secondary hover:border-muted hover:text-primary'
           }`}
         >
-          <SlidersHorizontal size={14} />
+          <SlidersHorizontalIcon size={14} />
           Advanced Filters
         </button>
       </div>
@@ -103,7 +110,7 @@ function BrowseContent() {
             }`}
             title="List view"
           >
-            <ListBullets size={18} />
+            <ListBulletsIcon size={18} />
           </button>
           <button
             type="button"
@@ -113,7 +120,7 @@ function BrowseContent() {
             }`}
             title="Grid view"
           >
-            <SquaresFour size={18} />
+            <SquaresFourIcon size={18} />
           </button>
         </div>
       </div>

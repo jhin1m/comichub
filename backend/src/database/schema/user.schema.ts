@@ -6,6 +6,8 @@ import {
   varchar,
   text,
   integer,
+  boolean,
+  jsonb,
   timestamp,
 } from 'drizzle-orm/pg-core';
 
@@ -46,7 +48,32 @@ export const userProfiles = pgTable('user_profiles', {
   discord: varchar('discord', { length: 255 }),
 });
 
+export const userContentPreferences = pgTable('user_content_preferences', {
+  userId: integer('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  hideNsfw: boolean('hide_nsfw').default(true).notNull(),
+  excludedTypes: jsonb('excluded_types').$type<string[]>().default([]).notNull(),
+  excludedDemographics: jsonb('excluded_demographics')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  excludedGenreSlugs: jsonb('excluded_genre_slugs')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  highlightedGenreSlugs: jsonb('highlighted_genre_slugs')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
+export type UserContentPreferences =
+  typeof userContentPreferences.$inferSelect;
+export type NewUserContentPreferences =
+  typeof userContentPreferences.$inferInsert;

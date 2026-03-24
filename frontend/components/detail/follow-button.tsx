@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { BookmarkSimple } from '@phosphor-icons/react';
+import { BookmarkSimpleIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { mangaApi } from '@/lib/api/manga.api';
@@ -41,7 +41,7 @@ export function FollowButton({ mangaId, followersCount }: Props) {
 
   return (
     <Button variant="secondary" onClick={handleToggle}>
-      {isFollowing ? <BookmarkSimple size={16} weight="fill" /> : <BookmarkSimple size={16} />}
+      {isFollowing ? <BookmarkSimpleIcon size={16} weight="fill" /> : <BookmarkSimpleIcon size={16} />}
       {isFollowing ? 'Following' : 'Follow'} ({count})
     </Button>
   );

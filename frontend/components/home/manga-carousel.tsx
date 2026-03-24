@@ -2,14 +2,15 @@
 
 import { useState, useRef, useCallback, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { CaretLeft, CaretRight, Fire, Heart, DotsThreeOutline } from '@phosphor-icons/react';
+import { CaretLeftIcon, CaretRightIcon, FireIcon, HeartIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
 import type { Icon as IconType } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCarouselCard } from './manga-carousel-card';
 import { mangaApi, type RankingPeriod } from '@/lib/api/manga.api';
+import { usePreferences } from '@/contexts/preferences.context';
 import type { MangaListItem } from '@/types/manga.types';
 
-const ICON_MAP: Record<string, IconType> = { flame: Fire, heart: Heart };
+const ICON_MAP: Record<string, IconType> = { flame: FireIcon, heart: HeartIcon };
 
 const PERIOD_OPTIONS: { value: RankingPeriod; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -30,11 +31,18 @@ interface Props {
 export function MangaCarousel({ title, iconName, items = [], showRank = false, moreHref = '/browse', defaultPeriod }: Props) {
   const Icon = iconName ? ICON_MAP[iconName] : undefined;
   const trackRef = useRef<HTMLDivElement>(null);
-  const [displayItems, setDisplayItems] = useState(items);
+  const [rawItems, setRawItems] = useState(items);
   const [period, setPeriod] = useState<RankingPeriod | undefined>(defaultPeriod);
   const [isPending, startTransition] = useTransition();
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(items.length > 5);
+  const { preferences } = usePreferences();
+
+  // Filter by type preference (rankings don't include demographic/genre in list items)
+  const displayItems = rawItems.filter((item) => {
+    if (preferences.excludedTypes.length > 0 && preferences.excludedTypes.includes(item.type)) return false;
+    return true;
+  });
 
   const updateButtons = useCallback(() => {
     const el = trackRef.current;
@@ -45,8 +53,8 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
 
   useEffect(() => { updateButtons(); }, [updateButtons]);
 
-  // Sync displayItems when server-side items change
-  useEffect(() => { setDisplayItems(items); }, [items]);
+  // Sync rawItems when server-side items change
+  useEffect(() => { setRawItems(items); }, [items]);
 
   function onPeriodChange(value: string) {
     const next = value as RankingPeriod;
@@ -54,7 +62,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
     startTransition(async () => {
       try {
         const data = await mangaApi.rankings(next, 1, 10);
-        setDisplayItems(data);
+        setRawItems(data);
       } catch (err) {
         console.error('Failed to fetch rankings:', err);
       }
@@ -125,7 +133,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
           className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
           aria-label="Previous"
         >
-          <CaretLeft size={13} />
+          <CaretLeftIcon size={13} />
         </button>
         <button
           onClick={() => scroll(1)}
@@ -133,7 +141,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
           className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
           aria-label="Next"
         >
-          <CaretRight size={13} />
+          <CaretRightIcon size={13} />
         </button>
 
         {defaultPeriod ? (
@@ -143,7 +151,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
                 className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
                 aria-label="Filter period"
               >
-                <DotsThreeOutline size={13} />
+                <DotsThreeOutlineIcon size={13} />
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
@@ -170,7 +178,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
             className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
             aria-label="See all"
           >
-            <DotsThreeOutline size={13} />
+            <DotsThreeOutlineIcon size={13} />
           </Link>
         )}
       </div>

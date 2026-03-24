@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CaretDown, X } from '@phosphor-icons/react';
+import { CaretDownIcon, XIcon } from '@phosphor-icons/react';
 
 interface SearchableSelectProps {
   label: string;
@@ -72,7 +72,7 @@ export function SearchableSelect({
                 onClick={handleClear}
                 className="ml-1 text-muted hover:text-primary cursor-pointer"
               >
-                <X size={12} />
+                <XIcon size={12} />
               </button>
             </>
           ) : (
@@ -89,7 +89,7 @@ export function SearchableSelect({
                 placeholder={value ? selectedLabel : placeholder}
                 className="flex-1 bg-transparent text-primary placeholder:text-muted focus:outline-none text-sm"
               />
-              <CaretDown
+              <CaretDownIcon
                 size={14}
                 className={`ml-1 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
               />

@@ -4,6 +4,7 @@ import {
   and,
   isNull,
   inArray,
+  notInArray,
   ilike,
   or,
   eq,
@@ -19,6 +20,7 @@ import type {
   PaginatedResult,
 } from '../manga/types/manga.types.js';
 import { SearchQueryDto, SearchSortField } from './dto/search-query.dto.js';
+import { MangaType } from '../manga/dto/create-manga.dto.js';
 import { escapeLike } from '../../common/utils/escape-like.util.js';
 
 const SUGGEST_TTL = 300; // 5 minutes
@@ -38,7 +40,7 @@ export class SearchService {
   ) {}
 
   async search(query: SearchQueryDto): Promise<PaginatedResult<MangaListItem>> {
-    const { page, limit, offset, q, genre, status, type, sort } = query;
+    const { page, limit, offset, q, genre, status, type, sort, excludeGenres, excludeTypes, excludeDemographics } = query;
 
     const conditions: SQL[] = [isNull(manga.deletedAt)];
 
@@ -76,6 +78,36 @@ export class SearchService {
         return { data: [], total: 0, page, limit };
       }
       conditions.push(inArray(manga.id, mangaIds));
+    }
+
+    if (excludeGenres) {
+      const slugs = excludeGenres.split(',').map((s) => s.trim()).filter(Boolean);
+      if (slugs.length) {
+        const genreRows = await this.db
+          .select({ id: genres.id })
+          .from(genres)
+          .where(inArray(genres.slug, slugs));
+        const genreIds = genreRows.map((g) => g.id);
+        if (genreIds.length) {
+          const placeholders = genreIds.map((id) => sql`${id}`);
+          conditions.push(
+            sql`${manga.id} NOT IN (
+              SELECT ${mangaGenres.mangaId} FROM ${mangaGenres}
+              WHERE ${mangaGenres.genreId} IN (${sql.join(placeholders, sql`, `)})
+            )`,
+          );
+        }
+      }
+    }
+
+    if (excludeTypes) {
+      const types = excludeTypes.split(',').map((s) => s.trim()).filter(Boolean) as MangaType[];
+      if (types.length) conditions.push(notInArray(manga.type, types));
+    }
+
+    if (excludeDemographics) {
+      const demos = excludeDemographics.split(',').map((s) => s.trim()).filter(Boolean);
+      if (demos.length) conditions.push(notInArray(manga.demographic, demos));
     }
 
     const where = and(...conditions);

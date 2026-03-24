@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { ThumbsUp, ThumbsDown, ArrowBendUpLeft, DotsThreeOutline, PencilSimple, Trash } from '@phosphor-icons/react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ThumbsUpIcon, ThumbsDownIcon, ArrowBendUpLeftIcon, DotsThreeOutlineIcon, PencilSimpleIcon, TrashIcon, LinkSimpleIcon } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Avatar } from '@/components/ui/avatar';
 import { CommentEditor } from './comment-editor';
@@ -35,6 +36,18 @@ function handleSpoilerClick(e: React.MouseEvent<HTMLDivElement>) {
   }
 }
 
+/** Role badge for admin/special users */
+function RoleBadge({ role }: { role?: string }) {
+  if (role === 'admin') {
+    return (
+      <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-accent-muted text-accent leading-none">
+        Admin
+      </span>
+    );
+  }
+  return null;
+}
+
 interface CommentItemProps {
   comment: Comment;
   commentableType: 'manga' | 'chapter';
@@ -62,7 +75,6 @@ export function CommentItem({
   const [dislikesCount, setDislikesCount] = useState(comment.dislikesCount);
   const [showReply, setShowReply] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [showMore, setShowMore] = useState(false);
   const [content, setContent] = useState(comment.content);
   const [deleted, setDeleted] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -72,7 +84,6 @@ export function CommentItem({
   const isOwner = user?.id === comment.userId;
   const isAdmin = user?.role === 'admin';
 
-  // Scroll into view and flash when highlighted
   useEffect(() => {
     if (highlighted && ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -85,7 +96,6 @@ export function CommentItem({
   const handleReaction = async (type: 'like' | 'dislike') => {
     if (!user) { toast.error('Login to react'); return; }
     const prev = { liked, disliked, likesCount, dislikesCount };
-    // Optimistic update
     if (type === 'like') {
       setLiked(!liked);
       setLikesCount(liked ? likesCount - 1 : likesCount + 1);
@@ -141,7 +151,15 @@ export function CommentItem({
     }
   };
 
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}${window.location.pathname}?cmid=${comment.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied');
+  };
+
   if (deleted) return null;
+
+  const hasMenuItems = isOwner || isAdmin;
 
   return (
     <div
@@ -153,17 +171,22 @@ export function CommentItem({
       )}
     >
       <div className="flex gap-2.5">
+        {/* Avatar with accent ring for admin */}
         <Avatar
           src={comment.userAvatar ?? undefined}
           fallback={comment.userName}
           size="sm"
+          className={cn(comment.userRole === 'admin' && 'ring-1 ring-accent')}
         />
         <div className="flex-1 min-w-0">
-          {/* Header: name + time + collapse/expand button */}
+          {/* Header: name + role badge + time + collapse */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span className="text-primary font-semibold text-xs">{comment.userName}</span>
-              <span className="text-muted text-[11px]">{timeAgo(comment.createdAt)}</span>
+              <RoleBadge role={comment.userRole} />
+              <span className="text-muted text-[11px]" title={new Date(comment.createdAt).toLocaleString()}>
+                {timeAgo(comment.createdAt)}
+              </span>
             </div>
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -194,31 +217,36 @@ export function CommentItem({
                 />
               )}
 
-              {/* Actions: like, dislike, reply, more */}
-              <div className="flex items-center gap-3 mt-1.5">
-                <button
-                  onClick={() => handleReaction('like')}
-                  aria-label={liked ? 'Unlike' : 'Like'}
-                  className={cn(
-                    'flex items-center gap-1 text-[11px] transition-colors',
-                    liked ? 'text-accent' : 'text-muted hover:text-primary',
-                  )}
-                >
-                  <ThumbsUp size={12} weight={liked ? 'fill' : 'regular'} />
-                  <span>{likesCount}</span>
-                </button>
+              {/* Actions: reaction pills + reply + more */}
+              <div className="flex items-center gap-2 mt-1.5">
+                {/* Reaction pills */}
+                <div className="flex items-center gap-0.5 bg-surface/60 rounded-full px-1">
+                  <button
+                    onClick={() => handleReaction('like')}
+                    aria-label={liked ? 'Unlike' : 'Like'}
+                    className={cn(
+                      'flex items-center gap-0.5 px-1.5 py-1 rounded-full text-[11px] transition-colors',
+                      liked ? 'text-accent' : 'text-muted hover:text-primary',
+                    )}
+                  >
+                    <ThumbsUpIcon size={12} weight={liked ? 'fill' : 'regular'} />
+                    <span>{likesCount}</span>
+                  </button>
 
-                <button
-                  onClick={() => handleReaction('dislike')}
-                  aria-label={disliked ? 'Remove dislike' : 'Dislike'}
-                  className={cn(
-                    'flex items-center gap-1 text-[11px] transition-colors',
-                    disliked ? 'text-accent' : 'text-muted hover:text-primary',
-                  )}
-                >
-                  <ThumbsDown size={12} weight={disliked ? 'fill' : 'regular'} />
-                  <span>{dislikesCount}</span>
-                </button>
+                  <div className="w-px h-3 bg-default" />
+
+                  <button
+                    onClick={() => handleReaction('dislike')}
+                    aria-label={disliked ? 'Remove dislike' : 'Dislike'}
+                    className={cn(
+                      'flex items-center gap-0.5 px-1.5 py-1 rounded-full text-[11px] transition-colors',
+                      disliked ? 'text-accent' : 'text-muted hover:text-primary',
+                    )}
+                  >
+                    <ThumbsDownIcon size={12} weight={disliked ? 'fill' : 'regular'} />
+                    <span>{dislikesCount}</span>
+                  </button>
+                </div>
 
                 {depth < 3 && (
                   <button
@@ -226,57 +254,52 @@ export function CommentItem({
                     aria-label="Reply"
                     className="flex items-center gap-1 text-[11px] text-muted hover:text-primary transition-colors"
                   >
-                    <ArrowBendUpLeft size={12} />
+                    <ArrowBendUpLeftIcon size={12} />
                     <span>Reply</span>
                   </button>
                 )}
 
-                {/* More menu */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowMore(!showMore)}
-                    aria-label="More options"
-                    className="flex items-center text-[11px] text-muted hover:text-primary transition-colors"
-                  >
-                    <DotsThreeOutline size={14} />
-                    <span className="ml-0.5">More</span>
-                  </button>
-
-                  {showMore && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowMore(false)} />
-                      <div className="absolute left-0 bottom-full mb-1 bg-elevated border border-default rounded-md shadow-lg py-1 z-20 min-w-[120px]">
-                        <button
-                          onClick={() => {
-                            const url = `${window.location.origin}${window.location.pathname}?cmid=${comment.id}`;
-                            navigator.clipboard.writeText(url);
-                            toast.success('Link copied');
-                            setShowMore(false);
-                          }}
-                          className="w-full px-3 py-1.5 text-left text-xs text-secondary hover:bg-hover hover:text-primary transition-colors"
+                {/* Radix DropdownMenu for More actions */}
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      aria-label="More options"
+                      className="flex items-center text-[11px] text-muted hover:text-primary transition-colors"
+                    >
+                      <DotsThreeOutlineIcon size={14} />
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content
+                      className="bg-elevated border border-default rounded-md shadow-lg py-1 z-50 min-w-[120px] animate-in fade-in-0 zoom-in-95"
+                      sideOffset={4}
+                      align="start"
+                    >
+                      <DropdownMenu.Item
+                        onClick={handleCopyLink}
+                        className="px-3 py-1.5 text-xs text-secondary hover:bg-hover hover:text-primary transition-colors cursor-pointer outline-none flex items-center gap-1.5"
+                      >
+                        <LinkSimpleIcon size={11} /> Copy link
+                      </DropdownMenu.Item>
+                      {isOwner && (
+                        <DropdownMenu.Item
+                          onClick={() => setShowEdit(true)}
+                          className="px-3 py-1.5 text-xs text-secondary hover:bg-hover hover:text-primary transition-colors cursor-pointer outline-none flex items-center gap-1.5"
                         >
-                          Copy link
-                        </button>
-                        {isOwner && (
-                          <button
-                            onClick={() => { setShowEdit(true); setShowMore(false); }}
-                            className="w-full px-3 py-1.5 text-left text-xs text-secondary hover:bg-hover hover:text-primary transition-colors flex items-center gap-1.5"
-                          >
-                            <PencilSimple size={11} /> Edit
-                          </button>
-                        )}
-                        {(isOwner || isAdmin) && !confirmingDelete && (
-                          <button
-                            onClick={() => { setConfirmingDelete(true); setShowMore(false); }}
-                            className="w-full px-3 py-1.5 text-left text-xs text-accent hover:bg-hover transition-colors flex items-center gap-1.5"
-                          >
-                            <Trash size={11} /> Delete
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
+                          <PencilSimpleIcon size={11} /> Edit
+                        </DropdownMenu.Item>
+                      )}
+                      {(isOwner || isAdmin) && (
+                        <DropdownMenu.Item
+                          onClick={() => setConfirmingDelete(true)}
+                          className="px-3 py-1.5 text-xs text-accent hover:bg-hover transition-colors cursor-pointer outline-none flex items-center gap-1.5"
+                        >
+                          <TrashIcon size={11} /> Delete
+                        </DropdownMenu.Item>
+                      )}
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
 
                 {/* Inline delete confirm */}
                 {confirmingDelete && (

@@ -1,5 +1,9 @@
 import { relations } from 'drizzle-orm';
-import { users, userProfiles } from './user.schema.js';
+import {
+  users,
+  userProfiles,
+  userContentPreferences,
+} from './user.schema.js';
 import {
   manga,
   genres,
@@ -37,6 +41,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [userProfiles.userId],
   }),
+  contentPreferences: one(userContentPreferences, {
+    fields: [users.id],
+    references: [userContentPreferences.userId],
+  }),
   manga: many(manga),
   comments: many(comments),
   commentLikes: many(commentLikes),
@@ -55,6 +63,16 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
   user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
 }));
+
+export const userContentPreferencesRelations = relations(
+  userContentPreferences,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userContentPreferences.userId],
+      references: [users.id],
+    }),
+  }),
+);
 
 // ── Manga relations ─────────────────────────────────────────────
 export const mangaRelations = relations(manga, ({ one, many }) => ({

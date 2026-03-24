@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, use } from 'react';
 import Link from 'next/link';
-import { CaretLeft, SidebarSimple } from '@phosphor-icons/react';
+import { CaretLeftIcon, SidebarSimpleIcon } from '@phosphor-icons/react';
 import { chapterApi } from '@/lib/api/chapter.api';
 import { userApi } from '@/lib/api/user.api';
 import { useAuth } from '@/contexts/auth.context';
@@ -112,7 +112,7 @@ export default function ChapterReaderPage({ params }: Props) {
             href={`/manga/${slug}`}
             className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors"
           >
-            <CaretLeft size={16} />
+            <CaretLeftIcon size={16} />
             <span className="truncate max-w-[250px]">{mangaTitle}</span>
           </Link>
           <div className="flex items-center gap-3 text-secondary">
@@ -122,7 +122,7 @@ export default function ChapterReaderPage({ params }: Props) {
               aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               className="hover:text-primary transition-colors p-1"
             >
-              {sidebarOpen ? <SidebarSimple size={18} /> : <SidebarSimple size={18} />}
+              {sidebarOpen ? <SidebarSimpleIcon size={18} /> : <SidebarSimpleIcon size={18} />}
             </button>
           </div>
         </div>

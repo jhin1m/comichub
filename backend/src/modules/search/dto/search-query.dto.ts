@@ -6,6 +6,7 @@ import {
   IsArray,
   MinLength,
   MaxLength,
+  Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
@@ -59,4 +60,34 @@ export class SearchQueryDto extends PaginationDto {
   @IsOptional()
   @IsEnum(SearchSortField)
   sort?: SearchSortField;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated genre slugs to exclude (max 10)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9-]+(,[a-z0-9-]+)*$/, {
+    message: 'excludeGenres must be comma-separated lowercase slugs',
+  })
+  excludeGenres?: string;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated manga types to exclude (e.g. manhwa,doujinshi)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z]+(,[a-z]+)*$/, {
+    message: 'excludeTypes must be comma-separated lowercase type values',
+  })
+  excludeTypes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated demographics to exclude (e.g. shoujo,josei)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z]+(,[a-z]+)*$/, {
+    message: 'excludeDemographics must be comma-separated lowercase values',
+  })
+  excludeDemographics?: string;
 }

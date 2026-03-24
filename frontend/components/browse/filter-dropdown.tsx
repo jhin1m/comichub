@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDownIcon } from '@phosphor-icons/react';
 
 interface FilterOption {
   value: string;
@@ -65,7 +65,7 @@ export function FilterDropdown({
           <span className={value ? 'text-primary' : 'text-muted'}>
             {selectedLabel}
           </span>
-          <CaretDown size={14} className={`ml-2 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <CaretDownIcon size={14} className={`ml-2 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isOpen && (

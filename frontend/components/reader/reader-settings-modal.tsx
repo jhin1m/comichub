@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type React from 'react';
-import { X, Layout, Image as ImageIcon, Keyboard } from '@phosphor-icons/react';
+import { XIcon, LayoutIcon, ImageIcon, KeyboardIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export type DisplayMode = 'single' | 'double' | 'longstrip';
@@ -22,9 +22,9 @@ interface Props {
 type Tab = 'layout' | 'image' | 'shortcuts';
 
 const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
-  { id: 'layout', icon: Layout, label: 'Layout' },
+  { id: 'layout', icon: LayoutIcon, label: 'Layout' },
   { id: 'image', icon: ImageIcon, label: 'Image' },
-  { id: 'shortcuts', icon: Keyboard, label: 'Shortcuts' },
+  { id: 'shortcuts', icon: KeyboardIcon, label: 'Shortcuts' },
 ];
 
 export function ReaderSettingsModal({
@@ -56,7 +56,7 @@ export function ReaderSettingsModal({
             aria-label="Close settings"
             className="text-secondary hover:text-primary transition-colors"
           >
-            <X size={18} />
+            <XIcon size={18} />
           </button>
         </div>
 

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import type { ChapterWithImages, ChapterNavigation } from '@/types/manga.types';
 
@@ -35,7 +35,7 @@ export function ReaderToolbar({ chapter, nav, mangaSlug }: Props) {
         <div className="flex items-center gap-2">
           <Link href={`/manga/${mangaSlug}`}>
             <Button variant="secondary" size="sm" aria-label="Back to manga">
-              <CaretLeft size={18} />
+              <CaretLeftIcon size={18} />
             </Button>
           </Link>
           <span className="text-sm text-secondary truncate max-w-[200px]">
@@ -46,14 +46,14 @@ export function ReaderToolbar({ chapter, nav, mangaSlug }: Props) {
           {nav?.prev && (
             <Link href={`/manga/${mangaSlug}/${nav.prev.id}`}>
               <Button variant="secondary" size="sm" aria-label="Previous chapter">
-                <CaretLeft size={18} />
+                <CaretLeftIcon size={18} />
               </Button>
             </Link>
           )}
           {nav?.next && (
             <Link href={`/manga/${mangaSlug}/${nav.next.id}`}>
               <Button variant="secondary" size="sm" aria-label="Next chapter">
-                <CaretRight size={18} />
+                <CaretRightIcon size={18} />
               </Button>
             </Link>
           )}

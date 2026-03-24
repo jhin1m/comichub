@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { MagnifyingGlass } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon } from '@phosphor-icons/react';
 
 interface SearchBarProps {
   initialValue?: string;
@@ -21,7 +21,7 @@ export function SearchBar({ initialValue = '', onSearch }: SearchBarProps) {
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
-      <MagnifyingGlass
+      <MagnifyingGlassIcon
         size={16}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
       />

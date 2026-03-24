@@ -9,6 +9,7 @@ export interface Comment {
   updatedAt: string;
   userName: string;
   userAvatar: string | null;
+  userRole?: 'admin' | 'user';
   isLiked?: boolean;
   isDisliked?: boolean;
   repliesCount?: number;

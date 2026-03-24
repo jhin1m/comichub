@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CaretDown } from '@phosphor-icons/react';
+import { CaretDownIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { TaxonomyItem } from '@/types/manga.types';
 
@@ -88,7 +88,7 @@ export function GenreFilter({
           <span className={selectedCount ? 'text-primary' : 'text-muted'}>
             {selectedCount ? `${selectedCount} selected` : 'Any'}
           </span>
-          <CaretDown
+          <CaretDownIcon
             size={14}
             className={`ml-2 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />

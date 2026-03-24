@@ -15,6 +15,7 @@ import { MangaStatus, MangaType } from './create-manga.dto.js';
 
 export enum MangaSortField {
   VIEWS = 'views',
+  TRENDING = 'trending',
   CREATED_AT = 'created_at',
   UPDATED_AT = 'updated_at',
 }
@@ -137,4 +138,24 @@ export class MangaQueryDto extends PaginationDto {
   @Type(() => Number)
   @IsNumber()
   minRating?: number;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated manga types to exclude (e.g. manhwa,doujinshi)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z]+(,[a-z]+)*$/, {
+    message: 'excludeTypes must be comma-separated lowercase type values',
+  })
+  excludeTypes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated demographics to exclude (e.g. shoujo,josei)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z]+(,[a-z]+)*$/, {
+    message: 'excludeDemographics must be comma-separated lowercase values',
+  })
+  excludeDemographics?: string;
 }

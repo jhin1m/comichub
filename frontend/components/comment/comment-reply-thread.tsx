@@ -62,7 +62,7 @@ export function CommentReplyThread({
   if (total === 0 && replies.length === 0) return null;
 
   return (
-    <div className="ml-8 border-l border-default/40 pl-3 mt-0.5">
+    <div className="ml-8 border-l-2 border-default/40 hover:border-accent/40 pl-3 mt-0.5 transition-colors">
       {loading && replies.length === 0 ? (
         <div className="space-y-2 py-1.5">
           {Array.from({ length: Math.min(replyCount, 3) }).map((_, i) => (

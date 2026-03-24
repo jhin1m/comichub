@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { MagnifyingGlass, ListBullets, CaretDown, CaretUp } from '@phosphor-icons/react';
+import { MagnifyingGlassIcon, ListBulletsIcon, CaretDownIcon, CaretUpIcon } from '@phosphor-icons/react';
 import { ChapterListItemRow } from './chapter-list-item';
 import type { ChapterListItem } from '@/types/manga.types';
 
@@ -55,9 +55,9 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return null;
     return sortDir === 'desc' ? (
-      <CaretDown size={12} className="text-accent" />
+      <CaretDownIcon size={12} className="text-accent" />
     ) : (
-      <CaretUp size={12} className="text-accent" />
+      <CaretUpIcon size={12} className="text-accent" />
     );
   };
 
@@ -66,7 +66,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
       {/* Header bar */}
       <div className="flex items-center justify-between gap-3 pb-3">
         <div className="flex items-center gap-2.5">
-          <ListBullets size={16} className="text-accent" />
+          <ListBulletsIcon size={16} className="text-accent" />
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">
             Chapters
           </h2>
@@ -77,7 +77,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
 
         {/* Search */}
         <div className="relative w-full max-w-[200px]">
-          <MagnifyingGlass
+          <MagnifyingGlassIcon
             size={12}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
           />

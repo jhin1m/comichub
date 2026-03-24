@@ -1,6 +1,6 @@
 'use client';
 
-import { Minus, Plus, GearSix } from '@phosphor-icons/react';
+import { MinusIcon, PlusIcon, GearSixIcon } from '@phosphor-icons/react';
 
 interface Props {
   zoom: number;
@@ -26,7 +26,7 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick }: Prop
           aria-label="Zoom out"
           className="text-secondary hover:text-primary disabled:opacity-40 transition-colors p-0.5"
         >
-          <Minus size={14} />
+          <MinusIcon size={14} />
         </button>
         <span className="text-xs text-secondary min-w-[36px] text-center tabular-nums">
           {zoom}%
@@ -37,7 +37,7 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick }: Prop
           aria-label="Zoom in"
           className="text-secondary hover:text-primary disabled:opacity-40 transition-colors p-0.5"
         >
-          <Plus size={14} />
+          <PlusIcon size={14} />
         </button>
       </div>
 
@@ -47,7 +47,7 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick }: Prop
         aria-label="Reader settings"
         className="pointer-events-auto text-secondary hover:text-primary transition-colors p-2 bg-elevated/80 backdrop-blur-sm rounded-lg"
       >
-        <GearSix size={18} />
+        <GearSixIcon size={18} />
       </button>
     </div>
   );

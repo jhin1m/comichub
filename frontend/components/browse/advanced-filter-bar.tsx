@@ -14,6 +14,7 @@ const SORT_OPTIONS = [
   { value: 'updated_at', label: 'Latest Update' },
   { value: 'created_at', label: 'Newest' },
   { value: 'views', label: 'Most Views' },
+  { value: 'trending', label: 'Trending' },
 ];
 
 const TYPE_OPTIONS = [

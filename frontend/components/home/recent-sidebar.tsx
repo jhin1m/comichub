@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sparkle, CheckCircle } from '@phosphor-icons/react';
+import { SparkleIcon, CheckCircleIcon } from '@phosphor-icons/react';
 import { formatRelativeDate } from '@/lib/utils';
 import type { MangaListItem, MangaType } from '@/types/manga.types';
 import { LatestComments } from '@/components/home/latest-comments';
@@ -89,7 +89,7 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
             activeTab === 'recent' ? 'text-primary' : 'text-muted hover:text-secondary'
           }`}
         >
-          <Sparkle size={15} className={activeTab === 'recent' ? 'text-accent' : ''} />
+          <SparkleIcon size={15} className={activeTab === 'recent' ? 'text-accent' : ''} />
           Recently Added
         </button>
         <span className="text-muted text-[15px] font-medium">/</span>
@@ -99,7 +99,7 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
             activeTab === 'complete' ? 'text-primary' : 'text-muted hover:text-secondary'
           }`}
         >
-          <CheckCircle size={15} className={activeTab === 'complete' ? 'text-accent' : ''} />
+          <CheckCircleIcon size={15} className={activeTab === 'complete' ? 'text-accent' : ''} />
           Complete Series
         </button>
       </div>

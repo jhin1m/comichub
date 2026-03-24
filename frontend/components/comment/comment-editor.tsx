@@ -6,7 +6,7 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Mark, mergeAttributes } from '@tiptap/core';
 import { useState, useCallback } from 'react';
-import { TextBolderIcon, Quotes, EyeSlash, Image as ImageIcon, Eye } from '@phosphor-icons/react';
+import { TextBolderIcon, QuotesIcon, EyeSlashIcon, ImageIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 const Spoiler = Mark.create({
@@ -150,7 +150,7 @@ export function CommentEditor({
                   editor?.isActive('blockquote') && 'text-primary',
                 )}
               >
-                <Quotes size={16} />
+                <QuotesIcon size={16} />
               </button>
               <button
                 type="button"
@@ -161,7 +161,7 @@ export function CommentEditor({
                   editor?.isActive('spoiler') && 'text-primary',
                 )}
               >
-                <EyeSlash size={16} />
+                <EyeSlashIcon size={16} />
               </button>
               <button
                 type="button"
@@ -173,13 +173,6 @@ export function CommentEditor({
                 )}
               >
                 <ImageIcon size={16} />
-              </button>
-              <button
-                type="button"
-                aria-label="Preview"
-                className="p-1.5 rounded text-secondary hover:text-primary transition-colors"
-              >
-                <Eye size={16} />
               </button>
             </div>
             <div className="flex items-center gap-3">
@@ -196,9 +189,9 @@ export function CommentEditor({
               <button
                 onClick={handleSubmit}
                 disabled={submitting || charCount === 0 || charCount > MAX_CHARS}
-                className="px-4 py-1 rounded bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-40 transition-colors"
+                className="px-4 py-1 rounded bg-accent hover:bg-accent-hover text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-40 transition-colors"
               >
-                {submitting ? '...' : 'Save'}
+                {submitting ? '...' : initialContent ? 'Save' : 'Send'}
               </button>
             </div>
           </div>

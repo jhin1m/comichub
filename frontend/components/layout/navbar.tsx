@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { List, X, Bell, SquaresFour } from '@phosphor-icons/react';
+import { ListIcon, XIcon, BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth.context';
@@ -14,8 +14,10 @@ export default function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [browseDropdownOpen, setBrowseDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const browseDropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch notification unread count when logged in
   useEffect(() => {
@@ -28,6 +30,9 @@ export default function Navbar() {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (browseDropdownRef.current && !browseDropdownRef.current.contains(e.target as Node)) {
+        setBrowseDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -48,12 +53,52 @@ export default function Navbar() {
 
         {/* Right action buttons — desktop */}
         <div className="hidden md:flex items-center gap-1 shrink-0">
+          <div className="relative" ref={browseDropdownRef}>
+            <button
+              onClick={() => setBrowseDropdownOpen((v) => !v)}
+              className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
+              aria-label="Browse menu"
+              aria-haspopup="menu"
+              aria-expanded={browseDropdownOpen}
+            >
+              <SquaresFourIcon size={18} />
+            </button>
+            {browseDropdownOpen && (
+              <div role="menu" className="absolute right-0 mt-2 w-48 bg-surface border border-default rounded shadow-lg py-1 z-50">
+                <Link
+                  href="/browse?sort=trending&type=manhwa"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
+                  onClick={() => setBrowseDropdownOpen(false)}
+                >
+                  <TrendUpIcon size={14} />
+                  Trending Webtoon
+                </Link>
+                <Link
+                  href="/browse?sort=trending&type=manga"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
+                  onClick={() => setBrowseDropdownOpen(false)}
+                >
+                  <BookOpenIcon size={14} />
+                  Trending Manga
+                </Link>
+                <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted cursor-not-allowed">
+                  <LockIcon size={14} />
+                  Popular Genres
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted cursor-not-allowed">
+                  <LockIcon size={14} />
+                  Popular Groups
+                </div>
+              </div>
+            )}
+          </div>
+
           <Link
-            href="/profile?tab=follows"
+            href="/settings/preferences"
             className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
-            aria-label="Reading list"
+            aria-label="Preferences"
           >
-            <SquaresFour size={18} />
+            <FadersHorizontalIcon size={18} />
           </Link>
 
           {user && (
@@ -61,7 +106,7 @@ export default function Navbar() {
               className="relative w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
               aria-label="Notifications"
             >
-              <Bell size={18} />
+              <BellIcon size={18} />
               {unreadCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
               )}
@@ -95,6 +140,14 @@ export default function Navbar() {
                   >
                     Profile
                   </Link>
+                  <Link
+                    href="/settings/preferences"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <FadersHorizontalIcon size={14} />
+                    Preferences
+                  </Link>
                   <button
                     onClick={() => { setDropdownOpen(false); logout(); }}
                     className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
@@ -120,7 +173,7 @@ export default function Navbar() {
           onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >
-          {menuOpen ? <X size={20} /> : <List size={20} />}
+          {menuOpen ? <XIcon size={20} /> : <ListIcon size={20} />}
         </button>
       </div>
 
@@ -129,6 +182,9 @@ export default function Navbar() {
         <div className="md:hidden bg-base border-b border-default px-4 py-3 flex flex-col gap-3">
           <Link href="/" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Home</Link>
           <Link href="/browse" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Browse</Link>
+          <Link href="/browse?sort=trending&type=manhwa" className="text-sm text-secondary hover:text-primary pl-3" onClick={() => setMenuOpen(false)}>Trending Webtoon</Link>
+          <Link href="/browse?sort=trending&type=manga" className="text-sm text-secondary hover:text-primary pl-3" onClick={() => setMenuOpen(false)}>Trending Manga</Link>
+          <Link href="/settings/preferences" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Preferences</Link>
           {user ? (
             <>
               <Link href="/profile" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Profile</Link>

@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock } from '@phosphor-icons/react/ssr';
+import { ClockIcon } from '@phosphor-icons/react/ssr';
 import { formatRelativeDate } from '@/lib/utils';
 import type { HistoryItem } from '@/types/user.types';
 
@@ -12,7 +12,7 @@ export function HistoryTab({ items }: HistoryTabProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Clock size={48} className="text-muted mb-4" />
+        <ClockIcon size={48} className="text-muted mb-4" />
         <p className="text-secondary text-sm mb-2">No history yet</p>
         <p className="text-muted text-xs">Start reading to track your progress</p>
       </div>

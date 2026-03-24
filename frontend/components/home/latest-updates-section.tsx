@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
-import { CaretLeft, CaretRight, Clock, DotsThreeOutline } from '@phosphor-icons/react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { CaretLeftIcon, CaretRightIcon, ClockIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCarouselCard } from '@/components/home/manga-carousel-card';
+import { usePreferencesParams } from '@/hooks/use-preferences-params';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
 
 const LIMIT = 30;
@@ -27,6 +28,23 @@ export function LatestUpdatesSection({ initialData }: Props) {
   const [total, setTotal] = useState(initialData.total);
   const [typeFilter, setTypeFilter] = useState('all');
   const [isPending, startTransition] = useTransition();
+  const { params: prefParams, isLoaded: prefsLoaded } = usePreferencesParams();
+  const hasRefetched = useRef(false);
+
+  // Re-fetch once preferences are loaded to apply filters on initial data
+  useEffect(() => {
+    if (!prefsLoaded || hasRefetched.current) return;
+    const hasFilters = prefParams.excludeTypes || prefParams.excludeDemographics
+      || prefParams.excludeGenres || prefParams.nsfw === false;
+    if (!hasFilters) return;
+    hasRefetched.current = true;
+    fetchData(1, typeFilter).then((result) => {
+      setPage(result.page);
+      setItems(result.data);
+      setTotal(result.total);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefsLoaded]);
 
   const totalPages = Math.ceil(total / LIMIT);
   const hasPrev = page > 1;
@@ -40,6 +58,10 @@ export function LatestUpdatesSection({ initialData }: Props) {
       order: 'desc',
     });
     if (type !== 'all') params.set('type', type);
+    if (prefParams.excludeTypes) params.set('excludeTypes', prefParams.excludeTypes);
+    if (prefParams.excludeDemographics) params.set('excludeDemographics', prefParams.excludeDemographics);
+    if (prefParams.excludeGenres) params.set('excludeGenres', prefParams.excludeGenres);
+    if (prefParams.nsfw === false) params.set('nsfw', 'false');
 
     const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
     const res = await fetch(`${baseUrl}/manga?${params}`);
@@ -80,7 +102,7 @@ export function LatestUpdatesSection({ initialData }: Props) {
       {/* Header */}
       <div className="flex items-center gap-2 mb-3.5">
         <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1 flex items-center gap-1.5">
-          <Clock size={18} className="text-accent" />
+          <ClockIcon size={18} className="text-accent" />
           Latest Updates
         </h2>
         <DropdownMenu.Root>
@@ -89,7 +111,7 @@ export function LatestUpdatesSection({ initialData }: Props) {
               className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
               aria-label="Filter type"
             >
-              <DotsThreeOutline size={13} />
+              <DotsThreeOutlineIcon size={13} />
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
@@ -133,14 +155,14 @@ export function LatestUpdatesSection({ initialData }: Props) {
             onClick={() => goToPage(page - 1)}
             className="flex items-center justify-center gap-1 h-8 rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <CaretLeft size={18} />
+            <CaretLeftIcon size={18} />
           </button>
           <button
             disabled={!hasNext || isPending}
             onClick={() => goToPage(page + 1)}
             className="flex items-center justify-center gap-1 h-8 rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <CaretRight size={18} />
+            <CaretRightIcon size={18} />
           </button>
         </div>
       )}

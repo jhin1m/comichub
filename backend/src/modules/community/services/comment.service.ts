@@ -82,6 +82,7 @@ const COMMENT_USER_SELECT = {
   updatedAt: comments.updatedAt,
   userName: users.name,
   userAvatar: users.avatar,
+  userRole: users.role,
   repliesCount:
     sql<number>`(SELECT count(*)::int FROM comments c2 WHERE c2.parent_id = ${comments.id} AND c2.deleted_at IS NULL)`.as(
       'replies_count',

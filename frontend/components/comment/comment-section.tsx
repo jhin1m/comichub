@@ -11,6 +11,7 @@ import { CommentItem } from './comment-item';
 import { CommentReplyThread } from './comment-reply-thread';
 import { Pagination } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ChatCircleDotsIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 const LIMIT = 15;
@@ -110,19 +111,25 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
 
   return (
     <section id="comments-section">
-      {/* Header: count + sort */}
+      {/* Header: count + sort tabs */}
       <div className="flex items-center justify-between mb-4">
-        <span className="text-secondary text-sm italic">
-          {total} {total === 1 ? 'comment' : 'comments'}
-        </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <ChatCircleDotsIcon size={18} className="text-secondary" />
+          <span className="text-primary text-sm font-semibold">
+            Comments
+          </span>
+          <span className="text-muted text-xs">({total})</span>
+        </div>
+        <div className="flex items-center bg-surface/60 rounded-lg p-0.5">
           {sortOptions.map((opt) => (
             <button
               key={opt.value}
               onClick={() => handleSortChange(opt.value)}
               className={cn(
-                'text-xs font-medium transition-colors',
-                sort === opt.value ? 'text-primary' : 'text-muted hover:text-secondary',
+                'px-3 py-1 rounded-md text-xs font-medium transition-all',
+                sort === opt.value
+                  ? 'bg-elevated text-primary shadow-sm'
+                  : 'text-muted hover:text-secondary',
               )}
             >
               {opt.label}
@@ -143,8 +150,10 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
       {loading ? (
         <CommentSkeleton />
       ) : comments.length === 0 ? (
-        <div className="py-8 text-center text-muted text-xs">
-          No comments yet. Be the first to comment!
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <ChatCircleDotsIcon size={40} className="text-muted mb-3" />
+          <p className="text-secondary text-sm">No comments yet</p>
+          <p className="text-muted text-xs mt-1">Be the first to share your thoughts!</p>
         </div>
       ) : (
         <>
