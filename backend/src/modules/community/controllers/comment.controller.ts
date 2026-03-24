@@ -34,7 +34,9 @@ export class CommentController {
   @Public()
   @Get('comments/recent')
   @ApiOperation({ summary: 'Get recent comments across all manga/chapters' })
-  getRecent(@Query('limit', new ParseIntPipe({ optional: true })) limit?: number) {
+  getRecent(
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
     return this.commentService.getRecent(Math.min(limit ?? 10, 50));
   }
 
@@ -122,7 +124,10 @@ export class CommentController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle dislike on comment' })
-  toggleDislike(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+  toggleDislike(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
     return this.commentService.toggleDislike(id, user.id);
   }
 }

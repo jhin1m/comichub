@@ -112,5 +112,4 @@ export class TaxonomyService {
     await this.findById(type, id);
     await this.db.delete(table).where(eq(table.id, id));
   }
-
 }

@@ -201,7 +201,12 @@ describe('CommentService', () => {
     });
 
     it('should remove like when user has already liked', async () => {
-      const existingLike = { id: 5, userId: 10, commentId: 1, isDislike: false };
+      const existingLike = {
+        id: 5,
+        userId: 10,
+        commentId: 1,
+        isDislike: false,
+      };
 
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {

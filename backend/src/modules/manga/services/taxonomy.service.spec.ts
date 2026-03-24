@@ -165,5 +165,4 @@ describe('TaxonomyService', () => {
       expect(mockDb.delete).toHaveBeenCalledOnce();
     });
   });
-
 });

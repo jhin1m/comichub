@@ -205,7 +205,10 @@ export class ChapterService {
       .set({
         chaptersCount: this.db.$count(
           chapters,
-          and(eq(chapters.mangaId, chapter.mangaId), isNull(chapters.deletedAt)),
+          and(
+            eq(chapters.mangaId, chapter.mangaId),
+            isNull(chapters.deletedAt),
+          ),
         ) as unknown as number,
       })
       .where(eq(manga.id, chapter.mangaId));

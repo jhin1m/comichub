@@ -1,5 +1,15 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { desc, and, isNull, inArray, ilike, or, eq, sql, SQL } from 'drizzle-orm';
+import {
+  desc,
+  and,
+  isNull,
+  inArray,
+  ilike,
+  or,
+  eq,
+  sql,
+  SQL,
+} from 'drizzle-orm';
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';

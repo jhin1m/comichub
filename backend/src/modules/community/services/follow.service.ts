@@ -11,7 +11,10 @@ export class FollowService {
 
   async toggle(mangaId: number, userId: number) {
     const result = await this.userFollowService.toggleFollow(userId, mangaId);
-    return { following: result.followed, followersCount: result.followersCount };
+    return {
+      following: result.followed,
+      followersCount: result.followersCount,
+    };
   }
 
   async isFollowing(mangaId: number, userId: number) {

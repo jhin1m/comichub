@@ -163,7 +163,10 @@ export class UserService {
     const { page, limit, offset, search } = query;
 
     const where = search
-      ? or(ilike(users.name, `%${escapeLike(search)}%`), ilike(users.email, `%${escapeLike(search)}%`))
+      ? or(
+          ilike(users.name, `%${escapeLike(search)}%`),
+          ilike(users.email, `%${escapeLike(search)}%`),
+        )
       : undefined;
 
     const [totalRow, rows] = await Promise.all([

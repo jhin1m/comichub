@@ -27,7 +27,18 @@ import {
 import { CommentReplyEvent } from '../../notification/events/comment-reply.event.js';
 import { CommentLikeEvent } from '../../notification/events/comment-like.event.js';
 
-const ALLOWED_TAGS = ['b', 'i', 'em', 'strong', 'blockquote', 'p', 'br', 'img', 'a', 'span'];
+const ALLOWED_TAGS = [
+  'b',
+  'i',
+  'em',
+  'strong',
+  'blockquote',
+  'p',
+  'br',
+  'img',
+  'a',
+  'span',
+];
 const ALLOWED_ATTRIBUTES: sanitizeHtml.IOptions['allowedAttributes'] = {
   a: ['href', 'target', 'rel'],
   img: ['src', 'alt'],
@@ -40,7 +51,10 @@ function sanitizeContent(content: string): string {
     allowedAttributes: ALLOWED_ATTRIBUTES,
     allowedSchemes: ['http', 'https'],
     transformTags: {
-      a: sanitizeHtml.simpleTransform('a', { target: '_blank', rel: 'noopener nofollow' }),
+      a: sanitizeHtml.simpleTransform('a', {
+        target: '_blank',
+        rel: 'noopener nofollow',
+      }),
     },
   });
 }
@@ -68,7 +82,10 @@ const COMMENT_USER_SELECT = {
   updatedAt: comments.updatedAt,
   userName: users.name,
   userAvatar: users.avatar,
-  repliesCount: sql<number>`(SELECT count(*)::int FROM comments c2 WHERE c2.parent_id = ${comments.id} AND c2.deleted_at IS NULL)`.as('replies_count'),
+  repliesCount:
+    sql<number>`(SELECT count(*)::int FROM comments c2 WHERE c2.parent_id = ${comments.id} AND c2.deleted_at IS NULL)`.as(
+      'replies_count',
+    ),
 };
 
 const MAX_DEPTH = 3;
@@ -90,12 +107,28 @@ export class CommentService {
     }
     const commentIds = data.map((d) => d.id);
     const reactions = await this.db
-      .select({ commentId: commentLikes.commentId, isDislike: commentLikes.isDislike })
+      .select({
+        commentId: commentLikes.commentId,
+        isDislike: commentLikes.isDislike,
+      })
       .from(commentLikes)
-      .where(and(eq(commentLikes.userId, currentUserId), inArray(commentLikes.commentId, commentIds)));
-    const likedSet = new Set(reactions.filter((r) => !r.isDislike).map((r) => r.commentId));
-    const dislikedSet = new Set(reactions.filter((r) => r.isDislike).map((r) => r.commentId));
-    return data.map((d) => ({ ...d, isLiked: likedSet.has(d.id), isDisliked: dislikedSet.has(d.id) }));
+      .where(
+        and(
+          eq(commentLikes.userId, currentUserId),
+          inArray(commentLikes.commentId, commentIds),
+        ),
+      );
+    const likedSet = new Set(
+      reactions.filter((r) => !r.isDislike).map((r) => r.commentId),
+    );
+    const dislikedSet = new Set(
+      reactions.filter((r) => r.isDislike).map((r) => r.commentId),
+    );
+    return data.map((d) => ({
+      ...d,
+      isLiked: likedSet.has(d.id),
+      isDisliked: dislikedSet.has(d.id),
+    }));
   }
 
   async getRecent(limit = 10) {
@@ -132,21 +165,35 @@ export class CommentService {
       .filter((r) => r.commentableType === 'chapter' && r.chapterMangaId)
       .map((r) => r.chapterMangaId as number);
 
-    let mangaMap = new Map<number, { title: string; slug: string; cover: string | null }>();
+    let mangaMap = new Map<
+      number,
+      { title: string; slug: string; cover: string | null }
+    >();
     if (chapterMangaIds.length > 0) {
       const uniqueIds = [...new Set(chapterMangaIds)];
       const mangaRows = await this.db
-        .select({ id: manga.id, title: manga.title, slug: manga.slug, cover: manga.cover })
+        .select({
+          id: manga.id,
+          title: manga.title,
+          slug: manga.slug,
+          cover: manga.cover,
+        })
         .from(manga)
-        .where(sql`${manga.id} IN (${sql.join(uniqueIds.map((id) => sql`${id}`), sql`, `)})`);
+        .where(
+          sql`${manga.id} IN (${sql.join(
+            uniqueIds.map((id) => sql`${id}`),
+            sql`, `,
+          )})`,
+        );
       mangaMap = new Map(mangaRows.map((m) => [m.id, m]));
     }
 
     return rows.map((row) => {
       const isChapter = row.commentableType === 'chapter';
-      const resolvedManga = isChapter && row.chapterMangaId
-        ? mangaMap.get(row.chapterMangaId)
-        : null;
+      const resolvedManga =
+        isChapter && row.chapterMangaId
+          ? mangaMap.get(row.chapterMangaId)
+          : null;
 
       return {
         id: row.id,
@@ -187,29 +234,59 @@ export class CommentService {
     return { data: withReactions, total, page: query.page, limit: query.limit };
   }
 
-  async listForManga(mangaId: number, query: CommentQueryDto, currentUserId?: number) {
+  async listForManga(
+    mangaId: number,
+    query: CommentQueryDto,
+    currentUserId?: number,
+  ) {
     const where = and(
       eq(comments.commentableType, CommentableType.MANGA),
       eq(comments.commentableId, mangaId),
       isNull(comments.parentId),
       isNull(comments.deletedAt),
     );
-    return this.listComments(where, query, buildSortClause(query.sort), currentUserId);
+    return this.listComments(
+      where,
+      query,
+      buildSortClause(query.sort),
+      currentUserId,
+    );
   }
 
-  async listForChapter(chapterId: number, query: CommentQueryDto, currentUserId?: number) {
+  async listForChapter(
+    chapterId: number,
+    query: CommentQueryDto,
+    currentUserId?: number,
+  ) {
     const where = and(
       eq(comments.commentableType, CommentableType.CHAPTER),
       eq(comments.commentableId, chapterId),
       isNull(comments.parentId),
       isNull(comments.deletedAt),
     );
-    return this.listComments(where, query, buildSortClause(query.sort), currentUserId);
+    return this.listComments(
+      where,
+      query,
+      buildSortClause(query.sort),
+      currentUserId,
+    );
   }
 
-  async getReplies(commentId: number, pagination: PaginationDto, currentUserId?: number) {
-    const where = and(eq(comments.parentId, commentId), isNull(comments.deletedAt));
-    return this.listComments(where, pagination, asc(comments.createdAt), currentUserId);
+  async getReplies(
+    commentId: number,
+    pagination: PaginationDto,
+    currentUserId?: number,
+  ) {
+    const where = and(
+      eq(comments.parentId, commentId),
+      isNull(comments.deletedAt),
+    );
+    return this.listComments(
+      where,
+      pagination,
+      asc(comments.createdAt),
+      currentUserId,
+    );
   }
 
   async getMyComments(userId: number, pagination: PaginationDto) {
@@ -285,7 +362,12 @@ export class CommentService {
       .where(eq(comments.id, commentId));
   }
 
-  async toggleReaction(commentId: number, userId: number, isDislike: boolean, userName?: string) {
+  async toggleReaction(
+    commentId: number,
+    userId: number,
+    isDislike: boolean,
+    userName?: string,
+  ) {
     const commentData = await this.findOrFail(commentId);
 
     const [existing] = await this.db
@@ -301,26 +383,39 @@ export class CommentService {
 
     // If existing reaction: remove it (and if it's the opposite type, we'll insert the new one)
     if (existing) {
-      await this.db.delete(commentLikes).where(eq(commentLikes.id, existing.id));
+      await this.db
+        .delete(commentLikes)
+        .where(eq(commentLikes.id, existing.id));
 
       // Decrement the old counter
       if (existing.isDislike) {
-        await this.db.update(comments)
-          .set({ dislikesCount: sql`GREATEST(${comments.dislikesCount} - 1, 0)` })
+        await this.db
+          .update(comments)
+          .set({
+            dislikesCount: sql`GREATEST(${comments.dislikesCount} - 1, 0)`,
+          })
           .where(eq(comments.id, commentId));
       } else {
-        await this.db.update(comments)
+        await this.db
+          .update(comments)
           .set({ likesCount: sql`GREATEST(${comments.likesCount} - 1, 0)` })
           .where(eq(comments.id, commentId));
       }
 
       // If same type → just un-toggle, return
       if (existing.isDislike === isDislike) {
-        const [c] = await this.db.select({ likesCount: comments.likesCount, dislikesCount: comments.dislikesCount })
-          .from(comments).where(eq(comments.id, commentId));
+        const [c] = await this.db
+          .select({
+            likesCount: comments.likesCount,
+            dislikesCount: comments.dislikesCount,
+          })
+          .from(comments)
+          .where(eq(comments.id, commentId));
         return {
-          liked: false, disliked: false,
-          likesCount: c?.likesCount ?? 0, dislikesCount: c?.dislikesCount ?? 0,
+          liked: false,
+          disliked: false,
+          likesCount: c?.likesCount ?? 0,
+          dislikesCount: c?.dislikesCount ?? 0,
         };
       }
     }
@@ -330,11 +425,13 @@ export class CommentService {
 
     // Increment the new counter
     if (isDislike) {
-      await this.db.update(comments)
+      await this.db
+        .update(comments)
         .set({ dislikesCount: sql`${comments.dislikesCount} + 1` })
         .where(eq(comments.id, commentId));
     } else {
-      await this.db.update(comments)
+      await this.db
+        .update(comments)
         .set({ likesCount: sql`${comments.likesCount} + 1` })
         .where(eq(comments.id, commentId));
 
@@ -349,11 +446,18 @@ export class CommentService {
       }
     }
 
-    const [c] = await this.db.select({ likesCount: comments.likesCount, dislikesCount: comments.dislikesCount })
-      .from(comments).where(eq(comments.id, commentId));
+    const [c] = await this.db
+      .select({
+        likesCount: comments.likesCount,
+        dislikesCount: comments.dislikesCount,
+      })
+      .from(comments)
+      .where(eq(comments.id, commentId));
     return {
-      liked: !isDislike, disliked: isDislike,
-      likesCount: c?.likesCount ?? 0, dislikesCount: c?.dislikesCount ?? 0,
+      liked: !isDislike,
+      disliked: isDislike,
+      likesCount: c?.likesCount ?? 0,
+      dislikesCount: c?.dislikesCount ?? 0,
     };
   }
 

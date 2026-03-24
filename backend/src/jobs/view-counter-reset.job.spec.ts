@@ -44,12 +44,24 @@ describe('ViewCounterResetJob', () => {
     });
 
     it('should invalidate ranking caches after reset', async () => {
-      mockRedis.scan.mockResolvedValue(['0', ['rankings:day', 'rankings:week']]);
+      mockRedis.scan.mockResolvedValue([
+        '0',
+        ['rankings:day', 'rankings:week'],
+      ]);
 
       await job.resetDailyViews();
 
-      expect(mockRedis.scan).toHaveBeenCalledWith('0', 'MATCH', 'rankings:*', 'COUNT', 100);
-      expect(mockRedis.del).toHaveBeenCalledWith('rankings:day', 'rankings:week');
+      expect(mockRedis.scan).toHaveBeenCalledWith(
+        '0',
+        'MATCH',
+        'rankings:*',
+        'COUNT',
+        100,
+      );
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'rankings:day',
+        'rankings:week',
+      );
     });
 
     it('should skip del when no ranking cache keys exist', async () => {

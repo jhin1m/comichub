@@ -78,7 +78,11 @@ describe('ViewTrackingService', () => {
       await service.trackChapterView(3);
 
       expect(mockRedis.get).toHaveBeenCalledWith('view:3:ip:unknown');
-      expect(mockRedis.setex).toHaveBeenCalledWith('view:3:ip:unknown', 300, '1');
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        'view:3:ip:unknown',
+        300,
+        '1',
+      );
     });
 
     it('should set dedup TTL to 300 seconds', async () => {
@@ -86,7 +90,11 @@ describe('ViewTrackingService', () => {
 
       await service.trackChapterView(1, 20);
 
-      expect(mockRedis.setex).toHaveBeenCalledWith(expect.any(String), 300, '1');
+      expect(mockRedis.setex).toHaveBeenCalledWith(
+        expect.any(String),
+        300,
+        '1',
+      );
     });
 
     it('should increment manga-level counters when chapter exists', async () => {
