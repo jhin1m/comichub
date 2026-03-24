@@ -125,7 +125,7 @@ export function MangaCarousel({ title, items = [], showRank = false, moreHref = 
           {items.map((item, i) => (
             <div
               key={item.id}
-              className="shrink-0 w-[calc((100%-1.5rem)/3)] sm:w-[calc((100%-2.25rem)/4)] md:w-[calc((100%-3rem)/5)]"
+              className="shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-1.5rem)/3)] md:w-[calc((100%-2.25rem)/4)] lg:w-[calc((100%-3rem)/5)]"
             >
               <MangaCarouselCard item={item} rank={showRank ? i + 1 : undefined} />
             </div>
