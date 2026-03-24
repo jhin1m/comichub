@@ -87,6 +87,7 @@ export const manga = pgTable(
     totalRatings: integer('total_ratings').default(0).notNull(),
     isHot: boolean('is_hot').default(false).notNull(),
     isNsfw: boolean('is_nsfw').default(false).notNull(),
+    demographic: varchar('demographic', { length: 20 }),
     isReviewed: boolean('is_reviewed').default(false).notNull(),
     year: integer('year'),
     lastChapterId: integer('last_chapter_id'), // app-managed, no FK (circular)

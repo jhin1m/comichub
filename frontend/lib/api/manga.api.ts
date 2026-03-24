@@ -10,6 +10,9 @@ export const mangaApi = {
   detail: (slug: string) =>
     apiClient.get<MangaDetail>(`/manga/${slug}`).then((r) => r.data),
 
+  random: () =>
+    apiClient.get<{ slug: string }>('/manga/random').then((r) => r.data),
+
   hot: (page = 1, limit = 10) =>
     apiClient.get<PaginatedResult<MangaListItem>>('/manga/hot', { params: { page, limit } }).then((r) => r.data),
 

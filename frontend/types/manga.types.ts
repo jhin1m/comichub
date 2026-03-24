@@ -86,4 +86,12 @@ export interface MangaQueryParams {
   order?: 'asc' | 'desc';
   artist?: number;
   author?: number;
+  // Advanced filters
+  includeGenres?: string;
+  excludeGenres?: string;
+  demographic?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  minChapter?: number;
+  minRating?: number;
 }

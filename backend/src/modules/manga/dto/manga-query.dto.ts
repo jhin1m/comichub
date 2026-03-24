@@ -1,5 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsEnum, IsInt, IsString, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsString,
+  IsBoolean,
+  IsNumber,
+  Matches,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { MangaStatus, MangaType } from './create-manga.dto.js';
@@ -43,7 +52,9 @@ export class MangaQueryDto extends PaginationDto {
   @IsInt()
   author?: number;
 
-  @ApiPropertyOptional({ description: 'Original language code (e.g. ja, ko, zh)' })
+  @ApiPropertyOptional({
+    description: 'Original language code (e.g. ja, ko, zh)',
+  })
   @IsOptional()
   @IsString()
   language?: string;
@@ -72,4 +83,58 @@ export class MangaQueryDto extends PaginationDto {
   @IsOptional()
   @IsEnum(SortOrder)
   order?: SortOrder;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated genre slugs to include (AND logic, max 10)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9-]+(,[a-z0-9-]+)*$/, {
+    message: 'includeGenres must be comma-separated lowercase slugs',
+  })
+  includeGenres?: string;
+
+  @ApiPropertyOptional({
+    description: 'Comma-separated genre slugs to exclude (max 10)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9-]+(,[a-z0-9-]+)*$/, {
+    message: 'excludeGenres must be comma-separated lowercase slugs',
+  })
+  excludeGenres?: string;
+
+  @ApiPropertyOptional({
+    description: 'Demographic filter (shounen, shoujo, seinen, josei)',
+    enum: ['shounen', 'shoujo', 'seinen', 'josei'],
+  })
+  @IsOptional()
+  @IsIn(['shounen', 'shoujo', 'seinen', 'josei'], {
+    message: 'demographic must be one of: shounen, shoujo, seinen, josei',
+  })
+  demographic?: string;
+
+  @ApiPropertyOptional({ description: 'Year range start' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  yearFrom?: number;
+
+  @ApiPropertyOptional({ description: 'Year range end' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  yearTo?: number;
+
+  @ApiPropertyOptional({ description: 'Minimum chapter count' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  minChapter?: number;
+
+  @ApiPropertyOptional({ description: 'Minimum average rating (0-5)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  minRating?: number;
 }

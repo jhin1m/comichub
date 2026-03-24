@@ -29,6 +29,20 @@
       "when": 1774616400000,
       "tag": "0003_add_manga_metadata_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1742806800000,
+      "tag": "0004_add_demographic_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774343711394,
+      "tag": "0005_omniscient_garia",
+      "breakpoints": true
     }
   ]
 }

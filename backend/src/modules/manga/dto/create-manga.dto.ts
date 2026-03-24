@@ -10,6 +10,7 @@ import {
   IsNotEmpty,
   Max,
   Min,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -57,7 +58,10 @@ export class CreateMangaDto {
   @MaxLength(500)
   cover?: string;
 
-  @ApiPropertyOptional({ example: 'ja', description: 'ISO 639-1 language code' })
+  @ApiPropertyOptional({
+    example: 'ja',
+    description: 'ISO 639-1 language code',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(10)
@@ -77,6 +81,16 @@ export class CreateMangaDto {
   @IsOptional()
   @IsBoolean()
   isNsfw?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Demographic (shounen, shoujo, seinen, josei)',
+    enum: ['shounen', 'shoujo', 'seinen', 'josei'],
+  })
+  @IsOptional()
+  @IsIn(['shounen', 'shoujo', 'seinen', 'josei'], {
+    message: 'demographic must be one of: shounen, shoujo, seinen, josei',
+  })
+  demographic?: string;
 
   @ApiPropertyOptional({ example: 2020 })
   @IsOptional()

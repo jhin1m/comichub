@@ -4,7 +4,19 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq, isNull, and, desc, asc, inArray, SQL } from 'drizzle-orm';
+import {
+  eq,
+  isNull,
+  and,
+  desc,
+  asc,
+  inArray,
+  notInArray,
+  gte,
+  lte,
+  sql,
+  SQL,
+} from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -52,6 +64,13 @@ export class MangaService {
       nsfw,
       sort,
       order,
+      includeGenres,
+      excludeGenres,
+      demographic,
+      yearFrom,
+      yearTo,
+      minChapter,
+      minRating,
     } = query;
 
     const conditions: SQL[] = [isNull(manga.deletedAt)];
@@ -100,6 +119,68 @@ export class MangaService {
       else return { data: [], total: 0, page, limit };
     }
 
+    if (demographic) conditions.push(eq(manga.demographic, demographic));
+    if (yearFrom !== undefined) conditions.push(gte(manga.year, yearFrom));
+    if (yearTo !== undefined) conditions.push(lte(manga.year, yearTo));
+    if (minChapter !== undefined)
+      conditions.push(gte(manga.chaptersCount, minChapter));
+    if (minRating !== undefined)
+      conditions.push(sql`${manga.averageRating}::numeric >= ${minRating}`);
+
+    if (includeGenres) {
+      const slugs = includeGenres
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (slugs.length) {
+        const genreRows = await this.db
+          .select({ id: genres.id })
+          .from(genres)
+          .where(inArray(genres.slug, slugs));
+        const genreIds = genreRows.map((r) => r.id);
+
+        if (genreIds.length !== slugs.length) {
+          return { data: [], total: 0, page, limit };
+        }
+
+        // AND logic: single aggregation query instead of N+1
+        const placeholders = genreIds.map((id) => sql`${id}`);
+        conditions.push(
+          sql`${manga.id} IN (
+            SELECT ${mangaGenres.mangaId} FROM ${mangaGenres}
+            WHERE ${mangaGenres.genreId} IN (${sql.join(placeholders, sql`, `)})
+            GROUP BY ${mangaGenres.mangaId}
+            HAVING COUNT(DISTINCT ${mangaGenres.genreId}) = ${genreIds.length}
+          )`,
+        );
+      }
+    }
+
+    if (excludeGenres) {
+      const slugs = excludeGenres
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (slugs.length) {
+        const genreRows = await this.db
+          .select({ id: genres.id })
+          .from(genres)
+          .where(inArray(genres.slug, slugs));
+        const genreIds = genreRows.map((r) => r.id);
+
+        if (genreIds.length) {
+          // Subquery instead of loading all IDs into memory
+          const placeholders = genreIds.map((id) => sql`${id}`);
+          conditions.push(
+            sql`${manga.id} NOT IN (
+              SELECT ${mangaGenres.mangaId} FROM ${mangaGenres}
+              WHERE ${mangaGenres.genreId} IN (${sql.join(placeholders, sql`, `)})
+            )`,
+          );
+        }
+      }
+    }
+
     const where = and(...conditions);
     const sortDir = order === SortOrder.ASC ? asc : desc;
     let orderBy;
@@ -137,6 +218,17 @@ export class MangaService {
     ]);
 
     return { data: rows as MangaListItem[], total: countResult, page, limit };
+  }
+
+  async findRandom(): Promise<{ slug: string }> {
+    const [row] = await this.db
+      .select({ slug: manga.slug })
+      .from(manga)
+      .where(isNull(manga.deletedAt))
+      .orderBy(sql`RANDOM()`)
+      .limit(1);
+    if (!row) throw new NotFoundException('No manga found');
+    return { slug: row.slug };
   }
 
   async findBySlug(slug: string): Promise<MangaDetail> {
@@ -217,6 +309,7 @@ export class MangaService {
         status: dto.status,
         type: dto.type,
         isNsfw: dto.isNsfw,
+        demographic: dto.demographic,
         year: dto.year,
       })
       .returning();
@@ -244,6 +337,7 @@ export class MangaService {
     if (dto.type !== undefined) updates.type = dto.type;
     if (dto.slug !== undefined) updates.slug = dto.slug;
     if (dto.isNsfw !== undefined) updates.isNsfw = dto.isNsfw;
+    if (dto.demographic !== undefined) updates.demographic = dto.demographic;
     if (dto.year !== undefined) updates.year = dto.year;
 
     const [updated] = await this.db
@@ -284,9 +378,7 @@ export class MangaService {
         }
       }
       if (dto.artistIds !== undefined) {
-        await tx
-          .delete(mangaArtists)
-          .where(eq(mangaArtists.mangaId, mangaId));
+        await tx.delete(mangaArtists).where(eq(mangaArtists.mangaId, mangaId));
         if (dto.artistIds.length) {
           await tx
             .insert(mangaArtists)
@@ -294,9 +386,7 @@ export class MangaService {
         }
       }
       if (dto.authorIds !== undefined) {
-        await tx
-          .delete(mangaAuthors)
-          .where(eq(mangaAuthors.mangaId, mangaId));
+        await tx.delete(mangaAuthors).where(eq(mangaAuthors.mangaId, mangaId));
         if (dto.authorIds.length) {
           await tx
             .insert(mangaAuthors)

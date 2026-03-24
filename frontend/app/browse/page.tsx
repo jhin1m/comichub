@@ -23,13 +23,21 @@ function BrowseContent() {
     page: Number(searchParams.get('page') ?? 1),
     limit: 24,
     search: searchParams.get('search') ?? undefined,
-    genre: searchParams.get('genre') ?? undefined,
+    genre: searchParams.get('genre') ?? undefined, // legacy compat
     status: (searchParams.get('status') as MangaQueryParams['status']) ?? undefined,
     type: (searchParams.get('type') as MangaQueryParams['type']) ?? undefined,
     sort: (searchParams.get('sort') as MangaQueryParams['sort']) ?? 'updated_at',
     order: 'desc',
     artist: searchParams.get('artist') ? Number(searchParams.get('artist')) : undefined,
     author: searchParams.get('author') ? Number(searchParams.get('author')) : undefined,
+    includeGenres: searchParams.get('includeGenres') ?? searchParams.get('genre') ?? undefined,
+    excludeGenres: searchParams.get('excludeGenres') ?? undefined,
+    demographic: searchParams.get('demographic') ?? undefined,
+    yearFrom: searchParams.get('yearFrom') ? Number(searchParams.get('yearFrom')) : undefined,
+    yearTo: searchParams.get('yearTo') ? Number(searchParams.get('yearTo')) : undefined,
+    minChapter: searchParams.get('minChapter') ? Number(searchParams.get('minChapter')) : undefined,
+    minRating: searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
+    nsfw: searchParams.get('nsfw') === 'true' ? true : undefined,
   };
 
   useEffect(() => {

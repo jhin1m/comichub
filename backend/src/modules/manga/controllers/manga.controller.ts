@@ -41,6 +41,15 @@ export class MangaController {
   }
 
   @Public()
+  @Get('random')
+  @ApiOperation({ summary: 'Get a random manga slug' })
+  @ApiResponse({ status: 200, description: 'Random manga slug' })
+  @ApiResponse({ status: 404, description: 'No manga found' })
+  findRandom() {
+    return this.mangaService.findRandom();
+  }
+
+  @Public()
   @Get(':slug')
   @ApiOperation({ summary: 'Get manga detail by slug' })
   @ApiParam({ name: 'slug', example: 'one-piece' })
