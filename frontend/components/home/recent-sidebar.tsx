@@ -16,32 +16,32 @@ const TYPE_LABEL: Record<MangaType, string> = {
   doujinshi: 'OTHER',
 };
 
-const TYPE_COLOR: Record<MangaType, string> = {
-  manga: 'text-info',
-  manhwa: 'text-success',
-  manhua: 'text-warning',
-  doujinshi: 'text-secondary',
+const TYPE_BADGE: Record<MangaType, string> = {
+  manga: 'bg-info/15 text-info',
+  manhwa: 'bg-success/15 text-success',
+  manhua: 'bg-warning/15 text-warning',
+  doujinshi: 'bg-surface text-secondary',
 };
 
 function SidebarItem({ item }: { item: MangaListItem }) {
   return (
     <Link
       href={`/manga/${item.slug}`}
-      className="flex gap-2.5 py-2 border-b border-default last:border-0 group"
+      className="flex gap-3 py-3 border-b border-default last:border-0 group hover:bg-surface/50 -mx-2 px-2 rounded-md transition-colors duration-150"
     >
-      {/* Thumbnail */}
-      <div className="relative w-13 h-17.5 shrink-0 rounded-[3px] overflow-hidden bg-elevated border border-default">
+      {/* Thumbnail — larger */}
+      <div className="relative w-14 h-[76px] shrink-0 rounded overflow-hidden bg-elevated border border-default group-hover:border-accent/40 transition-colors duration-200">
         {item.cover ? (
           <Image
             src={item.cover}
             alt={item.title}
             fill
             className="object-cover"
-            sizes="52px"
+            sizes="56px"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted text-[9px]">
+          <div className="w-full h-full flex items-center justify-center text-muted text-[10px]">
             N/A
           </div>
         )}
@@ -49,13 +49,13 @@ function SidebarItem({ item }: { item: MangaListItem }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className={`text-[9px] font-bold tracking-widest uppercase mb-0.5 ${TYPE_COLOR[item.type]}`}>
+        <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded mb-1 ${TYPE_BADGE[item.type]}`}>
           {TYPE_LABEL[item.type]}
-        </div>
-        <p className="text-[12px] font-medium text-primary line-clamp-2 leading-snug mb-1 group-hover:text-accent transition-colors duration-150">
+        </span>
+        <p className="text-sm font-medium text-primary line-clamp-2 leading-snug mb-1 group-hover:text-accent transition-colors duration-150">
           {item.title}
         </p>
-        <div className="text-[11px] text-muted">
+        <div className="text-xs text-muted">
           <span className="text-secondary">
             {item.chaptersCount > 0 ? `Ch.${item.chaptersCount}` : 'Ch.0'}
           </span>
@@ -81,25 +81,28 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
 
   return (
     <aside>
-      {/* Tab header */}
-      <div className="mb-3 pb-2.5 border-b border-default flex items-baseline gap-1">
+      {/* Tab header with accent underline */}
+      <div className="mb-4 flex items-center gap-4 border-b border-default">
         <button
           onClick={() => setActiveTab('recent')}
-          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer flex items-center gap-1 ${
-            activeTab === 'recent' ? 'text-primary' : 'text-muted hover:text-secondary'
+          className={`font-rajdhani font-bold text-xl pb-2.5 transition-all duration-200 cursor-pointer flex items-center gap-1.5 relative ${
+            activeTab === 'recent'
+              ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent after:rounded-full'
+              : 'text-muted hover:text-secondary'
           }`}
         >
-          <SparkleIcon size={15} className={activeTab === 'recent' ? 'text-accent' : ''} />
+          <SparkleIcon size={18} weight={activeTab === 'recent' ? 'fill' : 'regular'} className={activeTab === 'recent' ? 'text-accent' : ''} />
           Recently Added
         </button>
-        <span className="text-muted text-[15px] font-medium">/</span>
         <button
           onClick={() => setActiveTab('complete')}
-          className={`font-rajdhani font-bold text-[17px] transition-colors cursor-pointer flex items-center gap-1 ${
-            activeTab === 'complete' ? 'text-primary' : 'text-muted hover:text-secondary'
+          className={`font-rajdhani font-bold text-xl pb-2.5 transition-all duration-200 cursor-pointer flex items-center gap-1.5 relative ${
+            activeTab === 'complete'
+              ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent after:rounded-full'
+              : 'text-muted hover:text-secondary'
           }`}
         >
-          <CheckCircleIcon size={15} className={activeTab === 'complete' ? 'text-accent' : ''} />
+          <CheckCircleIcon size={18} weight={activeTab === 'complete' ? 'fill' : 'regular'} className={activeTab === 'complete' ? 'text-accent' : ''} />
           Complete Series
         </button>
       </div>
