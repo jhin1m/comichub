@@ -33,18 +33,18 @@ function CommentItem({ comment }: { comment: RecentComment }) {
             <div className="w-full h-full bg-hover" />
           )}
         </div>
-        <span className="text-[11px] tracking-wide text-secondary bg-elevated rounded-md px-3 py-1.5 line-clamp-1 flex-1 group-hover:text-accent transition-colors duration-150">
+        <span className="text-[11px] tracking-wide text-secondary bg-elevated rounded-md px-3 py-1.5 truncate min-w-0 flex-1 group-hover:text-accent transition-colors duration-150">
           {heading || 'Unknown'}
         </span>
       </div>
 
       {/* Comment content */}
-      <p className="text-[15px] text-primary leading-relaxed line-clamp-2 mb-1.5">
+      <p className="text-[13px] text-primary leading-relaxed line-clamp-2 mb-1.5">
         {stripHtml(comment.content)}
       </p>
 
       {/* User + time */}
-      <div className="flex items-center justify-between text-xs text-muted">
+      <div className="flex items-center justify-between text-xs text-muted font-rajdhani">
         <span className="truncate max-w-[60%]">{comment.userName}</span>
         <span className="shrink-0">{formatRelativeDate(comment.createdAt)}</span>
       </div>

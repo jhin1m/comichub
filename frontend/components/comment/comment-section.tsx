@@ -114,8 +114,8 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
       {/* Header: count + sort tabs */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <ChatCircleDotsIcon size={18} className="text-secondary" />
-          <span className="text-primary text-sm font-semibold">
+          <ChatCircleDotsIcon size={18} className="text-accent" />
+          <span className="text-primary text-sm font-rajdhani font-bold uppercase tracking-wider">
             Comments
           </span>
           <span className="text-muted text-xs">({total})</span>

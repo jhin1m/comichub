@@ -8,7 +8,7 @@ import { mangaApi } from '@/lib/api/manga.api';
 
 interface Props {
   mangaId: number;
-  averageRating: string; // e.g. "4.2"
+  averageRating: string;
   totalRatings: number;
 }
 
@@ -23,13 +23,12 @@ function getStarStates(rating: number): StarState[] {
   });
 }
 
-function StarIcon({ state, size = 24, gradientId }: { state: StarState; size?: number; gradientId: string }) {
-  const id = gradientId;
+function StarIcon({ state, size = 22, gradientId }: { state: StarState; size?: number; gradientId: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {state === 'half' && (
         <defs>
-          <linearGradient id={id}>
+          <linearGradient id={gradientId}>
             <stop offset="50%" stopColor="var(--color-amber-400, #f59e0b)" />
             <stop offset="50%" stopColor="#404040" />
           </linearGradient>
@@ -37,7 +36,7 @@ function StarIcon({ state, size = 24, gradientId }: { state: StarState; size?: n
       )}
       <polygon
         points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
-        fill={state === 'full' ? 'var(--color-amber-400, #f59e0b)' : state === 'half' ? `url(#${id})` : '#404040'}
+        fill={state === 'full' ? 'var(--color-amber-400, #f59e0b)' : state === 'half' ? `url(#${gradientId})` : '#404040'}
         stroke={state === 'empty' ? '#404040' : 'var(--color-amber-400, #f59e0b)'}
         strokeWidth="0.5"
       />
@@ -51,7 +50,7 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
   const componentId = useId();
 
   const avg = parseFloat(averageRating) || 0;
-  const displayScore = (avg * 2).toFixed(1); // 5-scale -> 10-scale
+  const displayScore = (avg * 2).toFixed(1);
 
   const [userRating, setUserRating] = useState<number | null>(null);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -92,7 +91,6 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
     const score = getScoreFromMouseEvent(e, starIndex);
     if (submitting) return;
 
-    // Toggle off if clicking the same score
     if (userRating === score) {
       setSubmitting(true);
       try {
@@ -126,7 +124,7 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
       : displayScore;
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="rounded-lg border border-default bg-surface/60 px-4 py-3">
       <div className="flex items-center gap-3">
         {/* Stars */}
         <div
@@ -143,29 +141,26 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
               onMouseMove={(e) => handleMouseMove(e, i)}
               onClick={(e) => handleClick(e, i)}
             >
-              <StarIcon state={state} size={24} gradientId={`${componentId}-star-${i}`} />
+              <StarIcon state={state} size={22} gradientId={`${componentId}-star-${i}`} />
             </button>
           ))}
         </div>
 
         {/* Score */}
-        <span
-          className="font-rajdhani text-2xl font-bold leading-none text-amber-500"
-        >
+        <span className="font-rajdhani text-2xl font-bold leading-none text-amber-500">
           {shownScore}
         </span>
       </div>
 
       {/* Sub-label */}
-      <p className="text-sm text-secondary">
-        Score:{' '}
-        <span className="font-medium text-primary">
-          {displayScore}
-        </span>{' '}
-        by {totalRatings.toLocaleString()} users
+      <p className="mt-1.5 text-xs text-muted font-rajdhani">
+        Score{' '}
+        <span className="font-semibold text-secondary">{displayScore}</span>
+        {' · '}
+        {totalRatings.toLocaleString()} ratings
         {userRating != null && (
-          <span className="ml-2 text-xs text-amber-500">
-            (your rating: {(userRating * 2).toFixed(1)})
+          <span className="ml-2 text-amber-500/80">
+            (yours: {(userRating * 2).toFixed(1)})
           </span>
         )}
       </p>

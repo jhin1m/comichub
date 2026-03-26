@@ -55,7 +55,7 @@ function SidebarItem({ item }: { item: MangaListItem }) {
         <p className="text-sm font-medium text-primary line-clamp-2 leading-snug mb-1 group-hover:text-accent transition-colors duration-150">
           {item.title}
         </p>
-        <div className="text-xs text-muted">
+        <div className="text-xs text-muted font-rajdhani">
           <span className="text-secondary">
             {item.chaptersCount > 0 ? `Ch.${item.chaptersCount}` : 'Ch.0'}
           </span>

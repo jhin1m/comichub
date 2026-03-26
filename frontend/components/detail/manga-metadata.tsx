@@ -34,7 +34,7 @@ function TaxonomyLinks({
         <span key={item.id}>
           <Link
             href={href(item)}
-            className="text-primary hover:text-secondary transition-colors"
+            className="text-primary hover:text-accent transition-colors"
           >
             {item.name}
           </Link>
@@ -48,8 +48,8 @@ function TaxonomyLinks({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-4 py-1.5 border-b border-default last:border-0">
-      <span className="text-muted shrink-0">{label}</span>
-      <span className="text-primary text-left">{children}</span>
+      <span className="text-muted shrink-0 font-rajdhani font-semibold w-18">{label}</span>
+      <span className="text-primary text-left flex-1">{children}</span>
     </div>
   );
 }
@@ -60,10 +60,10 @@ export function MangaMetadata({ manga }: Props) {
   return (
     <div className="text-sm">
       <Row label="Followed">
-        {formatCount(manga.followersCount)} users
+        <span className="font-rajdhani font-semibold">{formatCount(manga.followersCount)}</span> users
       </Row>
       <Row label="Score">
-        {score} by {formatCount(manga.totalRatings)} users
+        <span className="font-rajdhani font-semibold">{score}</span> by {formatCount(manga.totalRatings)} users
       </Row>
       <Row label="Type">{TYPE_LABELS[manga.type] ?? manga.type}</Row>
       <Row label="Authors">

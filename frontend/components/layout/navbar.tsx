@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ListIcon, XIcon, BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon } from '@phosphor-icons/react';
+import { BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth.context';
@@ -14,7 +14,6 @@ import { useNotificationStream } from '@/hooks/use-notification-stream';
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [browseDropdownOpen, setBrowseDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -63,8 +62,8 @@ export default function Navbar() {
         {/* Search (icon on mobile, full bar on desktop) */}
         <SearchAutocomplete />
 
-        {/* Right action buttons — desktop */}
-        <div className="hidden md:flex items-center gap-1 shrink-0">
+        {/* Right action buttons — always visible */}
+        <div className="flex items-center gap-1 shrink-0">
           <div className="relative" ref={browseDropdownRef}>
             <button
               onClick={() => setBrowseDropdownOpen((v) => !v)}
@@ -178,35 +177,7 @@ export default function Navbar() {
             </button>
           )}
         </div>
-
-        {/* Mobile hamburger */}
-        <button
-          className="md:hidden text-secondary hover:text-primary p-1"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <XIcon size={20} /> : <ListIcon size={20} />}
-        </button>
       </div>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="md:hidden bg-base border-b border-default px-4 py-3 flex flex-col gap-3">
-          <Link href="/" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link href="/browse" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Browse</Link>
-          <Link href="/browse?sort=trending&type=manhwa" className="text-sm text-secondary hover:text-primary pl-3" onClick={() => setMenuOpen(false)}>Trending Webtoon</Link>
-          <Link href="/browse?sort=trending&type=manga" className="text-sm text-secondary hover:text-primary pl-3" onClick={() => setMenuOpen(false)}>Trending Manga</Link>
-          <Link href="/settings/preferences" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Preferences</Link>
-          {user ? (
-            <>
-              <Link href="/profile" className="text-sm text-secondary hover:text-primary" onClick={() => setMenuOpen(false)}>Profile</Link>
-              <button onClick={() => { setMenuOpen(false); logout(); }} className="text-left text-sm text-secondary hover:text-primary">Logout</button>
-            </>
-          ) : (
-            <Link href="/login" className="text-sm text-accent" onClick={() => setMenuOpen(false)}>Login</Link>
-          )}
-        </div>
-      )}
     </header>
   );
 }

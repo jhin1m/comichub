@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { StarIcon, BooksIcon } from '@phosphor-icons/react';
+import { StarIcon, BooksIcon, SparkleIcon } from '@phosphor-icons/react';
 import { mangaApi } from '@/lib/api/manga.api';
 import type { MangaListItem, TaxonomyItem } from '@/types/manga.types';
 
@@ -63,7 +63,8 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-primary uppercase tracking-wider font-rajdhani">
+      <h3 className="flex items-center gap-2 text-sm font-bold text-primary uppercase tracking-wider font-rajdhani">
+        <SparkleIcon size={16} weight="fill" className="text-accent" />
         Recommendations
       </h3>
 

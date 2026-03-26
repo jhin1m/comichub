@@ -188,7 +188,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
           )}
 
           {/* Search */}
-          <div className="relative flex-1 sm:flex-none sm:w-[200px]">
+          <div className="relative flex-1 sm:flex-none sm:w-50">
             <MagnifyingGlassIcon
               size={12}
               className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
@@ -209,7 +209,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
         <button
           onClick={() => handleSort('number')}
           aria-label="Sort by chapter number"
-          className="flex items-center gap-1 hover:text-secondary transition-colors w-[140px] shrink-0"
+          className="flex items-center gap-1 hover:text-secondary transition-colors w-35 shrink-0"
         >
           Chapter <SortIcon field="number" />
         </button>
@@ -217,21 +217,21 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
         <button
           onClick={() => handleSort('views')}
           aria-label="Sort by views"
-          className="flex items-center gap-1 hover:text-secondary transition-colors w-[70px] justify-end shrink-0"
+          className="flex items-center gap-1 hover:text-secondary transition-colors w-17.5 justify-end shrink-0"
         >
           Views <SortIcon field="views" />
         </button>
         <button
           onClick={() => handleSort('date')}
           aria-label="Sort by date"
-          className="flex items-center gap-1 hover:text-secondary transition-colors w-[80px] justify-end shrink-0"
+          className="flex items-center gap-1 hover:text-secondary transition-colors w-20 justify-end shrink-0"
         >
           Date <SortIcon field="date" />
         </button>
       </div>
 
       {/* Chapter rows */}
-      <div className="max-h-[600px] overflow-y-auto chapter-list-scroll">
+      <div className="max-h-150 overflow-y-auto chapter-list-scroll">
         {paginated.length === 0 ? (
           <p className="text-sm text-muted py-8 text-center">No chapters found.</p>
         ) : (

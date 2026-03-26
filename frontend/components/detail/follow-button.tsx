@@ -40,7 +40,11 @@ export function FollowButton({ mangaId, followersCount }: Props) {
   };
 
   return (
-    <Button variant="secondary" onClick={handleToggle}>
+    <Button
+      variant="secondary"
+      onClick={handleToggle}
+      className={`font-rajdhani font-bold tracking-wide ${isFollowing ? 'border-accent/40 text-accent' : ''}`}
+    >
       {isFollowing ? <BookmarkSimpleIcon size={16} weight="fill" /> : <BookmarkSimpleIcon size={16} />}
       {isFollowing ? 'Following' : 'Follow'} ({count})
     </Button>
