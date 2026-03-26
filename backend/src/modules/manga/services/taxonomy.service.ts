@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -47,6 +47,16 @@ export class TaxonomyService {
     return this.db.select().from(table).orderBy(table.name) as Promise<
       TaxonomyItem[]
     >;
+  }
+
+  async search(type: string, query: string): Promise<TaxonomyItem[]> {
+    const table = this.getTable(type);
+    return this.db
+      .select()
+      .from(table)
+      .where(ilike(table.name, `%${query}%`))
+      .orderBy(table.name)
+      .limit(20) as Promise<TaxonomyItem[]>;
   }
 
   async findBySlug(type: string, slug: string): Promise<TaxonomyItem> {

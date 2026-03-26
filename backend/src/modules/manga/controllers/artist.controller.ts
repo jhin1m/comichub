@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   ParseIntPipe,
   UseGuards,
@@ -31,9 +32,12 @@ export class ArtistController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'List all artists' })
+  @ApiOperation({ summary: 'List or search artists' })
   @ApiResponse({ status: 200, description: 'Artist list' })
-  findAll() {
+  findAll(@Query('q') q?: string) {
+    if (q && q.trim().length >= 2) {
+      return this.taxonomyService.search('artists', q.trim());
+    }
     return this.taxonomyService.findAll('artists');
   }
 

@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   ParseIntPipe,
   UseGuards,
@@ -31,9 +32,12 @@ export class AuthorController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'List all authors' })
+  @ApiOperation({ summary: 'List or search authors' })
   @ApiResponse({ status: 200, description: 'Author list' })
-  findAll() {
+  findAll(@Query('q') q?: string) {
+    if (q && q.trim().length >= 2) {
+      return this.taxonomyService.search('authors', q.trim());
+    }
     return this.taxonomyService.findAll('authors');
   }
 

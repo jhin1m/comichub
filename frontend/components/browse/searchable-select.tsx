@@ -5,53 +5,81 @@ import { CaretDownIcon, XIcon } from '@phosphor-icons/react';
 interface SearchableSelectProps {
   label: string;
   value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
+  selectedLabel?: string;
+  onSearch: (query: string) => Promise<{ value: string; label: string }[]>;
+  onChange: (value: string, label: string) => void;
   placeholder?: string;
 }
 
-/** Live-search select: type to filter, click to pick. */
+/** Async search select: type to search API, click to pick. */
 export function SearchableSelect({
   label,
   value,
-  options,
+  selectedLabel = '',
+  onSearch,
   onChange,
   placeholder = 'Search...',
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [results, setResults] = useState<{ value: string; label: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setIsOpen(false);
         setSearch('');
+        setResults([]);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedLabel = options.find((o) => o.value === value)?.label ?? '';
+  // Debounced search
+  useEffect(() => {
+    if (search.length < 2) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
 
-  const filtered = search
-    ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase())).slice(0, 20)
-    : [];
+    setIsLoading(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await onSearch(search);
+        setResults(data);
+      } catch {
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search, onSearch]);
 
   const handleSelect = useCallback(
-    (val: string) => {
-      onChange(val);
+    (val: string, lbl: string) => {
+      onChange(val, lbl);
       setIsOpen(false);
       setSearch('');
+      setResults([]);
     },
     [onChange],
   );
 
   const handleClear = useCallback(() => {
-    onChange('');
+    onChange('', '');
     setSearch('');
+    setResults([]);
   }, [onChange]);
 
   return (
@@ -62,7 +90,6 @@ export function SearchableSelect({
         </span>
       )}
       <div className="relative">
-        {/* Selected value or search input */}
         <div className="flex items-center w-full px-3 py-2 bg-hover border border-hover rounded text-sm transition-colors">
           {value && !isOpen ? (
             <>
@@ -78,7 +105,6 @@ export function SearchableSelect({
           ) : (
             <>
               <input
-                ref={inputRef}
                 type="text"
                 value={search}
                 onChange={(e) => {
@@ -91,25 +117,28 @@ export function SearchableSelect({
               />
               <CaretDownIcon
                 size={14}
-                className={`ml-1 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                className={`ml-1 text-muted transition-transform ${isOpen ? 'rotate-180' : ''} ${isLoading ? 'animate-spin' : ''}`}
               />
             </>
           )}
         </div>
 
-        {/* Dropdown results */}
         {isOpen && search.length > 0 && (
           <div className="absolute z-50 top-full left-0 mt-1 w-full min-w-[180px] max-h-48 bg-elevated border border-hover rounded shadow-xl overflow-y-auto">
-            {filtered.length === 0 && (
-              <div className="px-3 py-2 text-xs text-muted">
-                {search.length < 2 ? 'Type to search...' : 'No results'}
-              </div>
+            {isLoading && (
+              <div className="px-3 py-2 text-xs text-muted">Searching...</div>
             )}
-            {filtered.map((opt) => (
+            {!isLoading && search.length < 2 && (
+              <div className="px-3 py-2 text-xs text-muted">Type at least 2 characters...</div>
+            )}
+            {!isLoading && search.length >= 2 && results.length === 0 && (
+              <div className="px-3 py-2 text-xs text-muted">No results</div>
+            )}
+            {results.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => handleSelect(opt.value)}
+                onClick={() => handleSelect(opt.value, opt.label)}
                 className={`w-full text-left px-3 py-2 text-sm hover:bg-hover transition-colors cursor-pointer ${
                   value === opt.value ? 'text-accent' : 'text-secondary'
                 }`}

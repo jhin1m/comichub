@@ -8,7 +8,7 @@ import { mangaApi } from '@/lib/api/manga.api';
 import { FilterDropdown } from '@/components/browse/filter-dropdown';
 import { GenreFilter } from '@/components/browse/genre-filter';
 import { SearchableSelect } from '@/components/browse/searchable-select';
-import type { TaxonomyItem, MangaQueryParams } from '@/types/manga.types';
+import type { MangaQueryParams } from '@/types/manga.types';
 
 const SORT_OPTIONS = [
   { value: 'updated_at', label: 'Latest Update' },
@@ -61,12 +61,11 @@ interface AdvancedFilterBarProps {
 }
 
 export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: AdvancedFilterBarProps) {
-  const [genres, setGenres] = useState<TaxonomyItem[]>([]);
-  const [artists, setArtists] = useState<TaxonomyItem[]>([]);
-  const [authors, setAuthors] = useState<TaxonomyItem[]>([]);
+  const [genres, setGenres] = useState<{ id: number; name: string; slug: string }[]>([]);
   const [includeGenres, setIncludeGenres] = useState<string[]>([]);
   const [excludeGenres, setExcludeGenres] = useState<string[]>([]);
   const [localFilters, setLocalFilters] = useState<Record<string, string>>({});
+  const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>({});
 
   // Sync local filters from URL params
   useEffect(() => {
@@ -100,12 +99,16 @@ export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: Adv
     genreApi.list().then(setGenres).catch(() => {});
   }, []);
 
-  // Lazy-load artists/authors when panel opens
-  useEffect(() => {
-    if (!isOpen) return;
-    if (artists.length === 0) artistApi.list().then(setArtists).catch(() => {});
-    if (authors.length === 0) authorApi.list().then(setAuthors).catch(() => {});
-  }, [isOpen, artists.length, authors.length]);
+  // Async search for artists/authors
+  const searchArtists = useCallback(async (q: string) => {
+    const data = await artistApi.search(q);
+    return data.map((a) => ({ value: String(a.id), label: a.name }));
+  }, []);
+
+  const searchAuthors = useCallback(async (q: string) => {
+    const data = await authorApi.search(q);
+    return data.map((a) => ({ value: String(a.id), label: a.name }));
+  }, []);
 
   const setFilter = useCallback((key: string, value: string) => {
     setLocalFilters((prev) => {
@@ -164,9 +167,6 @@ export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: Adv
       setIsRandomLoading(false);
     }
   }, [router]);
-
-  const artistOptions = artists.map((a) => ({ value: String(a.id), label: a.name }));
-  const authorOptions = authors.map((a) => ({ value: String(a.id), label: a.name }));
 
   if (!isOpen) return null;
 
@@ -244,15 +244,23 @@ export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: Adv
         <SearchableSelect
           label="Authors"
           value={localFilters.author || ''}
-          options={authorOptions}
-          onChange={(v) => setFilter('author', v)}
+          selectedLabel={selectedLabels.author || ''}
+          onSearch={searchAuthors}
+          onChange={(v, lbl) => {
+            setFilter('author', v);
+            setSelectedLabels((prev) => ({ ...prev, author: lbl }));
+          }}
           placeholder="Search authors..."
         />
         <SearchableSelect
           label="Artists"
           value={localFilters.artist || ''}
-          options={artistOptions}
-          onChange={(v) => setFilter('artist', v)}
+          selectedLabel={selectedLabels.artist || ''}
+          onSearch={searchArtists}
+          onChange={(v, lbl) => {
+            setFilter('artist', v);
+            setSelectedLabels((prev) => ({ ...prev, artist: lbl }));
+          }}
           placeholder="Search artists..."
         />
         <FilterDropdown
