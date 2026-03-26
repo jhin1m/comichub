@@ -22,7 +22,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
     DrizzleModule,
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 300 }]),
     AuthModule,
     UserModule,
     MangaModule,
