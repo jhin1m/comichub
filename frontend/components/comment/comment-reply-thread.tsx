@@ -78,15 +78,25 @@ export function CommentReplyThread({
       ) : (
         <>
           {replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              commentableType={commentableType}
-              commentableId={commentableId}
-              onCommentAdded={() => loadReplies(1)}
-              onCommentDeleted={handleCommentDeleted}
-              depth={depth + 1}
-            />
+            <div key={reply.id}>
+              <CommentItem
+                comment={reply}
+                commentableType={commentableType}
+                commentableId={commentableId}
+                onCommentAdded={() => loadReplies(1)}
+                onCommentDeleted={handleCommentDeleted}
+                depth={depth + 1}
+              />
+              {depth + 1 < 2 && (
+                <CommentReplyThread
+                  parentId={reply.id}
+                  commentableType={commentableType}
+                  commentableId={commentableId}
+                  replyCount={reply.repliesCount ?? 0}
+                  depth={depth + 1}
+                />
+              )}
+            </div>
           ))}
 
           {replies.length < total && (

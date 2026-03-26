@@ -248,7 +248,7 @@ export function CommentItem({
                   </button>
                 </div>
 
-                {depth < 3 && (
+                {depth < 2 && (
                   <button
                     onClick={() => setShowReply(!showReply)}
                     aria-label="Reply"
