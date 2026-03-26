@@ -42,7 +42,7 @@ export default async function MangaDetailPage({ params }: Props) {
           )}
 
           {/* Hero content */}
-          <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-10">
+          <div className="relative z-10 max-w-[1400px] mx-auto px-4 py-8 md:py-10">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
               <div className="space-y-4">
                 <MangaCoverHero manga={manga} />
@@ -56,7 +56,7 @@ export default async function MangaDetailPage({ params }: Props) {
         </section>
 
         {/* ===== BELOW HERO — chapters, comments, sidebar ===== */}
-        <main className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-8">
+        <main className="max-w-[1400px] mx-auto px-4 py-8">
           <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
             <div className="space-y-8">
               <ChapterList chapters={manga.chapters} mangaSlug={slug} />

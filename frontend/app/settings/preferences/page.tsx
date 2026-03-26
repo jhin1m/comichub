@@ -25,7 +25,7 @@ export default function PreferencesPage() {
 
   return (
     <div className="min-h-screen bg-base py-8 px-4">
-      <div className="max-w-3xl mx-auto flex flex-col gap-6">
+      <div className="max-w-350 px-4 mx-auto flex flex-col gap-6">
 
         {/* Header */}
         <div>
