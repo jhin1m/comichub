@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { CaretLeftIcon, CaretRightIcon, ClockIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { MangaCarouselCard } from '@/components/home/manga-carousel-card';
+import { MangaCard } from '@/components/manga/manga-card';
 import { usePreferencesParams } from '@/hooks/use-preferences-params';
 import { apiClient } from '@/lib/api-client';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
@@ -138,7 +138,7 @@ export function LatestUpdatesSection({ initialData }: Props) {
         className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
       >
         {items.map((item) => (
-          <MangaCarouselCard key={item.id} item={item} />
+          <MangaCard key={item.id} item={item} />
         ))}
       </div>
 

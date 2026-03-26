@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CaretLeftIcon, CaretRightIcon, FireIcon, HeartIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
 import type { Icon as IconType } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { MangaCarouselCard } from './manga-carousel-card';
+import { MangaCard } from '@/components/manga/manga-card';
 import { mangaApi, type RankingPeriod } from '@/lib/api/manga.api';
 import { usePreferences } from '@/contexts/preferences.context';
 import type { MangaListItem } from '@/types/manga.types';
@@ -202,7 +202,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
               key={item.id}
               className="shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-1.5rem)/3)] md:w-[calc((100%-2.25rem)/4)] lg:w-[calc((100%-3rem)/5)]"
             >
-              <MangaCarouselCard item={item} rank={showRank ? i + 1 : undefined} />
+              <MangaCard item={item} rank={showRank ? i + 1 : undefined} />
             </div>
           ))}
         </div>

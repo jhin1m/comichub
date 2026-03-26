@@ -25,7 +25,7 @@ export function MangaGrid({
   return (
     <div className={`grid ${COLS} gap-4 md:gap-6`}>
       {items.map((m) => (
-        <MangaCard key={m.id} manga={m} />
+        <MangaCard key={m.id} item={m} />
       ))}
     </div>
   );
