@@ -29,16 +29,16 @@ export function MangaCard({ item, rank }: Props) {
   const rankStyle = rank ? (RANK_STYLES[rank] ?? RANK_DEFAULT) : null;
 
   return (
-    <Link href={`/manga/${item.slug}`} className="group block cursor-pointer mb-4">
+    <Link href={`/manga/${item.slug}`} className="group block cursor-pointer">
       {/* Cover */}
-      <div className="relative aspect-2/3 rounded-sm overflow-hidden bg-surface border border-default mb-2">
+      <div className="relative aspect-2/3 rounded overflow-hidden bg-surface border border-default mb-2 transition-transform duration-150 ease-out group-hover:-translate-y-1 group-hover:border-accent">
         {item.cover ? (
           <Image
             src={item.cover}
             alt={item.title}
             fill
             draggable={false}
-            className="object-cover group-hover:opacity-85 transition-opacity duration-200 pointer-events-none"
+            className="object-cover pointer-events-none"
             sizes="(max-width:640px) 33vw, (max-width:1024px) 20vw, 180px"
             loading="lazy"
           />

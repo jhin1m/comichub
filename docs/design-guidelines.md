@@ -67,7 +67,7 @@ Clean dark aesthetic for long reading sessions. No light mode.
 | Body | Inter | 400 | 14–16px |
 | Caption / Meta | Inter | 400 | 12–13px |
 | Button | Inter | 600 | 13–15px |
-| Badge / Label | Inter | 600 | 11–12px (uppercase) |
+| Badge / Label | Rajdhani | 700 | 11–12px (uppercase) |
 
 Line height: 1.6 body, 1.2 headings. Letter-spacing: `0.05em` on uppercase labels.
 
@@ -82,9 +82,9 @@ Card grid gap: `gap-4` (mobile) / `gap-6` (desktop).
 
 ---
 
-## Icon Standards (Lucide React)
+## Icon Standards (Phosphor Icons)
 
-Stroke weight: 1.5px (Lucide default). Three standard sizes:
+Library: `@phosphor-icons/react` (SSR: `@phosphor-icons/react/ssr`). Three standard sizes:
 
 | Size | px | Tailwind | Usage |
 |---|---|---|---|
@@ -316,7 +316,7 @@ Grid columns: 2 (mobile 320px) → 3 (480px) → 4 (768px) → 5 (1024px) → 6 
 | xl | 1280px | 5–6 |
 | 2xl | 1440px+ | 6 |
 
-Max content width: `1400px`, centered with `mx-auto px-4 md:px-6 lg:px-8`.
+Max content width: `1400px` (`max-w-350` in Tailwind v4 = 350 × 4px), centered with `mx-auto px-4 md:px-6 lg:px-8`.
 
 ---
 

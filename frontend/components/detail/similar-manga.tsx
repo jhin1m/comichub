@@ -111,7 +111,7 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
                     {item.title}
                   </p>
                   <span className="flex items-center gap-1 text-[10px] text-secondary">
-                    <StarIcon size={10} weight="fill" className="text-yellow-400 shrink-0" />
+                    <StarIcon size={10} weight="fill" className="text-warning shrink-0" />
                     {Number(item.averageRating).toFixed(1)}
                   </span>
                 </div>

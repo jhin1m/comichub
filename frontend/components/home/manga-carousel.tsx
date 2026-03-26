@@ -81,7 +81,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
     if (!el) return;
     const card = el.children[0] as HTMLElement | undefined;
     if (!card) return;
-    const gap = 12; // gap-3 = 0.75rem = 12px
+    const gap = 16; // gap-4 = 1rem = 16px
     el.scrollBy({ left: dir * 2 * (card.offsetWidth + gap), behavior: 'smooth' });
   }
 
@@ -122,7 +122,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
     <section className="mb-8">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3.5">
-        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1 flex items-center gap-1.5">
+        <h2 className="font-rajdhani font-semibold text-2xl text-primary flex-1 flex items-center gap-1.5">
           {Icon && <Icon size={18} className="text-accent" />}
           {title}
         </h2>
@@ -194,20 +194,23 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
           onPointerCancel={onPointerUp}
           onClickCapture={onClickCapture}
           onDragStart={(e) => e.preventDefault()}
-          className={`flex gap-3 overflow-x-auto scrollbar-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
+          className={`flex gap-4 overflow-x-auto scrollbar-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
           style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
         >
           {displayItems.map((item, i) => (
             <div
               key={item.id}
-              className="shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-1.5rem)/3)] md:w-[calc((100%-2.25rem)/4)] lg:w-[calc((100%-3rem)/5)]"
+              className="shrink-0 w-[calc((100%-1rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-4rem)/5)]"
             >
               <MangaCard item={item} rank={showRank ? i + 1 : undefined} />
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-muted text-sm py-8 text-center">No data available</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <DotsThreeOutlineIcon size={48} className="text-muted mb-4" />
+          <p className="text-secondary text-sm">No data available</p>
+        </div>
       )}
     </section>
   );

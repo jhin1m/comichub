@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { CaretLeftIcon, CaretRightIcon, ClockIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
+import { ClockIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCard } from '@/components/manga/manga-card';
+import { Pagination } from '@/components/ui/pagination';
 import { usePreferencesParams } from '@/hooks/use-preferences-params';
 import { apiClient } from '@/lib/api-client';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
@@ -100,7 +101,7 @@ export function LatestUpdatesSection({ initialData }: Props) {
     <section ref={sectionRef} className="mb-8 scroll-mt-4">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3.5">
-        <h2 className="font-rajdhani font-bold text-[20px] text-primary flex-1 flex items-center gap-1.5">
+        <h2 className="font-rajdhani font-semibold text-2xl text-primary flex-1 flex items-center gap-1.5">
           <ClockIcon size={18} className="text-accent" />
           Latest Updates
         </h2>
@@ -135,7 +136,7 @@ export function LatestUpdatesSection({ initialData }: Props) {
 
       {/* Grid */}
       <div
-        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
+        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
       >
         {items.map((item) => (
           <MangaCard key={item.id} item={item} />
@@ -143,26 +144,20 @@ export function LatestUpdatesSection({ initialData }: Props) {
       </div>
 
       {items.length === 0 && (
-        <p className="text-muted text-sm py-8 text-center">No data available</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <ClockIcon size={48} className="text-muted mb-4" />
+          <p className="text-secondary text-sm">No data available</p>
+        </div>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="grid grid-cols-2 gap-3 mt-6">
-          <button
-            disabled={!hasPrev || isPending}
-            onClick={() => goToPage(page - 1)}
-            className="flex items-center justify-center gap-1 h-8 rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <CaretLeftIcon size={18} />
-          </button>
-          <button
-            disabled={!hasNext || isPending}
-            onClick={() => goToPage(page + 1)}
-            className="flex items-center justify-center gap-1 h-8 rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <CaretRightIcon size={18} />
-          </button>
+        <div className="flex justify-center mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+          />
         </div>
       )}
     </section>

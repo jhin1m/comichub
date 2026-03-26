@@ -110,7 +110,10 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
       {items.length > 0 ? (
         items.map((item) => <SidebarItem key={item.id} item={item} />)
       ) : (
-        <p className="text-muted text-sm py-6 text-center">No data available</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <SparkleIcon size={48} className="text-muted mb-4" />
+          <p className="text-secondary text-sm">No data available</p>
+        </div>
       )}
 
       <LatestComments comments={recentComments} />
