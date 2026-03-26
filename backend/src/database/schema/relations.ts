@@ -16,6 +16,9 @@ import {
   mangaGroups,
   chapters,
   chapterImages,
+  mangaSources,
+  chapterSources,
+  mangaLinks,
 } from './manga.schema.js';
 import {
   comments,
@@ -85,6 +88,8 @@ export const mangaRelations = relations(manga, ({ one, many }) => ({
   ratings: many(ratings),
   follows: many(follows),
   readingHistory: many(readingHistory),
+  sources: many(mangaSources),
+  links: many(mangaLinks),
 }));
 
 export const genresRelations = relations(genres, ({ many }) => ({
@@ -141,6 +146,7 @@ export const chaptersRelations = relations(chapters, ({ one, many }) => ({
   images: many(chapterImages),
   reports: many(chapterReports),
   readingHistory: many(readingHistory),
+  sources: many(chapterSources),
 }));
 
 export const chapterImagesRelations = relations(chapterImages, ({ one }) => ({
@@ -148,6 +154,18 @@ export const chapterImagesRelations = relations(chapterImages, ({ one }) => ({
     fields: [chapterImages.chapterId],
     references: [chapters.id],
   }),
+}));
+
+export const mangaSourcesRelations = relations(mangaSources, ({ one }) => ({
+  manga: one(manga, { fields: [mangaSources.mangaId], references: [manga.id] }),
+}));
+
+export const chapterSourcesRelations = relations(chapterSources, ({ one }) => ({
+  chapter: one(chapters, { fields: [chapterSources.chapterId], references: [chapters.id] }),
+}));
+
+export const mangaLinksRelations = relations(mangaLinks, ({ one }) => ({
+  manga: one(manga, { fields: [mangaLinks.mangaId], references: [manga.id] }),
 }));
 
 // ── Community relations ─────────────────────────────────────────

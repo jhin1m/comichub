@@ -13,6 +13,7 @@ import { SearchModule } from './modules/search/search.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
 import { SitemapModule } from './modules/sitemap/sitemap.module.js';
+import { ImportModule } from './modules/import/import.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 
 @Module({
@@ -30,6 +31,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
     JobsModule,
     NotificationModule,
     SitemapModule,
+    ImportModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

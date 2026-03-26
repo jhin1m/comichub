@@ -21,6 +21,7 @@ export const mangaStatusEnum = pgEnum('manga_status', [
   'completed',
   'hiatus',
   'dropped',
+  'cancelled',
 ]);
 export const mangaTypeEnum = pgEnum('manga_type', [
   'manga',
@@ -28,12 +29,24 @@ export const mangaTypeEnum = pgEnum('manga_type', [
   'manhua',
   'doujinshi',
 ]);
+export const importSourceEnum = pgEnum('import_source', [
+  'mangabaka',
+  'comick',
+  'weebdex',
+]);
+export const contentRatingEnum = pgEnum('content_rating', [
+  'safe',
+  'suggestive',
+  'erotica',
+  'pornographic',
+]);
 
 // Lookup tables — genres, artists, authors, translation groups
 export const genres = pgTable('genres', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull().unique(),
   slug: varchar('slug', { length: 120 }).notNull().unique(),
+  group: varchar('group', { length: 20 }).default('genre').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -76,6 +89,9 @@ export const manga = pgTable(
     originalLanguage: varchar('original_language', { length: 10 }),
     status: mangaStatusEnum('status').default('ongoing').notNull(),
     type: mangaTypeEnum('type').default('manga').notNull(),
+    contentRating: contentRatingEnum('content_rating').default('safe').notNull(),
+    nativeTitle: varchar('native_title', { length: 500 }),
+    romanizedTitle: varchar('romanized_title', { length: 500 }),
     views: bigint('views', { mode: 'number' }).default(0).notNull(),
     viewsDay: integer('views_day').default(0).notNull(),
     viewsWeek: integer('views_week').default(0).notNull(),
@@ -178,6 +194,8 @@ export const chapters = pgTable(
     number: numeric('number', { precision: 6, scale: 1 }).notNull(),
     title: varchar('title', { length: 500 }),
     slug: varchar('slug', { length: 520 }).notNull(),
+    language: varchar('language', { length: 10 }).default('vi').notNull(),
+    volume: varchar('volume', { length: 20 }),
     viewCount: bigint('view_count', { mode: 'number' }).default(0).notNull(),
     order: integer('order').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -188,7 +206,7 @@ export const chapters = pgTable(
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
-    uniqueIndex('chapters_manga_number_idx').on(table.mangaId, table.number),
+    uniqueIndex('chapters_manga_number_lang_idx').on(table.mangaId, table.number, table.language),
     uniqueIndex('chapters_manga_slug_idx').on(table.mangaId, table.slug),
     index('chapters_manga_order_idx').on(table.mangaId, table.order),
   ],
@@ -205,6 +223,8 @@ export const chapterImages = pgTable(
     imageUrl: varchar('image_url', { length: 1000 }).notNull(),
     pageNumber: integer('page_number').notNull(),
     order: integer('order').notNull(),
+    width: integer('width'),
+    height: integer('height'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
@@ -216,8 +236,63 @@ export const chapterImages = pgTable(
   ],
 );
 
+// manga_sources — tracks external source mapping for manga
+export const mangaSources = pgTable(
+  'manga_sources',
+  {
+    id: serial('id').primaryKey(),
+    mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+    source: importSourceEnum('source').notNull(),
+    externalId: varchar('external_id', { length: 100 }).notNull(),
+    externalSlug: varchar('external_slug', { length: 300 }),
+    lastSyncedAt: timestamp('last_synced_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('manga_sources_source_ext_id_idx').on(table.source, table.externalId),
+    index('manga_sources_manga_id_idx').on(table.mangaId),
+  ],
+);
+
+// chapter_sources — tracks external source mapping for chapters
+export const chapterSources = pgTable(
+  'chapter_sources',
+  {
+    id: serial('id').primaryKey(),
+    chapterId: integer('chapter_id').notNull().references(() => chapters.id, { onDelete: 'cascade' }),
+    source: importSourceEnum('source').notNull(),
+    externalId: varchar('external_id', { length: 100 }).notNull(),
+    lastSyncedAt: timestamp('last_synced_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('chapter_sources_source_ext_id_idx').on(table.source, table.externalId),
+    index('chapter_sources_chapter_id_idx').on(table.chapterId),
+  ],
+);
+
+// manga_links — external links (MAL, AniList, etc.)
+export const mangaLinks = pgTable(
+  'manga_links',
+  {
+    id: serial('id').primaryKey(),
+    mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 30 }).notNull(), // 'mal', 'anilist', 'kitsu', 'amazon', etc.
+    externalId: varchar('external_id', { length: 100 }),
+    url: varchar('url', { length: 500 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('manga_links_manga_type_idx').on(table.mangaId, table.type),
+  ],
+);
+
 export type Manga = typeof manga.$inferSelect;
 export type NewManga = typeof manga.$inferInsert;
 export type Chapter = typeof chapters.$inferSelect;
 export type NewChapter = typeof chapters.$inferInsert;
 export type Genre = typeof genres.$inferSelect;
+export type MangaSource = typeof mangaSources.$inferSelect;
+export type NewMangaSource = typeof mangaSources.$inferInsert;
+export type ChapterSource = typeof chapterSources.$inferSelect;
+export type MangaLink = typeof mangaLinks.$inferSelect;

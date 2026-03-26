@@ -6,6 +6,7 @@ import { redisConfig } from './redis.config.js';
 import { s3Config } from './s3.config.js';
 import { jwtConfig } from './jwt.config.js';
 import { googleConfig } from './google.config.js';
+import { importConfig } from '../modules/import/config/import.config.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { googleConfig } from './google.config.js';
         s3Config,
         jwtConfig,
         googleConfig,
+        importConfig,
       ],
       envFilePath: ['.env'],
     }),

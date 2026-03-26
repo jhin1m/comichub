@@ -33,6 +33,6 @@ import { RankingService } from './services/ranking.service.js';
     TaxonomyService,
     RankingService,
   ],
-  exports: [RankingService, TaxonomyService],
+  exports: [RankingService, TaxonomyService, MangaService, ChapterService],
 })
 export class MangaModule {}

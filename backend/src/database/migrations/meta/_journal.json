@@ -57,6 +57,13 @@
       "when": 1774566160000,
       "tag": "0007_rename_genre_columns_to_slugs",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774511840270,
+      "tag": "0008_comic_import_schema",
+      "breakpoints": true
     }
   ]
 }
