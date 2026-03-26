@@ -24,14 +24,12 @@ export default function ProfilePage() {
       return;
     }
     if (user) {
-      Promise.all([userApi.getMe(), userApi.getHistory(), userApi.getFollows()])
+      Promise.allSettled([userApi.getMe(), userApi.getHistory(), userApi.getFollows()])
         .then(([p, h, f]) => {
-          setProfile(p);
-          setHistory(h);
-          setFollows(f);
-        })
-        .catch(() => {
-          router.replace('/login');
+          if (p.status === 'fulfilled') setProfile(p.value);
+          else { router.replace('/login'); return; }
+          if (h.status === 'fulfilled') setHistory(h.value);
+          if (f.status === 'fulfilled') setFollows(f.value);
         });
     }
   }, [user, authLoading, router]);

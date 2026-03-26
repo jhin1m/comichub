@@ -59,15 +59,8 @@ describe('ImportMappingService', () => {
     it('should find existing record by slug', async () => {
       const mockTable = { id: 'id', slug: 'slug' };
 
-      let callCount = 0;
-      mockDb.select.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: existing lookup
-          return buildChain([{ id: 1 }]);
-        }
-        return buildChain([]);
-      });
+      // Batch lookup: returns existing record with slug
+      mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'action' }]));
 
       const result = await service['resolveByName'](mockTable as any, ['Action']);
 
@@ -77,12 +70,8 @@ describe('ImportMappingService', () => {
     it('should create new record when not found', async () => {
       const mockTable = { id: 'id', slug: 'slug' };
 
-      let callCount = 0;
-      mockDb.select.mockImplementation(() => {
-        callCount++;
-        // Lookup returns empty
-        return buildChain([]);
-      });
+      // Batch lookup returns empty (none found)
+      mockDb.select.mockReturnValue(buildChain([]));
 
       const insertChain = buildChain([{ id: 2 }]);
       mockDb.insert.mockReturnValue(insertChain);
@@ -96,18 +85,8 @@ describe('ImportMappingService', () => {
     it('should handle multiple names', async () => {
       const mockTable = { id: 'id', slug: 'slug' };
 
-      let lookupCall = 0;
-      mockDb.select.mockImplementation(() => {
-        lookupCall++;
-        if (lookupCall === 1 || lookupCall === 3) {
-          // Action found, Comedy not found
-          return buildChain([{ id: 1 }]);
-        }
-        if (lookupCall === 2) {
-          return buildChain([]); // Comedy not found
-        }
-        return buildChain([{ id: 2 }]); // Created Comedy
-      });
+      // Batch lookup: 'action' found, 'comedy' not found
+      mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'action' }]));
 
       const insertChain = buildChain([{ id: 2 }]);
       mockDb.insert.mockReturnValue(insertChain);
@@ -121,7 +100,8 @@ describe('ImportMappingService', () => {
 
   describe('resolveGenres', () => {
     it('should find existing genre by slug', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ id: 1 }]));
+      // Batch lookup returns existing genre with slug
+      mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'action' }]));
 
       const result = await service.resolveGenres(['Action']);
 

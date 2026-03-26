@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { NotificationService } from './notification.service.js';
 import { DiscordWebhookService } from './discord/discord-webhook.service.js';
+import { SseConnectionManagerService } from './sse-connection-manager.service.js';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
@@ -55,11 +56,14 @@ describe('NotificationService', () => {
 
     mockDiscord = { sendNewChapter: vi.fn().mockResolvedValue(undefined) };
 
+    const mockSseManager = { pushToUser: vi.fn(), pushToUsers: vi.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationService,
         { provide: DRIZZLE, useValue: mockDb },
         { provide: DiscordWebhookService, useValue: mockDiscord },
+        { provide: SseConnectionManagerService, useValue: mockSseManager },
       ],
     }).compile();
 

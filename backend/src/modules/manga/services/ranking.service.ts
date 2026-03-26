@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, desc, gte, and, isNull } from 'drizzle-orm';
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
@@ -78,7 +78,6 @@ export class RankingService {
       .limit(1);
 
     if (!existing) {
-      const { NotFoundException } = await import('@nestjs/common');
       throw new NotFoundException('Manga not found');
     }
 
@@ -88,16 +87,34 @@ export class RankingService {
       .set({ isHot: newIsHot })
       .where(eq(manga.id, id));
 
-    // Invalidate hot cache
-    const keys = await this.redis.keys('rankings:hot:*');
-    if (keys.length) await this.redis.del(...keys);
+    // Invalidate hot cache using SCAN (safe for production)
+    const hotKeys = await this.scanKeys('rankings:hot:*');
+    if (hotKeys.length) await this.redis.del(...hotKeys);
 
     return { id, isHot: newIsHot };
   }
 
   async invalidateRankingCaches(): Promise<void> {
-    const keys = await this.redis.keys('rankings:*');
+    const keys = await this.scanKeys('rankings:*');
     if (keys.length) await this.redis.del(...keys);
+  }
+
+  /** SCAN for keys matching pattern (safe for production, unlike KEYS) */
+  private async scanKeys(pattern: string): Promise<string[]> {
+    const keys: string[] = [];
+    let cursor = '0';
+    do {
+      const [next, batch] = await this.redis.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = next;
+      keys.push(...batch);
+    } while (cursor !== '0');
+    return keys;
   }
 
   private async queryRanking(type: RankingType): Promise<MangaListItem[]> {

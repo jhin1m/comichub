@@ -71,11 +71,14 @@ export default function ChapterReaderPage({ params }: Props) {
       .finally(() => setIsLoading(false));
   }, [id]);
 
+  const chapterDbId = chapter?.id;
+  const userId = user?.id;
   useEffect(() => {
     if (chapter && user) {
       userApi.upsertHistory(chapter.mangaId, chapter.id).catch(() => {});
     }
-  }, [chapter?.id, user?.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapterDbId, userId]);
 
   // Reset scroll on chapter change
   useEffect(() => {

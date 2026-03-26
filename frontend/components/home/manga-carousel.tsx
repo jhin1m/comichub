@@ -63,8 +63,8 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
       try {
         const data = await mangaApi.rankings(next, 1, 10);
         setRawItems(data);
-      } catch (err) {
-        console.error('Failed to fetch rankings:', err);
+      } catch {
+        // fetch failed — keep current data
       }
     });
   }

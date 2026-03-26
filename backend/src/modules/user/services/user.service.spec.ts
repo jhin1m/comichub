@@ -88,11 +88,16 @@ describe('UserService', () => {
         .mockImplementation((key: string, fallback?: any) => fallback ?? ''),
     };
 
+    const mockRedis = {
+      del: vi.fn().mockResolvedValue(1),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
         { provide: DRIZZLE, useValue: mockDb },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: 'REDIS_CLIENT', useValue: mockRedis },
       ],
     }).compile();
 

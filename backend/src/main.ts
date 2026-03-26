@@ -35,6 +35,7 @@ async function bootstrap() {
       nodeEnv === 'production'
         ? configService.get<string>('app.frontendUrl', 'http://localhost:3000')
         : true,
+    credentials: true,
   });
 
   // Swagger — dev/staging only

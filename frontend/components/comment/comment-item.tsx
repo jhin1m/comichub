@@ -10,24 +10,7 @@ import { CommentEditor } from './comment-editor';
 import { commentApi } from '@/lib/api/comment.api';
 import { useAuth } from '@/contexts/auth.context';
 import type { Comment } from '@/types/comment.types';
-import { cn } from '@/lib/utils';
-
-function timeAgo(date: string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  const intervals = [
-    { label: 'year', seconds: 31536000 },
-    { label: 'month', seconds: 2592000 },
-    { label: 'week', seconds: 604800 },
-    { label: 'day', seconds: 86400 },
-    { label: 'hour', seconds: 3600 },
-    { label: 'minute', seconds: 60 },
-  ];
-  for (const interval of intervals) {
-    const count = Math.floor(seconds / interval.seconds);
-    if (count >= 1) return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
-  }
-  return 'just now';
-}
+import { cn, formatRelativeDate } from '@/lib/utils';
 
 function handleSpoilerClick(e: React.MouseEvent<HTMLDivElement>) {
   const target = e.target as HTMLElement;
@@ -185,7 +168,7 @@ export function CommentItem({
               <span className="text-primary font-semibold text-xs">{comment.userName}</span>
               <RoleBadge role={comment.userRole} />
               <span className="text-muted text-[11px]" title={new Date(comment.createdAt).toLocaleString()}>
-                {timeAgo(comment.createdAt)}
+                {formatRelativeDate(comment.createdAt)}
               </span>
             </div>
             <button

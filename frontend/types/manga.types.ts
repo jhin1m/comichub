@@ -37,6 +37,7 @@ export interface ChapterListItem {
   number: string;
   title: string | null;
   slug: string;
+  language: string;
   viewCount: number;
   order: number;
   createdAt: string;

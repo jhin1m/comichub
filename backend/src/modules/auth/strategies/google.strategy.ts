@@ -46,9 +46,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
 
     if (!user) {
-      user = await this.db.query.users.findFirst({
-        where: eq(users.email, email),
-      });
+      // Only link by email if the Google account has a verified email
+      const emailVerified =
+        profile.emails?.[0]?.verified === true ||
+        (profile._json as Record<string, unknown>)?.email_verified === true;
+
+      if (emailVerified) {
+        user = await this.db.query.users.findFirst({
+          where: eq(users.email, email),
+        });
+      }
     }
 
     if (!user) {

@@ -21,33 +21,35 @@ export class FollowService {
 
     if (!mangaRow) throw new NotFoundException('Manga not found');
 
-    const existing = await this.db.query.follows.findFirst({
-      where: and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)),
-    });
+    return this.db.transaction(async (tx) => {
+      const existing = await tx.query.follows.findFirst({
+        where: and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)),
+      });
 
-    if (existing) {
-      await this.db
-        .delete(follows)
-        .where(and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)));
+      if (existing) {
+        await tx
+          .delete(follows)
+          .where(and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)));
 
-      const [updated] = await this.db
+        const [updated] = await tx
+          .update(manga)
+          .set({ followersCount: sql`greatest(${manga.followersCount} - 1, 0)` })
+          .where(eq(manga.id, mangaId))
+          .returning({ followersCount: manga.followersCount });
+
+        return { followed: false, followersCount: updated?.followersCount ?? 0 };
+      }
+
+      await tx.insert(follows).values({ userId, mangaId });
+
+      const [updated] = await tx
         .update(manga)
-        .set({ followersCount: sql`greatest(${manga.followersCount} - 1, 0)` })
+        .set({ followersCount: sql`${manga.followersCount} + 1` })
         .where(eq(manga.id, mangaId))
         .returning({ followersCount: manga.followersCount });
 
-      return { followed: false, followersCount: updated?.followersCount ?? 0 };
-    }
-
-    await this.db.insert(follows).values({ userId, mangaId });
-
-    const [updated] = await this.db
-      .update(manga)
-      .set({ followersCount: sql`${manga.followersCount} + 1` })
-      .where(eq(manga.id, mangaId))
-      .returning({ followersCount: manga.followersCount });
-
-    return { followed: true, followersCount: updated?.followersCount ?? 0 };
+      return { followed: true, followersCount: updated?.followersCount ?? 0 };
+    });
   }
 
   async isFollowed(

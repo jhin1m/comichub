@@ -6,7 +6,9 @@ import { ExecutionContext, CallHandler } from '@nestjs/common';
 describe('TransformInterceptor', () => {
   const interceptor = new TransformInterceptor();
 
-  const mockContext = {} as ExecutionContext;
+  const mockContext = {
+    getHandler: () => function mockHandler() {},
+  } as unknown as ExecutionContext;
 
   it('should wrap plain data in standard response', async () => {
     const handler: CallHandler = { handle: () => of({ id: 1, name: 'test' }) };

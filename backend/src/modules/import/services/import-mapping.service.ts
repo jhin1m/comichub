@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -24,49 +24,65 @@ export class ImportMappingService {
   constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
 
   async resolveByName(table: TaxonomyTable, names: string[]): Promise<number[]> {
-    const ids: number[] = [];
-    for (const name of names) {
-      const slug = slugify(name);
-      const [existing] = await this.db
-        .select({ id: table.id })
-        .from(table as typeof genres)
-        .where(eq((table as typeof genres).slug, slug))
-        .limit(1);
-      if (existing) {
-        ids.push(existing.id);
-      } else {
-        const [created] = await this.db
-          .insert(table as typeof genres)
-          .values({ name, slug } as { name: string; slug: string })
-          .onConflictDoNothing()
-          .returning({ id: (table as typeof genres).id });
-        if (created) ids.push(created.id);
-      }
+    if (!names.length) return [];
+    const t = table as typeof genres;
+    const slugMap = new Map(names.map((name) => [slugify(name), name]));
+    const slugs = [...slugMap.keys()];
+
+    // Batch lookup existing
+    const existing = await this.db
+      .select({ id: t.id, slug: t.slug })
+      .from(t)
+      .where(inArray(t.slug, slugs));
+
+    const foundSlugs = new Set(existing.map((r) => r.slug));
+    const missing = slugs.filter((s) => !foundSlugs.has(s));
+
+    let inserted: { id: number }[] = [];
+    if (missing.length) {
+      inserted = await this.db
+        .insert(t)
+        .values(missing.map((s) => ({ name: slugMap.get(s)!, slug: s } as { name: string; slug: string })))
+        .onConflictDoNothing()
+        .returning({ id: t.id });
     }
-    return ids;
+
+    // Preserve input order
+    const idBySlug = new Map([
+      ...existing.map((r) => [r.slug, r.id] as [string, number]),
+      ...inserted.map((r, i) => [missing[i], r.id] as [string, number]),
+    ]);
+    return slugs.map((s) => idBySlug.get(s)).filter((id): id is number => id !== undefined);
   }
 
   async resolveGenres(names: string[], group = 'genre'): Promise<number[]> {
-    const ids: number[] = [];
-    for (const name of names) {
-      const slug = slugify(name);
-      const [existing] = await this.db
-        .select({ id: genres.id })
-        .from(genres)
-        .where(eq(genres.slug, slug))
-        .limit(1);
-      if (existing) {
-        ids.push(existing.id);
-      } else {
-        const [created] = await this.db
-          .insert(genres)
-          .values({ name, slug, group })
-          .onConflictDoNothing()
-          .returning({ id: genres.id });
-        if (created) ids.push(created.id);
-      }
+    if (!names.length) return [];
+    const slugMap = new Map(names.map((name) => [slugify(name), name]));
+    const slugs = [...slugMap.keys()];
+
+    // Batch lookup existing
+    const existing = await this.db
+      .select({ id: genres.id, slug: genres.slug })
+      .from(genres)
+      .where(inArray(genres.slug, slugs));
+
+    const foundSlugs = new Set(existing.map((r) => r.slug));
+    const missing = slugs.filter((s) => !foundSlugs.has(s));
+
+    let inserted: { id: number }[] = [];
+    if (missing.length) {
+      inserted = await this.db
+        .insert(genres)
+        .values(missing.map((s) => ({ name: slugMap.get(s)!, slug: s, group })))
+        .onConflictDoNothing()
+        .returning({ id: genres.id });
     }
-    return ids;
+
+    const idBySlug = new Map([
+      ...existing.map((r) => [r.slug, r.id] as [string, number]),
+      ...inserted.map((r, i) => [missing[i], r.id] as [string, number]),
+    ]);
+    return slugs.map((s) => idBySlug.get(s)).filter((id): id is number => id !== undefined);
   }
 
   async syncPivots(
@@ -75,19 +91,9 @@ export class ImportMappingService {
     artistIds: number[],
     authorIds: number[],
   ): Promise<void> {
-    await this.db.delete(mangaGenres).where(eq(mangaGenres.mangaId, mangaId));
-    await this.db.delete(mangaArtists).where(eq(mangaArtists.mangaId, mangaId));
-    await this.db.delete(mangaAuthors).where(eq(mangaAuthors.mangaId, mangaId));
-
-    if (genreIds.length > 0) {
-      await this.db.insert(mangaGenres).values(genreIds.map((genreId) => ({ mangaId, genreId })));
-    }
-    if (artistIds.length > 0) {
-      await this.db.insert(mangaArtists).values(artistIds.map((artistId) => ({ mangaId, artistId })));
-    }
-    if (authorIds.length > 0) {
-      await this.db.insert(mangaAuthors).values(authorIds.map((authorId) => ({ mangaId, authorId })));
-    }
+    await this.db.transaction(async (tx) => {
+      await this.syncPivotsTx(tx, mangaId, genreIds, artistIds, authorIds);
+    });
   }
 
   async upsertLinks(mangaId: number, links: ExternalLink[]): Promise<void> {

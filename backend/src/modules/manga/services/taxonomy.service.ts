@@ -14,6 +14,7 @@ import {
   groups,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
+import { escapeLike } from '../../../common/utils/escape-like.util.js';
 import { CreateTaxonomyDto } from '../dto/taxonomy.dto.js';
 import type { TaxonomyItem } from '../types/manga.types.js';
 
@@ -54,7 +55,7 @@ export class TaxonomyService {
     return this.db
       .select()
       .from(table)
-      .where(ilike(table.name, `%${query}%`))
+      .where(ilike(table.name, `%${escapeLike(query)}%`))
       .orderBy(table.name)
       .limit(20) as Promise<TaxonomyItem[]>;
   }

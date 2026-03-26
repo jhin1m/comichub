@@ -3,6 +3,7 @@ import {
   Inject,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   eq,
@@ -81,7 +82,15 @@ export class MangaService {
     if (type) conditions.push(eq(manga.type, type));
     if (language) conditions.push(eq(manga.originalLanguage, language));
     if (year) conditions.push(eq(manga.year, year));
-    if (nsfw !== undefined) conditions.push(eq(manga.isNsfw, nsfw));
+    // Default: hide NSFW unless explicitly requested
+    if (nsfw === true) {
+      // no filter — show all including NSFW
+    } else if (nsfw === false) {
+      conditions.push(eq(manga.isNsfw, false));
+    } else {
+      // nsfw param not provided — default to hiding NSFW
+      conditions.push(eq(manga.isNsfw, false));
+    }
 
     // Genre filter via subquery on pivot
     if (genre) {
@@ -91,34 +100,24 @@ export class MangaService {
         .where(eq(genres.slug, genre))
         .limit(1);
       if (genreRow) {
-        const mangaIdsWithGenre = await this.db
-          .select({ mangaId: mangaGenres.mangaId })
-          .from(mangaGenres)
-          .where(eq(mangaGenres.genreId, genreRow.id));
-        const ids = mangaIdsWithGenre.map((r) => r.mangaId);
-        if (ids.length) conditions.push(inArray(manga.id, ids));
-        else return { data: [], total: 0, page, limit };
+        conditions.push(
+          sql`${manga.id} IN (SELECT ${mangaGenres.mangaId} FROM ${mangaGenres} WHERE ${mangaGenres.genreId} = ${genreRow.id})`,
+        );
+      } else {
+        return { data: [], total: 0, page, limit };
       }
     }
 
     if (artist) {
-      const rows = await this.db
-        .select({ mangaId: mangaArtists.mangaId })
-        .from(mangaArtists)
-        .where(eq(mangaArtists.artistId, artist));
-      const ids = rows.map((r) => r.mangaId);
-      if (ids.length) conditions.push(inArray(manga.id, ids));
-      else return { data: [], total: 0, page, limit };
+      conditions.push(
+        sql`${manga.id} IN (SELECT ${mangaArtists.mangaId} FROM ${mangaArtists} WHERE ${mangaArtists.artistId} = ${artist})`,
+      );
     }
 
     if (author) {
-      const rows = await this.db
-        .select({ mangaId: mangaAuthors.mangaId })
-        .from(mangaAuthors)
-        .where(eq(mangaAuthors.authorId, author));
-      const ids = rows.map((r) => r.mangaId);
-      if (ids.length) conditions.push(inArray(manga.id, ids));
-      else return { data: [], total: 0, page, limit };
+      conditions.push(
+        sql`${manga.id} IN (SELECT ${mangaAuthors.mangaId} FROM ${mangaAuthors} WHERE ${mangaAuthors.authorId} = ${author})`,
+      );
     }
 
     if (demographic) conditions.push(eq(manga.demographic, demographic));
@@ -246,11 +245,15 @@ export class MangaService {
     return { slug: row.slug };
   }
 
-  async findBySlug(slug: string): Promise<MangaDetail> {
+  async findBySlug(slug: string, isAuthenticated = false): Promise<MangaDetail> {
+    const whereConditions = [eq(manga.slug, slug), isNull(manga.deletedAt)];
+    if (!isAuthenticated) {
+      whereConditions.push(eq(manga.isNsfw, false));
+    }
     const [m] = await this.db
       .select()
       .from(manga)
-      .where(and(eq(manga.slug, slug), isNull(manga.deletedAt)))
+      .where(and(...whereConditions))
       .limit(1);
     if (!m) throw new NotFoundException('Manga not found');
 
@@ -282,6 +285,7 @@ export class MangaService {
             number: chapters.number,
             title: chapters.title,
             slug: chapters.slug,
+            language: chapters.language,
             viewCount: chapters.viewCount,
             order: chapters.order,
             createdAt: chapters.createdAt,
@@ -303,6 +307,10 @@ export class MangaService {
 
   async create(dto: CreateMangaDto): Promise<MangaDetail> {
     const slug = dto.slug ?? slugify(dto.title);
+
+    if (!slug) {
+      throw new BadRequestException('Could not generate a valid slug from the provided title');
+    }
 
     const [existing] = await this.db
       .select({ id: manga.id })

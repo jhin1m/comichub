@@ -4,3 +4,8 @@ plans
 frontend/node_modules
 frontend/.next
 frontend/tsconfig.tsbuildinfo
+node_modules/
+.env
+.env.*
+*.env*
+*.pem

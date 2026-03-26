@@ -5,6 +5,7 @@ import { CaretLeftIcon, CaretRightIcon, ClockIcon, DotsThreeOutlineIcon } from '
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCarouselCard } from '@/components/home/manga-carousel-card';
 import { usePreferencesParams } from '@/hooks/use-preferences-params';
+import { apiClient } from '@/lib/api-client';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
 
 const LIMIT = 30;
@@ -51,22 +52,20 @@ export function LatestUpdatesSection({ initialData }: Props) {
   const hasNext = page < totalPages;
 
   async function fetchData(targetPage: number, type: string) {
-    const params = new URLSearchParams({
+    const params: Record<string, string> = {
       page: String(targetPage),
       limit: String(LIMIT),
       sort: 'updated_at',
       order: 'desc',
-    });
-    if (type !== 'all') params.set('type', type);
-    if (prefParams.excludeTypes) params.set('excludeTypes', prefParams.excludeTypes);
-    if (prefParams.excludeDemographics) params.set('excludeDemographics', prefParams.excludeDemographics);
-    if (prefParams.excludeGenres) params.set('excludeGenres', prefParams.excludeGenres);
-    if (prefParams.nsfw === false) params.set('nsfw', 'false');
+    };
+    if (type !== 'all') params.type = type;
+    if (prefParams.excludeTypes) params.excludeTypes = prefParams.excludeTypes;
+    if (prefParams.excludeDemographics) params.excludeDemographics = prefParams.excludeDemographics;
+    if (prefParams.excludeGenres) params.excludeGenres = prefParams.excludeGenres;
+    if (prefParams.nsfw === false) params.nsfw = 'false';
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
-    const res = await fetch(`${baseUrl}/manga?${params}`);
-    const json = await res.json();
-    return json.data as PaginatedResult<MangaListItem>;
+    const res = await apiClient.get<PaginatedResult<MangaListItem>>('/manga', { params });
+    return res.data;
   }
 
   function goToPage(nextPage: number) {
@@ -77,8 +76,8 @@ export function LatestUpdatesSection({ initialData }: Props) {
         setItems(result.data);
         setTotal(result.total);
         sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (err) {
-        console.error('Failed to fetch latest updates:', err);
+      } catch {
+        // fetch failed — keep current data
       }
     });
   }
@@ -91,8 +90,8 @@ export function LatestUpdatesSection({ initialData }: Props) {
         setPage(result.page);
         setItems(result.data);
         setTotal(result.total);
-      } catch (err) {
-        console.error('Failed to fetch latest updates:', err);
+      } catch {
+        // fetch failed — keep current data
       }
     });
   }

@@ -90,6 +90,12 @@ export function CommentEditor({
 
   const handleAddImage = () => {
     if (imageUrl && editor) {
+      try {
+        const parsed = new URL(imageUrl);
+        if (!['http:', 'https:'].includes(parsed.protocol)) return;
+      } catch {
+        return;
+      }
       editor.chain().focus().setImage({ src: imageUrl }).run();
       setImageUrl('');
       setShowImageInput(false);

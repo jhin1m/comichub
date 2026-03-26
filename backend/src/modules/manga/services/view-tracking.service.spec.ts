@@ -72,17 +72,14 @@ describe('ViewTrackingService', () => {
       );
     });
 
-    it('should fall back to "unknown" when neither userId nor ip is provided', async () => {
+    it('should skip tracking when neither userId nor ip is provided', async () => {
       mockRedis.get.mockResolvedValue(null);
 
       await service.trackChapterView(3);
 
-      expect(mockRedis.get).toHaveBeenCalledWith('view:3:ip:unknown');
-      expect(mockRedis.setex).toHaveBeenCalledWith(
-        'view:3:ip:unknown',
-        300,
-        '1',
-      );
+      expect(mockRedis.get).not.toHaveBeenCalled();
+      expect(mockRedis.setex).not.toHaveBeenCalled();
+      expect(mockRedis.incr).not.toHaveBeenCalled();
     });
 
     it('should set dedup TTL to 300 seconds', async () => {

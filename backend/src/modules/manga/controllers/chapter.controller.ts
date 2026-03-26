@@ -122,7 +122,7 @@ export class ChapterController {
   @Roles('admin')
   @UseGuards(RolesGuard)
   @Post('chapters/:id/images')
-  @UseInterceptors(FilesInterceptor('images', 200))
+  @UseInterceptors(FilesInterceptor('images', 200, { limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {

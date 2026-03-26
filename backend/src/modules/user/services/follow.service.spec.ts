@@ -42,6 +42,7 @@ describe('FollowService', () => {
       insert: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      transaction: vi.fn((cb: (tx: any) => Promise<any>) => cb(mockDb)),
     };
 
     const module: TestingModule = await Test.createTestingModule({

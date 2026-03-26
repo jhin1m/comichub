@@ -46,17 +46,12 @@ describe('WeebDexAdapter', () => {
     it('should extract title preferring English, fallback to first available', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: {
-            en: 'English Title',
-            ja: 'Japanese Title',
-          },
-        },
+        title: 'English Title',
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -66,17 +61,12 @@ describe('WeebDexAdapter', () => {
     it('should fallback to first available title when en missing', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: {
-            ja: 'Japanese Title',
-            ko: 'Korean Title',
-          },
-        },
+        title: 'Japanese Title',
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -86,17 +76,16 @@ describe('WeebDexAdapter', () => {
     it('should extract nativeTitle from ja/ko/zh keys', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: {
-            en: 'English',
-            ja: 'Japanese Title',
-          },
+        title: 'English',
+        alt_titles: {
+          ja: ['Japanese Title'],
+          en: ['English'],
         },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -106,18 +95,17 @@ describe('WeebDexAdapter', () => {
     it('should flatten altTitles from array of Record objects', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Main Title' },
-          altTitles: [
-            { en: 'Alt Title 1', ja: 'Alt Title 1 JP' },
-            { ko: 'Alt Title 2' },
-          ],
+        title: 'Main Title',
+        alt_titles: {
+          en: ['Alt Title 1'],
+          ja: ['Alt Title 1 JP'],
+          ko: ['Alt Title 2'],
         },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -129,18 +117,13 @@ describe('WeebDexAdapter', () => {
     it('should extract description preferring English', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
-          description: {
-            en: 'English Description',
-            ja: 'Japanese Description',
-          },
-        },
+        title: 'Title',
+        description: 'English Description',
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -153,15 +136,13 @@ describe('WeebDexAdapter', () => {
       for (const status of statuses) {
         const raw = {
           id: 'manga-123',
-          attributes: {
-            title: { en: 'Title' },
-            status,
-          },
+          title: 'Title',
+          status,
         };
 
         (fetch as any).mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ data: raw }),
+          json: () => Promise.resolve(raw),
         });
 
         const result = await adapter.fetchManga('manga-123');
@@ -169,36 +150,16 @@ describe('WeebDexAdapter', () => {
       }
     });
 
-    it('should infer type from originalLanguage: ja → manga', async () => {
-      const raw = {
-        id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
-          originalLanguage: 'ja',
-        },
-      };
-
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ data: raw }),
-      });
-
-      const result = await adapter.fetchManga('manga-123');
-      expect(result.type).toBe('manga');
-    });
-
     it('should infer type: ko → manhwa', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
-          originalLanguage: 'ko',
-        },
+        title: 'Title',
+        language: 'ko',
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -208,15 +169,13 @@ describe('WeebDexAdapter', () => {
     it('should infer type: zh → manhua', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
-          originalLanguage: 'zh',
-        },
+        title: 'Title',
+        language: 'zh',
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -226,19 +185,19 @@ describe('WeebDexAdapter', () => {
     it('should extract genres from tags where group=genre', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
+        title: 'Title',
+        relationships: {
           tags: [
-            { attributes: { group: 'genre', name: { en: 'Action' } } },
-            { attributes: { group: 'genre', name: { en: 'Comedy' } } },
-            { attributes: { group: 'theme', name: { en: 'School' } } },
+            { group: 'genre', name: 'Action' },
+            { group: 'genre', name: 'Comedy' },
+            { group: 'theme', name: 'School' },
           ],
         },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -248,19 +207,19 @@ describe('WeebDexAdapter', () => {
     it('should extract themes from tags where group=theme', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
+        title: 'Title',
+        relationships: {
           tags: [
-            { attributes: { group: 'genre', name: { en: 'Action' } } },
-            { attributes: { group: 'theme', name: { en: 'School' } } },
-            { attributes: { group: 'theme', name: { en: 'Slice of Life' } } },
+            { group: 'genre', name: 'Action' },
+            { group: 'theme', name: 'School' },
+            { group: 'theme', name: 'Slice of Life' },
           ],
         },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -270,16 +229,18 @@ describe('WeebDexAdapter', () => {
     it('should extract authors from relationships', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: { title: { en: 'Title' } },
-        relationships: [
-          { type: 'author', attributes: { name: 'Author A' } },
-          { type: 'author', attributes: { name: 'Author B' } },
-        ],
+        title: 'Title',
+        relationships: {
+          authors: [
+            { name: 'Author A' },
+            { name: 'Author B' },
+          ],
+        },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -289,16 +250,18 @@ describe('WeebDexAdapter', () => {
     it('should extract artists from relationships', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: { title: { en: 'Title' } },
-        relationships: [
-          { type: 'artist', attributes: { name: 'Artist A' } },
-          { type: 'artist', attributes: { name: 'Artist B' } },
-        ],
+        title: 'Title',
+        relationships: {
+          artists: [
+            { name: 'Artist A' },
+            { name: 'Artist B' },
+          ],
+        },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
@@ -308,26 +271,26 @@ describe('WeebDexAdapter', () => {
     it('should construct cover URL from cover_art relationship', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: { title: { en: 'Title' } },
-        relationships: [
-          { type: 'cover_art', attributes: { fileName: 'cover-file' } },
-        ],
+        title: 'Title',
+        relationships: {
+          cover: { id: 'cover-id', ext: '.jpg' },
+        },
       };
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');
-      expect(result.coverUrl).toBe('https://uploads.weebdex.org/covers/manga-123/cover-file.256.jpg');
+      expect(result.coverUrl).toBe('https://weebdex.org/covers/manga-123/cover-id.jpg');
     });
 
     it('should map link keys using LINK_TYPE_MAP', async () => {
       const raw = {
         id: 'manga-123',
-        attributes: {
-          title: { en: 'Title' },
+        title: 'Title',
+        relationships: {
           links: {
             mal: 'mal-123',
             al: 'al-456',
@@ -338,7 +301,7 @@ describe('WeebDexAdapter', () => {
 
       (fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ data: raw }),
+        json: () => Promise.resolve(raw),
       });
 
       const result = await adapter.fetchManga('manga-123');

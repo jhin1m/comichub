@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 
 export function OAuthButton() {
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('oauth_state', state);
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
+    window.location.href = `${baseUrl}/auth/google&state=${state}`;
   };
 
   return (

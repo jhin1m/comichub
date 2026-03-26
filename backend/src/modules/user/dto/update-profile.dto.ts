@@ -6,29 +6,29 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  name!: string;
+  name?: string;
 
   @ApiPropertyOptional({ maxLength: 500 })
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  bio!: string;
+  bio?: string;
 
   @ApiPropertyOptional({ maxLength: 500 })
   @IsOptional()
   @IsUrl()
   @MaxLength(500)
-  website!: string;
+  website?: string;
 
   @ApiPropertyOptional({ maxLength: 255 })
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  twitter!: string;
+  twitter?: string;
 
   @ApiPropertyOptional({ maxLength: 255 })
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  discord!: string;
+  discord?: string;
 }

@@ -30,15 +30,15 @@ function StarIcon({ state, size = 24, gradientId }: { state: StarState; size?: n
       {state === 'half' && (
         <defs>
           <linearGradient id={id}>
-            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="50%" stopColor="var(--color-amber-400, #f59e0b)" />
             <stop offset="50%" stopColor="#404040" />
           </linearGradient>
         </defs>
       )}
       <polygon
         points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
-        fill={state === 'full' ? '#f59e0b' : state === 'half' ? `url(#${id})` : '#404040'}
-        stroke={state === 'empty' ? '#404040' : '#f59e0b'}
+        fill={state === 'full' ? 'var(--color-amber-400, #f59e0b)' : state === 'half' ? `url(#${id})` : '#404040'}
+        stroke={state === 'empty' ? '#404040' : 'var(--color-amber-400, #f59e0b)'}
         strokeWidth="0.5"
       />
     </svg>

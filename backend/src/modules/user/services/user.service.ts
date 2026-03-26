@@ -7,6 +7,7 @@ import {
 import { eq, ilike, or, sql, count } from 'drizzle-orm';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
+import type Redis from 'ioredis';
 import sharp from 'sharp';
 import { escapeLike } from '../../../common/utils/escape-like.util.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
@@ -33,6 +34,7 @@ export class UserService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly config: ConfigService,
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
     this.s3 = new S3Client({
       region: config.get<string>('s3.region', 'ap-southeast-1'),
@@ -159,7 +161,11 @@ export class UserService {
   // Admin methods
   async listUsers(
     query: UserQueryDto,
-  ): Promise<PaginatedResult<Omit<typeof users.$inferSelect, 'password'>>> {
+  ): Promise<
+    PaginatedResult<
+      Omit<typeof users.$inferSelect, 'password' | 'googleId'>
+    >
+  > {
     const { page, limit, offset, search } = query;
 
     const where = search
@@ -185,7 +191,6 @@ export class UserService {
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
           deletedAt: users.deletedAt,
-          googleId: users.googleId,
         })
         .from(users)
         .where(where)
@@ -226,6 +231,9 @@ export class UserService {
 
     const bannedUntil = dto.bannedUntil ? new Date(dto.bannedUntil) : null;
     await this.db.update(users).set({ bannedUntil }).where(eq(users.id, id));
+
+    // Invalidate user's refresh token so they are immediately logged out
+    await this.redis.del(`refresh:${id}`);
 
     return {
       message: bannedUntil

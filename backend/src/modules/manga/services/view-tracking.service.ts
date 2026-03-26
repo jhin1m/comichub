@@ -20,7 +20,10 @@ export class ViewTrackingService {
     userId?: number,
     ip?: string,
   ): Promise<void> {
-    const identifier = userId ? `user:${userId}` : `ip:${ip ?? 'unknown'}`;
+    // Skip tracking if we can't uniquely identify the viewer
+    if (!userId && !ip) return;
+
+    const identifier = userId ? `user:${userId}` : `ip:${ip}`;
     const dedupKey = `view:${chapterId}:${identifier}`;
 
     const exists = await this.redis.get(dedupKey);

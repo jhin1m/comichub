@@ -11,6 +11,10 @@ export const jwtConfig = registerAs('jwt', () => {
     );
   }
 
+  if (!accessSecret || !refreshSecret) {
+    console.warn('WARNING: Using default JWT secrets — not safe for staging/production');
+  }
+
   return {
     accessSecret: accessSecret || 'dev-access-secret',
     refreshSecret: refreshSecret || 'dev-refresh-secret',

@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { eq, isNull, and, gt, lt, asc, desc } from 'drizzle-orm';
+import { eq, isNull, and, gt, lt, asc, desc, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -146,10 +146,7 @@ export class ChapterService {
     await this.db
       .update(manga)
       .set({
-        chaptersCount: this.db.$count(
-          chapters,
-          and(eq(chapters.mangaId, mangaId), isNull(chapters.deletedAt)),
-        ) as unknown as number,
+        chaptersCount: sql<number>`(SELECT count(*) FROM ${chapters} WHERE manga_id = ${mangaId} AND deleted_at IS NULL)`,
         chapterUpdatedAt: new Date(),
       })
       .where(eq(manga.id, mangaId));
@@ -204,13 +201,7 @@ export class ChapterService {
     await this.db
       .update(manga)
       .set({
-        chaptersCount: this.db.$count(
-          chapters,
-          and(
-            eq(chapters.mangaId, chapter.mangaId),
-            isNull(chapters.deletedAt),
-          ),
-        ) as unknown as number,
+        chaptersCount: sql<number>`(SELECT count(*) FROM ${chapters} WHERE manga_id = ${chapter.mangaId} AND deleted_at IS NULL)`,
       })
       .where(eq(manga.id, chapter.mangaId));
   }

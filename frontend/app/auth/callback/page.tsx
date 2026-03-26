@@ -11,7 +11,15 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const oauth = searchParams.get('oauth');
+    const state = searchParams.get('state');
+    const storedState = sessionStorage.getItem('oauth_state');
+
     if (oauth === 'success') {
+      if (!state || !storedState || state !== storedState) {
+        router.replace('/login');
+        return;
+      }
+      sessionStorage.removeItem('oauth_state');
       // Tokens are in HTTP-only cookies; just restore the session
       restoreSession()
         .then(() => router.replace('/'))

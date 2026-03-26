@@ -26,6 +26,8 @@ import { MangaQueryDto } from '../dto/manga-query.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
 @ApiTags('manga')
 @Controller('manga')
@@ -55,8 +57,8 @@ export class MangaController {
   @ApiParam({ name: 'slug', example: 'one-piece' })
   @ApiResponse({ status: 200, description: 'Manga detail with chapters' })
   @ApiResponse({ status: 404, description: 'Manga not found' })
-  findOne(@Param('slug') slug: string) {
-    return this.mangaService.findBySlug(slug);
+  findOne(@Param('slug') slug: string, @CurrentUser() user?: JwtPayload) {
+    return this.mangaService.findBySlug(slug, !!user);
   }
 
   @ApiBearerAuth()

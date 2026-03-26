@@ -45,16 +45,26 @@ const ALLOWED_ATTRIBUTES: sanitizeHtml.IOptions['allowedAttributes'] = {
   span: ['class'],
 };
 
+const ALLOWED_IMG_SRC_PATTERN = /^https:\/\//i;
+
 function sanitizeContent(content: string): string {
   return sanitizeHtml(content, {
     allowedTags: ALLOWED_TAGS,
     allowedAttributes: ALLOWED_ATTRIBUTES,
-    allowedSchemes: ['http', 'https'],
+    allowedSchemes: ['https'],
+    allowedSchemesAppliedToAttributes: ['src', 'href'],
     transformTags: {
       a: sanitizeHtml.simpleTransform('a', {
         target: '_blank',
         rel: 'noopener nofollow',
       }),
+      img: (tagName, attribs) => {
+        const src = attribs.src ?? '';
+        if (!ALLOWED_IMG_SRC_PATTERN.test(src)) {
+          return { tagName: 'span', attribs: {} };
+        }
+        return { tagName, attribs };
+      },
     },
   });
 }
@@ -396,118 +406,125 @@ export class CommentService {
   ) {
     const commentData = await this.findOrFail(commentId);
 
-    const [existing] = await this.db
-      .select()
-      .from(commentLikes)
-      .where(
-        and(
-          eq(commentLikes.userId, userId),
-          eq(commentLikes.commentId, commentId),
-        ),
-      )
-      .limit(1);
+    const result = await this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(commentLikes)
+        .where(
+          and(
+            eq(commentLikes.userId, userId),
+            eq(commentLikes.commentId, commentId),
+          ),
+        )
+        .limit(1);
 
-    // If existing reaction: remove it (and if it's the opposite type, we'll insert the new one)
-    if (existing) {
-      await this.db
-        .delete(commentLikes)
-        .where(eq(commentLikes.id, existing.id));
+      // If existing reaction: remove it (and if it's the opposite type, we'll insert the new one)
+      if (existing) {
+        await tx
+          .delete(commentLikes)
+          .where(eq(commentLikes.id, existing.id));
 
-      // Decrement the old counter
-      if (existing.isDislike) {
-        await this.db
+        // Decrement the old counter
+        if (existing.isDislike) {
+          await tx
+            .update(comments)
+            .set({
+              dislikesCount: sql`GREATEST(${comments.dislikesCount} - 1, 0)`,
+            })
+            .where(eq(comments.id, commentId));
+        } else {
+          await tx
+            .update(comments)
+            .set({ likesCount: sql`GREATEST(${comments.likesCount} - 1, 0)` })
+            .where(eq(comments.id, commentId));
+        }
+
+        // If same type → just un-toggle, return
+        if (existing.isDislike === isDislike) {
+          const [c] = await tx
+            .select({
+              likesCount: comments.likesCount,
+              dislikesCount: comments.dislikesCount,
+            })
+            .from(comments)
+            .where(eq(comments.id, commentId));
+          return {
+            liked: false,
+            disliked: false,
+            likesCount: c?.likesCount ?? 0,
+            dislikesCount: c?.dislikesCount ?? 0,
+            emitLike: false,
+          };
+        }
+      }
+
+      // Insert new reaction
+      await tx.insert(commentLikes).values({ userId, commentId, isDislike });
+
+      // Increment the new counter
+      if (isDislike) {
+        await tx
           .update(comments)
-          .set({
-            dislikesCount: sql`GREATEST(${comments.dislikesCount} - 1, 0)`,
-          })
+          .set({ dislikesCount: sql`${comments.dislikesCount} + 1` })
           .where(eq(comments.id, commentId));
       } else {
-        await this.db
+        await tx
           .update(comments)
-          .set({ likesCount: sql`GREATEST(${comments.likesCount} - 1, 0)` })
+          .set({ likesCount: sql`${comments.likesCount} + 1` })
           .where(eq(comments.id, commentId));
       }
 
-      // If same type → just un-toggle, return
-      if (existing.isDislike === isDislike) {
-        const [c] = await this.db
-          .select({
-            likesCount: comments.likesCount,
-            dislikesCount: comments.dislikesCount,
-          })
-          .from(comments)
-          .where(eq(comments.id, commentId));
-        return {
-          liked: false,
-          disliked: false,
-          likesCount: c?.likesCount ?? 0,
-          dislikesCount: c?.dislikesCount ?? 0,
-        };
-      }
-    }
-
-    // Insert new reaction
-    await this.db.insert(commentLikes).values({ userId, commentId, isDislike });
-
-    // Increment the new counter
-    if (isDislike) {
-      await this.db
-        .update(comments)
-        .set({ dislikesCount: sql`${comments.dislikesCount} + 1` })
+      const [c] = await tx
+        .select({
+          likesCount: comments.likesCount,
+          dislikesCount: comments.dislikesCount,
+        })
+        .from(comments)
         .where(eq(comments.id, commentId));
-    } else {
-      await this.db
-        .update(comments)
-        .set({ likesCount: sql`${comments.likesCount} + 1` })
-        .where(eq(comments.id, commentId));
+      return {
+        liked: !isDislike,
+        disliked: isDislike,
+        likesCount: c?.likesCount ?? 0,
+        dislikesCount: c?.dislikesCount ?? 0,
+        emitLike: !isDislike && !!(commentData.userId && commentData.userId !== userId),
+      };
+    });
 
-      // Emit like notification (only for likes, not dislikes)
-      if (commentData.userId && commentData.userId !== userId) {
-        const event = new CommentLikeEvent();
-        event.commentId = commentId;
-        event.likerName = userName ?? '';
-        event.likerAvatar = userAvatar ?? null;
-        event.commentOwnerId = commentData.userId;
-        event.commentPreview = (commentData.content ?? '').slice(0, 100);
-        if (commentData.commentableType === 'manga' && commentData.commentableId) {
-          const [m] = await this.db
-            .select({ slug: manga.slug })
-            .from(manga)
-            .where(eq(manga.id, commentData.commentableId))
-            .limit(1);
+    // Emit like notification outside transaction (only for likes, not dislikes)
+    if (result.emitLike) {
+      const event = new CommentLikeEvent();
+      event.commentId = commentId;
+      event.likerName = userName ?? '';
+      event.likerAvatar = userAvatar ?? null;
+      event.commentOwnerId = commentData.userId!;
+      event.commentPreview = (commentData.content ?? '').slice(0, 100);
+      if (commentData.commentableType === 'manga' && commentData.commentableId) {
+        const [m] = await this.db
+          .select({ slug: manga.slug })
+          .from(manga)
+          .where(eq(manga.id, commentData.commentableId))
+          .limit(1);
+        event.mangaSlug = m?.slug ?? null;
+      } else if (commentData.commentableType === 'chapter' && commentData.commentableId) {
+        const [ch] = await this.db
+          .select({ mangaId: chapters.mangaId })
+          .from(chapters)
+          .where(eq(chapters.id, commentData.commentableId))
+          .limit(1);
+        if (ch?.mangaId) {
+          const [m] = await this.db.select({ slug: manga.slug }).from(manga).where(eq(manga.id, ch.mangaId)).limit(1);
           event.mangaSlug = m?.slug ?? null;
-        } else if (commentData.commentableType === 'chapter' && commentData.commentableId) {
-          const [ch] = await this.db
-            .select({ mangaId: chapters.mangaId })
-            .from(chapters)
-            .where(eq(chapters.id, commentData.commentableId))
-            .limit(1);
-          if (ch?.mangaId) {
-            const [m] = await this.db.select({ slug: manga.slug }).from(manga).where(eq(manga.id, ch.mangaId)).limit(1);
-            event.mangaSlug = m?.slug ?? null;
-          } else {
-            event.mangaSlug = null;
-          }
         } else {
           event.mangaSlug = null;
         }
-        this.eventEmitter.emit('comment.liked', event);
+      } else {
+        event.mangaSlug = null;
       }
+      this.eventEmitter.emit('comment.liked', event);
     }
 
-    const [c] = await this.db
-      .select({
-        likesCount: comments.likesCount,
-        dislikesCount: comments.dislikesCount,
-      })
-      .from(comments)
-      .where(eq(comments.id, commentId));
-    return {
-      liked: !isDislike,
-      disliked: isDislike,
-      likesCount: c?.likesCount ?? 0,
-      dislikesCount: c?.dislikesCount ?? 0,
-    };
+    const { emitLike: _emitLike, ...response } = result;
+    return response;
   }
 
   /** Backward-compatible wrapper */
