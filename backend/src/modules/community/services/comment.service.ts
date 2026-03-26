@@ -300,7 +300,7 @@ export class CommentService {
       .orderBy(comments.createdAt);
   }
 
-  async create(userId: number, dto: CreateCommentDto, userName?: string) {
+  async create(userId: number, dto: CreateCommentDto, userName?: string, userAvatar?: string | null) {
     if (dto.parentId) {
       await this.validateDepth(dto.parentId);
     }
@@ -324,10 +324,34 @@ export class CommentService {
         const event = new CommentReplyEvent();
         event.commentId = dto.parentId;
         event.replyAuthorName = userName ?? '';
+        event.replyAuthorAvatar = userAvatar ?? null;
+        event.replyContent = cleanContent.slice(0, 100);
         event.mangaId =
           dto.commentableType === CommentableType.MANGA
             ? dto.commentableId
             : null;
+        if (dto.commentableType === CommentableType.MANGA && dto.commentableId) {
+          const [m] = await this.db
+            .select({ slug: manga.slug })
+            .from(manga)
+            .where(eq(manga.id, dto.commentableId))
+            .limit(1);
+          event.mangaSlug = m?.slug ?? null;
+        } else if (dto.commentableType === CommentableType.CHAPTER && dto.commentableId) {
+          const [ch] = await this.db
+            .select({ mangaId: chapters.mangaId })
+            .from(chapters)
+            .where(eq(chapters.id, dto.commentableId))
+            .limit(1);
+          if (ch?.mangaId) {
+            const [m] = await this.db.select({ slug: manga.slug }).from(manga).where(eq(manga.id, ch.mangaId)).limit(1);
+            event.mangaSlug = m?.slug ?? null;
+          } else {
+            event.mangaSlug = null;
+          }
+        } else {
+          event.mangaSlug = null;
+        }
         event.commentOwnerId = parent.userId;
         this.eventEmitter.emit('comment.replied', event);
       }
@@ -368,6 +392,7 @@ export class CommentService {
     userId: number,
     isDislike: boolean,
     userName?: string,
+    userAvatar?: string | null,
   ) {
     const commentData = await this.findOrFail(commentId);
 
@@ -441,8 +466,31 @@ export class CommentService {
         const event = new CommentLikeEvent();
         event.commentId = commentId;
         event.likerName = userName ?? '';
+        event.likerAvatar = userAvatar ?? null;
         event.commentOwnerId = commentData.userId;
         event.commentPreview = (commentData.content ?? '').slice(0, 100);
+        if (commentData.commentableType === 'manga' && commentData.commentableId) {
+          const [m] = await this.db
+            .select({ slug: manga.slug })
+            .from(manga)
+            .where(eq(manga.id, commentData.commentableId))
+            .limit(1);
+          event.mangaSlug = m?.slug ?? null;
+        } else if (commentData.commentableType === 'chapter' && commentData.commentableId) {
+          const [ch] = await this.db
+            .select({ mangaId: chapters.mangaId })
+            .from(chapters)
+            .where(eq(chapters.id, commentData.commentableId))
+            .limit(1);
+          if (ch?.mangaId) {
+            const [m] = await this.db.select({ slug: manga.slug }).from(manga).where(eq(manga.id, ch.mangaId)).limit(1);
+            event.mangaSlug = m?.slug ?? null;
+          } else {
+            event.mangaSlug = null;
+          }
+        } else {
+          event.mangaSlug = null;
+        }
         this.eventEmitter.emit('comment.liked', event);
       }
     }
@@ -463,8 +511,8 @@ export class CommentService {
   }
 
   /** Backward-compatible wrapper */
-  async toggleLike(commentId: number, userId: number, likerName?: string) {
-    return this.toggleReaction(commentId, userId, false, likerName);
+  async toggleLike(commentId: number, userId: number, likerName?: string, likerAvatar?: string | null) {
+    return this.toggleReaction(commentId, userId, false, likerName, likerAvatar);
   }
 
   async toggleDislike(commentId: number, userId: number) {

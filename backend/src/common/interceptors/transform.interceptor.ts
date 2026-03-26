@@ -23,6 +23,12 @@ export class TransformInterceptor<T> implements NestInterceptor<
     _context: ExecutionContext,
     next: CallHandler,
   ): Observable<ApiResponse<T>> {
+    // Skip wrapping for SSE endpoints (NestJS marks them with __sse__ metadata)
+    const handler = _context.getHandler();
+    if (Reflect.getMetadata('__sse__', handler)) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       map((data) => {
         // If data already has our response shape, pass through

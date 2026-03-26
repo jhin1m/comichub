@@ -14,11 +14,11 @@ import { ContentPreferencesController } from './controllers/content-preferences.
   imports: [AuthModule],
   providers: [UserService, FollowService, HistoryService, ContentPreferencesService],
   controllers: [
+    ContentPreferencesController,
     UserController,
     FollowController,
     HistoryController,
     AdminUserController,
-    ContentPreferencesController,
   ],
   exports: [UserService, FollowService, HistoryService, ContentPreferencesService],
 })

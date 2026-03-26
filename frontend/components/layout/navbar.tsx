@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ListIcon, XIcon, BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth.context';
 import { notificationApi } from '@/lib/api/notification.api';
+import { NotificationDropdown } from '@/components/notification/notification-dropdown';
+import { useNotificationStream } from '@/hooks/use-notification-stream';
 
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
@@ -16,14 +18,24 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [browseDropdownOpen, setBrowseDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const fetchUnreadCount = useCallback(() => {
+    notificationApi.getUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
+  }, []);
+
+  // SSE: just +1 locally, no API call. Dropdown close syncs real count.
+  const handleSseEvent = useCallback(() => {
+    setUnreadCount((c) => c + 1);
+  }, []);
+  useNotificationStream(handleSseEvent);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const browseDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch notification unread count when logged in
+  // Fetch once when user logs in
   useEffect(() => {
-    if (!user) return;
-    notificationApi.getUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
-  }, [user]);
+    if (user) fetchUnreadCount();
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -102,15 +114,23 @@ export default function Navbar() {
           </Link>
 
           {user && (
-            <button
-              className="relative w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
-              aria-label="Notifications"
+            <NotificationDropdown
+              open={notifOpen}
+              onOpenChange={setNotifOpen}
+              onUnreadCountChange={setUnreadCount}
             >
-              <BellIcon size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
-              )}
-            </button>
+              <button
+                className="relative w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
+                aria-label="Notifications"
+              >
+                <BellIcon size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 flex items-center justify-center bg-accent text-black text-[10px] font-bold rounded-full leading-none">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            </NotificationDropdown>
           )}
 
           {loading ? (
@@ -139,14 +159,6 @@ export default function Navbar() {
                     onClick={() => setDropdownOpen(false)}
                   >
                     Profile
-                  </Link>
-                  <Link
-                    href="/settings/preferences"
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    <FadersHorizontalIcon size={14} />
-                    Preferences
                   </Link>
                   <button
                     onClick={() => { setDropdownOpen(false); logout(); }}

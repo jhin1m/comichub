@@ -86,7 +86,7 @@ export class CommentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create comment' })
   create(@CurrentUser() user: User, @Body() dto: CreateCommentDto) {
-    return this.commentService.create(user.id, dto, user.name);
+    return this.commentService.create(user.id, dto, user.name, user.avatar);
   }
 
   @Patch('comments/:id')
@@ -117,7 +117,7 @@ export class CommentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle like on comment' })
   toggleLike(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
-    return this.commentService.toggleLike(id, user.id, user.name);
+    return this.commentService.toggleLike(id, user.id, user.name, user.avatar);
   }
 
   @Post('comments/:id/dislike')

@@ -8,6 +8,8 @@ export const setAccessToken = (token: string | null) => {
   _accessToken = token;
 };
 
+export const getAccessToken = (): string | null => _accessToken;
+
 export const clearTokens = () => {
   _accessToken = null;
   if (typeof window !== 'undefined') {

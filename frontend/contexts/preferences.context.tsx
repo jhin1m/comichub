@@ -22,7 +22,15 @@ function readLocalStorage(): ContentPreferences | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as ContentPreferences;
+    const parsed = JSON.parse(raw);
+    // Strip stale keys — only keep fields defined in ContentPreferences
+    return {
+      hideNsfw: parsed.hideNsfw ?? DEFAULT_PREFERENCES.hideNsfw,
+      excludedTypes: parsed.excludedTypes ?? DEFAULT_PREFERENCES.excludedTypes,
+      excludedDemographics: parsed.excludedDemographics ?? DEFAULT_PREFERENCES.excludedDemographics,
+      excludedGenreSlugs: parsed.excludedGenreSlugs ?? DEFAULT_PREFERENCES.excludedGenreSlugs,
+      highlightedGenreSlugs: parsed.highlightedGenreSlugs ?? DEFAULT_PREFERENCES.highlightedGenreSlugs,
+    };
   } catch {
     return null;
   }

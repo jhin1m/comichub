@@ -14,12 +14,14 @@ import type { NewChapterEvent } from './events/new-chapter.event.js';
 import type { CommentReplyEvent } from './events/comment-reply.event.js';
 import type { CommentLikeEvent } from './events/comment-like.event.js';
 import { DiscordWebhookService } from './discord/discord-webhook.service.js';
+import { SseConnectionManagerService } from './sse-connection-manager.service.js';
 
 @Injectable()
 export class NotificationService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly discord: DiscordWebhookService,
+    private readonly sseManager: SseConnectionManagerService,
   ) {}
 
   // ─── Event Handlers ────────────────────────────────────────────────
@@ -35,7 +37,19 @@ export class NotificationService {
     await this.createSingle(event.commentOwnerId, 'comment.replied', {
       commentId: event.commentId,
       replyAuthorName: event.replyAuthorName,
+      replyAuthorAvatar: event.replyAuthorAvatar,
+      replyContent: event.replyContent,
       mangaId: event.mangaId,
+      mangaSlug: event.mangaSlug,
+    });
+    this.sseManager.pushToUser(event.commentOwnerId, {
+      type: 'comment.replied',
+      commentId: event.commentId,
+      replyAuthorName: event.replyAuthorName,
+      replyAuthorAvatar: event.replyAuthorAvatar,
+      replyContent: event.replyContent,
+      mangaId: event.mangaId,
+      mangaSlug: event.mangaSlug,
     });
   }
 
@@ -44,7 +58,17 @@ export class NotificationService {
     await this.createSingle(event.commentOwnerId, 'comment.liked', {
       commentId: event.commentId,
       likerName: event.likerName,
+      likerAvatar: event.likerAvatar,
       commentPreview: event.commentPreview,
+      mangaSlug: event.mangaSlug,
+    });
+    this.sseManager.pushToUser(event.commentOwnerId, {
+      type: 'comment.liked',
+      commentId: event.commentId,
+      likerName: event.likerName,
+      likerAvatar: event.likerAvatar,
+      commentPreview: event.commentPreview,
+      mangaSlug: event.mangaSlug,
     });
   }
 
@@ -61,6 +85,7 @@ export class NotificationService {
     const payload = {
       mangaId: event.mangaId,
       mangaTitle: event.mangaTitle,
+      mangaSlug: event.mangaSlug,
       chapterId: event.chapterId,
       chapterNumber: event.chapterNumber,
       mangaCover: event.mangaCover,
@@ -80,6 +105,9 @@ export class NotificationService {
         .insert(notifications)
         .values(records.slice(i, i + chunkSize));
     }
+
+    const followerIds = followerRows.map((r) => r.userId);
+    this.sseManager.pushToUsers(followerIds, { type: 'chapter.created', ...payload });
   }
 
   async createSingle(
@@ -109,8 +137,15 @@ export class NotificationService {
 
     const where = and(...conditions);
 
-    const [totalRow, rows] = await Promise.all([
+    const unreadWhere = and(
+      eq(notifications.notifiableType, 'user'),
+      eq(notifications.notifiableId, userId),
+      isNull(notifications.readAt),
+    );
+
+    const [totalRow, unreadRow, rows] = await Promise.all([
       this.db.select({ cnt: count() }).from(notifications).where(where),
+      this.db.select({ cnt: count() }).from(notifications).where(unreadWhere),
       this.db
         .select()
         .from(notifications)
@@ -124,6 +159,7 @@ export class NotificationService {
     return {
       data: rows,
       total,
+      unreadCount: unreadRow[0]?.cnt ?? 0,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
