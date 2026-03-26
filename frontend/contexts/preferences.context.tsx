@@ -46,10 +46,11 @@ function writeLocalStorage(prefs: ContentPreferences) {
 }
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [preferences, setPreferences] = useState<ContentPreferences>(DEFAULT_PREFERENCES);
   const [isLoaded, setIsLoaded] = useState(false);
   const prevUserRef = useRef<typeof user>(undefined);
+  const prevLoadingRef = useRef(loading);
 
   // Mount: read from localStorage
   useEffect(() => {
@@ -60,11 +61,17 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   // Auth change: sync on login/logout
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || loading) return;
+
+    const wasLoading = prevLoadingRef.current;
     const prevUser = prevUserRef.current;
+    prevLoadingRef.current = loading;
     prevUserRef.current = user;
 
-    // user just logged in (was null/undefined, now has value)
+    // Auth just finished initial load (page reload) — use localStorage, skip API calls
+    if (wasLoading) return;
+
+    // Real login: user was null while app was active, now has value
     if (!prevUser && user) {
       const localPrefs = readLocalStorage();
       const syncAndFetch = async () => {
@@ -88,7 +95,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       writeLocalStorage(preferences);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isLoaded]);
+  }, [user, loading, isLoaded]);
 
   const apiDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestPrefsRef = useRef(preferences);
