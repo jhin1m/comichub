@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '@/lib/api/auth.api';
 import { setAccessToken, clearTokens } from '@/lib/api-client';
 import type { AuthUser, LoginForm, RegisterForm } from '@/types/auth.types';
@@ -51,40 +51,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restoreSession();
   }, [restoreSession]);
 
-  const login = async (data: LoginForm) => {
+  const login = useCallback(async (data: LoginForm) => {
     const tokens = await authApi.login(data);
     setAccessToken(tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
     const me = await authApi.me();
     setUser(me);
-  };
+  }, []);
 
-  const register = async (data: RegisterForm) => {
+  const register = useCallback(async (data: RegisterForm) => {
     const tokens = await authApi.register(data);
     setAccessToken(tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
     const me = await authApi.me();
     setUser(me);
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authApi.logout();
     } finally {
       clearTokens();
       setUser(null);
     }
-  };
+  }, []);
 
-  const setTokensFromOAuth = async (accessToken: string, refreshToken: string) => {
+  const setTokensFromOAuth = useCallback(async (accessToken: string, refreshToken: string) => {
     setAccessToken(accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     const me = await authApi.me();
     setUser(me);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    user, loading, login, register, logout, restoreSession, setTokensFromOAuth,
+  }), [user, loading, login, register, logout, restoreSession, setTokensFromOAuth]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, restoreSession, setTokensFromOAuth }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

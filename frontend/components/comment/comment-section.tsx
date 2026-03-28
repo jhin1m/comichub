@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { lazy, Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { commentApi } from '@/lib/api/comment.api';
 import { useAuth } from '@/contexts/auth.context';
 import type { Comment, CommentSort } from '@/types/comment.types';
-import { CommentEditor } from './comment-editor';
+const CommentEditor = lazy(() => import('./comment-editor').then(m => ({ default: m.CommentEditor })));
 import { CommentItem } from './comment-item';
 import { CommentReplyThread } from './comment-reply-thread';
 import { Pagination } from '@/components/ui/pagination';
@@ -138,12 +138,14 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
         </div>
       </div>
 
-      {/* Top-level editor */}
+      {/* Top-level editor — lazy-loaded to defer TipTap bundle */}
       <div className="mb-4">
-        <CommentEditor
-          onSubmit={handleNewComment}
-          isLoggedIn={!!user}
-        />
+        <Suspense fallback={<div className="h-[70px] bg-elevated/60 rounded-lg animate-pulse" />}>
+          <CommentEditor
+            onSubmit={handleNewComment}
+            isLoggedIn={!!user}
+          />
+        </Suspense>
       </div>
 
       {/* Comment list */}

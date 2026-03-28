@@ -15,13 +15,19 @@ export function MangaDescription({ description }: Props) {
   useEffect(() => {
     const el = innerRef.current;
     if (!el) return;
+    let timer: ReturnType<typeof setTimeout>;
     const check = () => {
-      const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 20;
-      setNeedsToggle(el.scrollHeight > lineHeight * 3 + 2);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 20;
+        setNeedsToggle(el.scrollHeight > lineHeight * 3 + 2);
+      }, 150);
     };
-    check();
+    // Initial check (no debounce)
+    const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 20;
+    setNeedsToggle(el.scrollHeight > lineHeight * 3 + 2);
     window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    return () => { window.removeEventListener('resize', check); clearTimeout(timer); };
   }, [description]);
 
   if (!description) return null;

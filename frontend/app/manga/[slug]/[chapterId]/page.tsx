@@ -49,14 +49,18 @@ export default function ChapterReaderPage({ params }: Props) {
 
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
 
-  // Detect mobile and set responsive defaults
+  // Detect mobile and set responsive defaults (debounced)
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
+    let timer: ReturnType<typeof setTimeout>;
+    const check = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setIsMobile(window.innerWidth < 768), 150);
+    };
+    setIsMobile(window.innerWidth < 768);
     // Open sidebar by default on desktop only
     if (window.innerWidth >= 768) setSidebarOpen(true);
     window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    return () => { window.removeEventListener('resize', check); clearTimeout(timer); };
   }, []);
 
   useEffect(() => {

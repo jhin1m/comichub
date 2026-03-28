@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/auth.context';
 import { preferencesApi } from '@/lib/api/preferences.api';
 import { DEFAULT_PREFERENCES } from '@/types/preferences.types';
@@ -124,15 +124,22 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     }
   }, [user]);
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+    };
+  }, []);
+
+  const value = useMemo(() => ({
+    preferences,
+    updatePreferences,
+    isLoaded,
+    highlightedGenreSlugs: preferences.highlightedGenreSlugs,
+  }), [preferences, updatePreferences, isLoaded]);
+
   return (
-    <PreferencesContext.Provider
-      value={{
-        preferences,
-        updatePreferences,
-        isLoaded,
-        highlightedGenreSlugs: preferences.highlightedGenreSlugs,
-      }}
-    >
+    <PreferencesContext.Provider value={value}>
       {children}
     </PreferencesContext.Provider>
   );

@@ -14,4 +14,7 @@ export const userApi = {
 
   upsertHistory: (mangaId: number, chapterId: number) =>
     apiClient.post('/history', { mangaId, chapterId }).then((r) => r.data),
+
+  removeHistory: (mangaId: number) =>
+    apiClient.patch(`/users/me/history/${mangaId}`).then((r) => r.data),
 };

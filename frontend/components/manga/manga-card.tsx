@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatRelativeDate } from '@/lib/utils';
@@ -24,21 +25,21 @@ interface Props {
   rank?: number;
 }
 
-export function MangaCard({ item, rank }: Props) {
+export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
   const showNew = isNewRelease(item.updatedAt);
   const rankStyle = rank ? (RANK_STYLES[rank] ?? RANK_DEFAULT) : null;
 
   return (
     <Link href={`/manga/${item.slug}`} className="group block cursor-pointer">
       {/* Cover */}
-      <div className="relative aspect-2/3 rounded overflow-hidden bg-surface border border-default mb-2 transition-transform duration-150 ease-out group-hover:-translate-y-1 group-hover:border-accent">
+      <div className="relative aspect-2/3 rounded overflow-hidden bg-surface border border-default mb-2">
         {item.cover ? (
           <Image
             src={item.cover}
             alt={item.title}
             fill
             draggable={false}
-            className="object-cover pointer-events-none"
+            className="object-cover pointer-events-none transition-[filter] duration-150 ease-out group-hover:saturate-150"
             sizes="(max-width:640px) 33vw, (max-width:1024px) 20vw, 180px"
             loading="lazy"
           />
@@ -80,4 +81,4 @@ export function MangaCard({ item, rank }: Props) {
       </p>
     </Link>
   );
-}
+});

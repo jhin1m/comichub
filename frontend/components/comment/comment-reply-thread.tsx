@@ -46,20 +46,28 @@ export function CommentReplyThread({
     }
   };
 
-  // Auto-load replies on mount if there are any
-  useEffect(() => {
-    if (replyCount > 0) {
-      loadReplies(1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parentId, replyCount]);
+  const [expanded, setExpanded] = useState(false);
 
   const handleCommentDeleted = (id: number) => {
     setReplies((prev) => prev.filter((r) => r.id !== id));
     setTotal((t) => Math.max(0, t - 1));
   };
 
-  if (total === 0 && replies.length === 0) return null;
+  if (total === 0 && replies.length === 0 && !expanded) return null;
+
+  // Lazy-load: show "View N replies" button until user clicks
+  if (!expanded && replies.length === 0 && replyCount > 0) {
+    return (
+      <div className="ml-8 pl-3 mt-0.5">
+        <button
+          onClick={() => { setExpanded(true); loadReplies(1); }}
+          className="text-[11px] text-muted hover:text-accent transition-colors py-1"
+        >
+          View {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="ml-8 border-l-2 border-default/40 hover:border-accent/40 pl-3 mt-0.5 transition-colors">

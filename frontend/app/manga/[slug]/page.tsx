@@ -34,15 +34,17 @@ export default async function MangaDetailPage({ params }: Props) {
                 alt=""
                 fill
                 className="object-cover blur-3xl scale-125 opacity-20"
+                sizes="100vw"
+                quality={10}
                 priority
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-base via-base/95 to-base/80" />
-              <div className="absolute inset-0 bg-gradient-to-t from-base via-transparent to-base/60" />
+              <div className="absolute inset-0 bg-linear-to-r from-base via-base/95 to-base/80" />
+              <div className="absolute inset-0 bg-linear-to-t from-base via-transparent to-base/60" />
             </div>
           )}
 
           {/* Hero content */}
-          <div className="relative z-10 max-w-[1400px] mx-auto px-4 py-8 md:py-10">
+          <div className="relative z-10 max-w-350 mx-auto px-4 py-8 md:py-10">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
               <div className="space-y-4">
                 <MangaCoverHero manga={manga} />
@@ -56,7 +58,7 @@ export default async function MangaDetailPage({ params }: Props) {
         </section>
 
         {/* ===== BELOW HERO — chapters, comments, sidebar ===== */}
-        <main className="max-w-[1400px] mx-auto px-4 py-8">
+        <main className="max-w-350 mx-auto px-4 py-8">
           <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
             <div className="space-y-8">
               <ChapterList chapters={manga.chapters} mangaSlug={slug} />

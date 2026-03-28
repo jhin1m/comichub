@@ -39,6 +39,7 @@ export function MangaCoverHero({ manga }: Props) {
               alt={manga.title}
               fill
               className="object-cover"
+              sizes="192px"
               priority
             />
           )}
@@ -100,6 +101,7 @@ export function MangaCoverHero({ manga }: Props) {
               alt={manga.title}
               fill
               className="object-cover"
+              sizes="224px"
               priority
             />
           )}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon } from '@phosphor-icons/react';
+import { BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon, BookmarkSimpleIcon } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth.context';
@@ -104,6 +104,16 @@ export default function Navbar() {
             )}
           </div>
 
+          {user && (
+            <Link
+              href="/profile?tab=bookmarks"
+              className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
+              aria-label="Bookmarks"
+            >
+              <BookmarkSimpleIcon size={18} />
+            </Link>
+          )}
+
           <Link
             href="/settings/preferences"
             className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
@@ -158,6 +168,13 @@ export default function Navbar() {
                     onClick={() => setDropdownOpen(false)}
                   >
                     Profile
+                  </Link>
+                  <Link
+                    href="/profile?tab=bookmarks"
+                    className="block px-4 py-2 text-sm text-primary hover:bg-hover transition-colors"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Bookmarks
                   </Link>
                   <button
                     onClick={() => { setDropdownOpen(false); logout(); }}

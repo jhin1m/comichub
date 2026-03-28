@@ -32,6 +32,13 @@ export function SearchAutocomplete() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  /* Cleanup debounce timer on unmount */
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   /* Focus mobile input when opened */
   useEffect(() => {
     if (mobileOpen && mobileInputRef.current) {

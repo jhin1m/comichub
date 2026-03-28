@@ -10,19 +10,19 @@ import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
 export default async function HomePage() {
   let daily: MangaListItem[] = [];
   let weekly: MangaListItem[] = [];
-  let latestUpdates: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 30 };
-  let recentlyAdded: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
-  let completeSeries: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 12 };
+  let latestUpdates: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 18 };
+  let recentlyAdded: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 8 };
+  let completeSeries: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 8 };
   let recentComments: RecentComment[] = [];
 
   try {
     [daily, weekly, latestUpdates, recentlyAdded, completeSeries, recentComments] = await Promise.all([
       mangaApi.rankings('daily', 1, 10),
       mangaApi.rankings('weekly', 1, 10),
-      mangaApi.list({ page: 1, limit: 30, sort: 'updated_at', order: 'desc' }),
-      mangaApi.list({ page: 1, limit: 12, sort: 'created_at', order: 'desc' }),
-      mangaApi.list({ page: 1, limit: 12, status: 'completed', sort: 'updated_at', order: 'desc' }),
-      commentApi.recent(10),
+      mangaApi.list({ page: 1, limit: 18, sort: 'updated_at', order: 'desc' }),
+      mangaApi.list({ page: 1, limit: 8, sort: 'created_at', order: 'desc' }),
+      mangaApi.list({ page: 1, limit: 8, status: 'completed', sort: 'updated_at', order: 'desc' }),
+      commentApi.recent(5),
     ]);
   } catch (err) {
     console.error('Failed to fetch homepage data:', err);

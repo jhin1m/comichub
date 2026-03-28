@@ -9,7 +9,7 @@ import { usePreferencesParams } from '@/hooks/use-preferences-params';
 import { apiClient } from '@/lib/api-client';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
 
-const LIMIT = 30;
+const LIMIT = 18;
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'All' },
