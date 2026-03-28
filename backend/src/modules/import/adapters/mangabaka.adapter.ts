@@ -1,9 +1,20 @@
-import { Injectable, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SourceAdapter } from './source-adapter.interface.js';
 import { ImportSource } from '../types/import-source.enum.js';
-import type { ExternalManga, ExternalLink } from '../types/external-manga.types.js';
-import type { MangaBakaSeries, MangaBakaSearchResult } from '../types/mangabaka-api.types.js';
+import type {
+  ExternalManga,
+  ExternalLink,
+} from '../types/external-manga.types.js';
+import type {
+  MangaBakaSeries,
+  MangaBakaSearchResult,
+} from '../types/mangabaka-api.types.js';
 import { ImportService } from '../services/import.service.js';
 
 @Injectable()
@@ -37,7 +48,9 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
   }
 
   async fetchManga(externalId: string): Promise<ExternalManga> {
-    const data = await this.request<MangaBakaSeries>(`/v1/series/${externalId}/full`);
+    const data = await this.request<MangaBakaSeries>(
+      `/v1/series/${externalId}/full`,
+    );
     return this.normalize(data);
   }
 
@@ -76,24 +89,31 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
       .filter(Boolean);
   }
 
-  private normalizeStatus(
-    status?: string,
-  ): ExternalManga['status'] {
+  private normalizeStatus(status?: string): ExternalManga['status'] {
     switch (status) {
-      case 'releasing': return 'ongoing';
-      case 'finished': return 'completed';
-      case 'hiatus': return 'hiatus';
-      case 'cancelled': return 'cancelled';
-      case 'dropped': return 'dropped';
-      default: return 'ongoing';
+      case 'releasing':
+        return 'ongoing';
+      case 'finished':
+        return 'completed';
+      case 'hiatus':
+        return 'hiatus';
+      case 'cancelled':
+        return 'cancelled';
+      case 'dropped':
+        return 'dropped';
+      default:
+        return 'ongoing';
     }
   }
 
   private normalizeType(type?: string): ExternalManga['type'] {
     switch (type) {
-      case 'manhwa': return 'manhwa';
-      case 'manhua': return 'manhua';
-      case 'doujinshi': return 'doujinshi';
+      case 'manhwa':
+        return 'manhwa';
+      case 'manhua':
+        return 'manhua';
+      case 'doujinshi':
+        return 'doujinshi';
       case 'manga':
       case 'novel':
       case 'oel':
@@ -107,11 +127,16 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
     rating?: string,
   ): ExternalManga['contentRating'] {
     switch (rating) {
-      case 'safe': return 'safe';
-      case 'suggestive': return 'suggestive';
-      case 'erotica': return 'erotica';
-      case 'pornographic': return 'pornographic';
-      default: return undefined;
+      case 'safe':
+        return 'safe';
+      case 'suggestive':
+        return 'suggestive';
+      case 'erotica':
+        return 'erotica';
+      case 'pornographic':
+        return 'pornographic';
+      default:
+        return undefined;
     }
   }
 
@@ -147,12 +172,14 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
     const res = await fetch(`${this.baseUrl}${path}`, {
       headers: {
         'x-api-key': this.apiKey,
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
     if (!res.ok) {
-      this.logger.error(`MangaBaka API error: ${res.status} ${res.statusText} — ${this.baseUrl}${path}`);
+      this.logger.error(
+        `MangaBaka API error: ${res.status} ${res.statusText} — ${this.baseUrl}${path}`,
+      );
       throw new BadRequestException(`MangaBaka API error: ${res.status}`);
     }
 

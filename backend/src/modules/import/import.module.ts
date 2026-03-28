@@ -9,7 +9,12 @@ import { ImportController } from './controllers/import.controller.js';
 @Module({
   imports: [MangaModule],
   controllers: [ImportController],
-  providers: [ImportService, ImportMappingService, MangaBakaAdapter, WeebDexAdapter],
+  providers: [
+    ImportService,
+    ImportMappingService,
+    MangaBakaAdapter,
+    WeebDexAdapter,
+  ],
   exports: [ImportService],
 })
 export class ImportModule {}

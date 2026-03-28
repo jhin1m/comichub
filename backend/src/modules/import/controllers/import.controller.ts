@@ -31,7 +31,10 @@ export class ImportController {
 
   @Get('search')
   @ApiOperation({ summary: 'Search external source for manga (admin only)' })
-  @ApiResponse({ status: 200, description: 'Search results from external source' })
+  @ApiResponse({
+    status: 200,
+    description: 'Search results from external source',
+  })
   search(@Query() dto: ImportSearchDto) {
     return this.importService.searchManga(dto.source, dto.q);
   }
@@ -45,10 +48,15 @@ export class ImportController {
   }
 
   @Post('manga/:id/sync')
-  @ApiOperation({ summary: 'Re-sync manga metadata from external source (admin only)' })
+  @ApiOperation({
+    summary: 'Re-sync manga metadata from external source (admin only)',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Manga synced successfully' })
-  @ApiResponse({ status: 404, description: 'Manga or source mapping not found' })
+  @ApiResponse({
+    status: 404,
+    description: 'Manga or source mapping not found',
+  })
   syncManga(@Param('id', ParseIntPipe) id: number) {
     return this.importService.syncManga(id);
   }

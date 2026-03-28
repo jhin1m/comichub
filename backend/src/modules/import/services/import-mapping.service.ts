@@ -14,7 +14,11 @@ import {
   mangaLinks,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
-import type { ExternalManga, ExternalLink, ImportResult } from '../types/external-manga.types.js';
+import type {
+  ExternalManga,
+  ExternalLink,
+  ImportResult,
+} from '../types/external-manga.types.js';
 import type { ImportSource } from '../types/import-source.enum.js';
 
 type TaxonomyTable = typeof genres | typeof artists | typeof authors;
@@ -23,7 +27,10 @@ type TaxonomyTable = typeof genres | typeof artists | typeof authors;
 export class ImportMappingService {
   constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
 
-  async resolveByName(table: TaxonomyTable, names: string[]): Promise<number[]> {
+  async resolveByName(
+    table: TaxonomyTable,
+    names: string[],
+  ): Promise<number[]> {
     if (!names.length) return [];
     const t = table as typeof genres;
     const slugMap = new Map(names.map((name) => [slugify(name), name]));
@@ -42,7 +49,15 @@ export class ImportMappingService {
     if (missing.length) {
       inserted = await this.db
         .insert(t)
-        .values(missing.map((s) => ({ name: slugMap.get(s)!, slug: s } as { name: string; slug: string })))
+        .values(
+          missing.map(
+            (s) =>
+              ({ name: slugMap.get(s)!, slug: s }) as {
+                name: string;
+                slug: string;
+              },
+          ),
+        )
         .onConflictDoNothing()
         .returning({ id: t.id });
     }
@@ -52,7 +67,9 @@ export class ImportMappingService {
       ...existing.map((r) => [r.slug, r.id] as [string, number]),
       ...inserted.map((r, i) => [missing[i], r.id] as [string, number]),
     ]);
-    return slugs.map((s) => idBySlug.get(s)).filter((id): id is number => id !== undefined);
+    return slugs
+      .map((s) => idBySlug.get(s))
+      .filter((id): id is number => id !== undefined);
   }
 
   async resolveGenres(names: string[], group = 'genre'): Promise<number[]> {
@@ -82,7 +99,9 @@ export class ImportMappingService {
       ...existing.map((r) => [r.slug, r.id] as [string, number]),
       ...inserted.map((r, i) => [missing[i], r.id] as [string, number]),
     ]);
-    return slugs.map((s) => idBySlug.get(s)).filter((id): id is number => id !== undefined);
+    return slugs
+      .map((s) => idBySlug.get(s))
+      .filter((id): id is number => id !== undefined);
   }
 
   async syncPivots(
@@ -100,7 +119,12 @@ export class ImportMappingService {
     for (const link of links) {
       await this.db
         .insert(mangaLinks)
-        .values({ mangaId, type: link.type, externalId: link.externalId, url: link.url })
+        .values({
+          mangaId,
+          type: link.type,
+          externalId: link.externalId,
+          url: link.url,
+        })
         .onConflictDoUpdate({
           target: [mangaLinks.mangaId, mangaLinks.type],
           set: { externalId: link.externalId, url: link.url },
@@ -108,7 +132,10 @@ export class ImportMappingService {
     }
   }
 
-  async upsertManga(external: ExternalManga, source: ImportSource): Promise<ImportResult> {
+  async upsertManga(
+    external: ExternalManga,
+    source: ImportSource,
+  ): Promise<ImportResult> {
     // Resolve taxonomy outside transaction (idempotent find-or-create)
     const genreIds = await this.resolveGenres(external.genres, 'genre');
     const themeIds = await this.resolveGenres(external.themes, 'theme');
@@ -124,9 +151,11 @@ export class ImportMappingService {
       description: external.description ?? null,
       cover: external.coverUrl ?? null,
       originalLanguage: external.originalLanguage ?? null,
-      status: (external.status ?? 'ongoing') as typeof manga.$inferInsert['status'],
-      type: (external.type ?? 'manga') as typeof manga.$inferInsert['type'],
-      contentRating: (external.contentRating ?? 'safe') as typeof manga.$inferInsert['contentRating'],
+      status: (external.status ??
+        'ongoing') as (typeof manga.$inferInsert)['status'],
+      type: (external.type ?? 'manga') as (typeof manga.$inferInsert)['type'],
+      contentRating: (external.contentRating ??
+        'safe') as (typeof manga.$inferInsert)['contentRating'],
       demographic: external.demographic ?? null,
       year: external.year ?? null,
     };
@@ -163,7 +192,7 @@ export class ImportMappingService {
             ),
           );
 
-        return { mangaId, slug: updated!.slug, created: false };
+        return { mangaId, slug: updated.slug, created: false };
       }
 
       // New manga — generate unique slug
@@ -181,7 +210,7 @@ export class ImportMappingService {
         .values({ ...mangaValues, slug })
         .returning({ id: manga.id, slug: manga.slug });
 
-      const mangaId = inserted!.id;
+      const mangaId = inserted.id;
 
       await tx.insert(mangaSources).values({
         mangaId,
@@ -193,7 +222,7 @@ export class ImportMappingService {
       await this.syncPivotsTx(tx, mangaId, allGenreIds, artistIds, authorIds);
       await this.upsertLinksTx(tx, mangaId, external.links);
 
-      return { mangaId, slug: inserted!.slug, created: true };
+      return { mangaId, slug: inserted.slug, created: true };
     });
   }
 
@@ -209,21 +238,36 @@ export class ImportMappingService {
     await tx.delete(mangaAuthors).where(eq(mangaAuthors.mangaId, mangaId));
 
     if (genreIds.length > 0) {
-      await tx.insert(mangaGenres).values(genreIds.map((genreId) => ({ mangaId, genreId })));
+      await tx
+        .insert(mangaGenres)
+        .values(genreIds.map((genreId) => ({ mangaId, genreId })));
     }
     if (artistIds.length > 0) {
-      await tx.insert(mangaArtists).values(artistIds.map((artistId) => ({ mangaId, artistId })));
+      await tx
+        .insert(mangaArtists)
+        .values(artistIds.map((artistId) => ({ mangaId, artistId })));
     }
     if (authorIds.length > 0) {
-      await tx.insert(mangaAuthors).values(authorIds.map((authorId) => ({ mangaId, authorId })));
+      await tx
+        .insert(mangaAuthors)
+        .values(authorIds.map((authorId) => ({ mangaId, authorId })));
     }
   }
 
-  private async upsertLinksTx(tx: DrizzleDB, mangaId: number, links: ExternalLink[]): Promise<void> {
+  private async upsertLinksTx(
+    tx: DrizzleDB,
+    mangaId: number,
+    links: ExternalLink[],
+  ): Promise<void> {
     for (const link of links) {
       await tx
         .insert(mangaLinks)
-        .values({ mangaId, type: link.type, externalId: link.externalId, url: link.url })
+        .values({
+          mangaId,
+          type: link.type,
+          externalId: link.externalId,
+          url: link.url,
+        })
         .onConflictDoUpdate({
           target: [mangaLinks.mangaId, mangaLinks.type],
           set: { externalId: link.externalId, url: link.url },

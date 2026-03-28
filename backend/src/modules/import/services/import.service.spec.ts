@@ -157,7 +157,9 @@ describe('ImportService', () => {
     });
 
     it('should throw on adapter fetch error', async () => {
-      mockMangaBakaAdapter.fetchManga.mockRejectedValueOnce(new Error('Fetch failed'));
+      mockMangaBakaAdapter.fetchManga.mockRejectedValueOnce(
+        new Error('Fetch failed'),
+      );
 
       await expect(
         service.importManga(ImportSource.MANGABAKA, '123'),
@@ -205,7 +207,10 @@ describe('ImportService', () => {
       mockMangaBakaAdapter.searchManga.mockResolvedValueOnce(results);
       mockDb.select.mockReturnValue(buildChain([]));
 
-      const searchResults = await service.searchManga(ImportSource.MANGABAKA, 'test');
+      const searchResults = await service.searchManga(
+        ImportSource.MANGABAKA,
+        'test',
+      );
 
       expect(searchResults).toHaveLength(2);
       expect(searchResults[0].title).toBe('Result 1');
@@ -232,7 +237,10 @@ describe('ImportService', () => {
         buildChain([{ externalId: '1', mangaId: 42 }]),
       );
 
-      const searchResults = await service.searchManga(ImportSource.MANGABAKA, 'test');
+      const searchResults = await service.searchManga(
+        ImportSource.MANGABAKA,
+        'test',
+      );
 
       expect(searchResults[0].alreadyImported).toBe(true);
       expect(searchResults[0].internalId).toBe(42);
@@ -256,7 +264,10 @@ describe('ImportService', () => {
       mockMangaBakaAdapter.searchManga.mockResolvedValueOnce(results);
       mockDb.select.mockReturnValue(buildChain([]));
 
-      const searchResults = await service.searchManga(ImportSource.MANGABAKA, 'test');
+      const searchResults = await service.searchManga(
+        ImportSource.MANGABAKA,
+        'test',
+      );
 
       expect(searchResults[0].alreadyImported).toBe(false);
       expect(searchResults[0].internalId).toBeUndefined();
@@ -266,7 +277,10 @@ describe('ImportService', () => {
       mockMangaBakaAdapter.searchManga.mockResolvedValueOnce([]);
       mockDb.select.mockReturnValue(buildChain([]));
 
-      const searchResults = await service.searchManga(ImportSource.MANGABAKA, 'nonexistent');
+      const searchResults = await service.searchManga(
+        ImportSource.MANGABAKA,
+        'nonexistent',
+      );
 
       expect(searchResults).toEqual([]);
     });
@@ -360,7 +374,9 @@ describe('ImportService', () => {
           },
         ]),
       );
-      mockMangaBakaAdapter.fetchManga.mockRejectedValueOnce(new Error('API error'));
+      mockMangaBakaAdapter.fetchManga.mockRejectedValueOnce(
+        new Error('API error'),
+      );
 
       await expect(service.syncManga(42)).rejects.toThrow(BadRequestException);
     });

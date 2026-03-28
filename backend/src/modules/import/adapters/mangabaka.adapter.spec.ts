@@ -13,7 +13,8 @@ describe('MangaBakaAdapter', () => {
   beforeEach(async () => {
     mockConfig = {
       get: vi.fn((key: string) => {
-        if (key === 'import.mangabaka.baseUrl') return 'https://api.mangabaka.dev';
+        if (key === 'import.mangabaka.baseUrl')
+          return 'https://api.mangabaka.dev';
         if (key === 'import.mangabaka.apiKey') return 'mb-test-key';
         return '';
       }),
@@ -357,9 +358,18 @@ describe('MangaBakaAdapter', () => {
 
       const result = await adapter.fetchManga('1');
       expect(result.links).toHaveLength(3);
-      expect(result.links).toContainEqual({ type: 'anilist', externalId: 'al-123' });
-      expect(result.links).toContainEqual({ type: 'mal', externalId: 'mal-456' });
-      expect(result.links).toContainEqual({ type: 'kitsu', externalId: 'kitsu-789' });
+      expect(result.links).toContainEqual({
+        type: 'anilist',
+        externalId: 'al-123',
+      });
+      expect(result.links).toContainEqual({
+        type: 'mal',
+        externalId: 'mal-456',
+      });
+      expect(result.links).toContainEqual({
+        type: 'kitsu',
+        externalId: 'kitsu-789',
+      });
     });
 
     it('should parse link type from URL in links array', async () => {
@@ -380,9 +390,18 @@ describe('MangaBakaAdapter', () => {
 
       const result = await adapter.fetchManga('1');
       expect(result.links).toHaveLength(3);
-      expect(result.links).toContainEqual({ type: 'mal', url: 'https://myanimelist.net/manga/123' });
-      expect(result.links).toContainEqual({ type: 'anilist', url: 'https://anilist.co/manga/456' });
-      expect(result.links).toContainEqual({ type: 'kitsu', url: 'https://kitsu.io/manga/789' });
+      expect(result.links).toContainEqual({
+        type: 'mal',
+        url: 'https://myanimelist.net/manga/123',
+      });
+      expect(result.links).toContainEqual({
+        type: 'anilist',
+        url: 'https://anilist.co/manga/456',
+      });
+      expect(result.links).toContainEqual({
+        type: 'kitsu',
+        url: 'https://kitsu.io/manga/789',
+      });
     });
 
     it('should handle missing optional fields gracefully', async () => {
@@ -424,7 +443,7 @@ describe('MangaBakaAdapter', () => {
         {
           headers: {
             'x-api-key': 'mb-test-key',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
         },
       );
@@ -455,7 +474,9 @@ describe('MangaBakaAdapter', () => {
         statusText: 'Not Found',
       });
 
-      await expect(adapter.fetchManga('999')).rejects.toThrow(BadRequestException);
+      await expect(adapter.fetchManga('999')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should handle search with no results', async () => {

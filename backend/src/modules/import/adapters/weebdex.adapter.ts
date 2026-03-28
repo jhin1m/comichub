@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SourceAdapter } from './source-adapter.interface.js';
 import { ImportSource } from '../types/import-source.enum.js';
@@ -66,7 +71,9 @@ export class WeebDexAdapter implements SourceAdapter, OnModuleInit {
     const url = `${this.baseUrl}${path}`;
     const res = await fetch(url);
     if (!res.ok) {
-      this.logger.error(`WeebDex API error: ${res.status} ${res.statusText} — ${url}`);
+      this.logger.error(
+        `WeebDex API error: ${res.status} ${res.statusText} — ${url}`,
+      );
       throw new BadRequestException(`WeebDex API error: ${res.status}`);
     }
     return res.json() as Promise<T>;

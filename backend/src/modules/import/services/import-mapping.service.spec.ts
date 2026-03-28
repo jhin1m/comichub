@@ -42,10 +42,7 @@ describe('ImportMappingService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ImportMappingService,
-        { provide: DRIZZLE, useValue: mockDb },
-      ],
+      providers: [ImportMappingService, { provide: DRIZZLE, useValue: mockDb }],
     }).compile();
 
     service = module.get<ImportMappingService>(ImportMappingService);
@@ -62,7 +59,9 @@ describe('ImportMappingService', () => {
       // Batch lookup: returns existing record with slug
       mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'action' }]));
 
-      const result = await service['resolveByName'](mockTable as any, ['Action']);
+      const result = await service['resolveByName'](mockTable as any, [
+        'Action',
+      ]);
 
       expect(result).toContain(1);
     });
@@ -76,7 +75,9 @@ describe('ImportMappingService', () => {
       const insertChain = buildChain([{ id: 2 }]);
       mockDb.insert.mockReturnValue(insertChain);
 
-      const result = await service['resolveByName'](mockTable as any, ['NewGenre']);
+      const result = await service['resolveByName'](mockTable as any, [
+        'NewGenre',
+      ]);
 
       expect(result).toContain(2);
       expect(mockDb.insert).toHaveBeenCalled();
@@ -91,7 +92,10 @@ describe('ImportMappingService', () => {
       const insertChain = buildChain([{ id: 2 }]);
       mockDb.insert.mockReturnValue(insertChain);
 
-      const result = await service['resolveByName'](mockTable as any, ['Action', 'Comedy']);
+      const result = await service['resolveByName'](mockTable as any, [
+        'Action',
+        'Comedy',
+      ]);
 
       expect(result).toContain(1);
       expect(result).toContain(2);
@@ -220,9 +224,7 @@ describe('ImportMappingService', () => {
       const insertChain = buildChain([]);
       mockDb.insert.mockReturnValue(insertChain);
 
-      await service.upsertLinks(1, [
-        { type: 'mal', externalId: 'mal-123' },
-      ]);
+      await service.upsertLinks(1, [{ type: 'mal', externalId: 'mal-123' }]);
 
       expect(mockDb.insert).toHaveBeenCalled();
     });
@@ -233,7 +235,11 @@ describe('ImportMappingService', () => {
 
       await service.upsertLinks(1, [
         { type: 'mal', externalId: 'mal-123' },
-        { type: 'anilist', externalId: 'al-456', url: 'https://anilist.co/manga/456' },
+        {
+          type: 'anilist',
+          externalId: 'al-456',
+          url: 'https://anilist.co/manga/456',
+        },
       ]);
 
       expect(mockDb.insert).toHaveBeenCalledTimes(2);
@@ -292,9 +298,7 @@ describe('ImportMappingService', () => {
     });
 
     it('should update existing manga when source record found', async () => {
-      mockDb.select.mockReturnValue(
-        buildChain([{ mangaId: 1 }]),
-      );
+      mockDb.select.mockReturnValue(buildChain([{ mangaId: 1 }]));
 
       const updateChain = buildChain([{ slug: 'existing-manga' }]);
       mockDb.update.mockReturnValue(updateChain);
@@ -407,7 +411,9 @@ describe('ImportMappingService', () => {
         return buildChain([]);
       });
 
-      const insertChain = buildChain([{ id: 1, slug: 'conflicting-manga-1234567890' }]);
+      const insertChain = buildChain([
+        { id: 1, slug: 'conflicting-manga-1234567890' },
+      ]);
       mockDb.insert.mockReturnValue(insertChain);
 
       mockDb.delete.mockReturnValue(buildChain([]));
@@ -478,9 +484,7 @@ describe('ImportMappingService', () => {
     });
 
     it('should preserve optional fields in update', async () => {
-      mockDb.select.mockReturnValue(
-        buildChain([{ mangaId: 1 }]),
-      );
+      mockDb.select.mockReturnValue(buildChain([{ mangaId: 1 }]));
 
       const updateChain = buildChain([{ slug: 'manga' }]);
       mockDb.update.mockReturnValue(updateChain);

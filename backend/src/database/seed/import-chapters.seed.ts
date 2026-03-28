@@ -26,13 +26,19 @@ interface WDChapter {
 }
 
 function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 500);
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 500);
 }
 
 async function throttledFetch<T>(path: string): Promise<T> {
   const now = Date.now();
-  if (now - lastReq < 210) await new Promise((r) => setTimeout(r, 210 - (now - lastReq)));
+  if (now - lastReq < 210)
+    await new Promise((r) => setTimeout(r, 210 - (now - lastReq)));
   lastReq = Date.now();
   const res = await fetch(`${BASE_URL}${path}`);
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
@@ -73,7 +79,9 @@ async function importChaptersForManga(
   }
 
   // Sort by chapter number
-  filtered.sort((a, b) => parseFloat(a.chapter ?? '0') - parseFloat(b.chapter ?? '0'));
+  filtered.sort(
+    (a, b) => parseFloat(a.chapter ?? '0') - parseFloat(b.chapter ?? '0'),
+  );
 
   let inserted = 0;
   for (let i = 0; i < filtered.length; i++) {
@@ -82,7 +90,8 @@ async function importChaptersForManga(
     const chSlug = `chapter-${chNum}`;
 
     // Check if already exists
-    const [existing] = await db.select({ id: schema.chapters.id })
+    const [existing] = await db
+      .select({ id: schema.chapters.id })
       .from(schema.chapters)
       .where(
         and(
@@ -90,33 +99,46 @@ async function importChaptersForManga(
           eq(schema.chapters.number, chNum),
           eq(schema.chapters.language, 'en'),
         ),
-      ).limit(1);
+      )
+      .limit(1);
     if (existing) continue;
 
     // Check slug conflict
-    const [slugConflict] = await db.select({ id: schema.chapters.id })
+    const [slugConflict] = await db
+      .select({ id: schema.chapters.id })
       .from(schema.chapters)
-      .where(and(eq(schema.chapters.mangaId, mangaId), eq(schema.chapters.slug, chSlug)))
+      .where(
+        and(
+          eq(schema.chapters.mangaId, mangaId),
+          eq(schema.chapters.slug, chSlug),
+        ),
+      )
       .limit(1);
     const finalSlug = slugConflict ? `${chSlug}-${Date.now()}` : chSlug;
 
     try {
-      const [row] = await db.insert(schema.chapters).values({
-        mangaId,
-        number: chNum,
-        title: ch.title ?? null,
-        slug: finalSlug,
-        language: 'en',
-        volume: ch.volume ?? null,
-        order: i + 1,
-      }).returning({ id: schema.chapters.id });
+      const [row] = await db
+        .insert(schema.chapters)
+        .values({
+          mangaId,
+          number: chNum,
+          title: ch.title ?? null,
+          slug: finalSlug,
+          language: 'en',
+          volume: ch.volume ?? null,
+          order: i + 1,
+        })
+        .returning({ id: schema.chapters.id });
 
       // Track source
-      await db.insert(schema.chapterSources).values({
-        chapterId: row.id,
-        source: 'weebdex' as any,
-        externalId: ch.id,
-      }).onConflictDoNothing();
+      await db
+        .insert(schema.chapterSources)
+        .values({
+          chapterId: row.id,
+          source: 'weebdex' as any,
+          externalId: ch.id,
+        })
+        .onConflictDoNothing();
 
       inserted++;
     } catch (err) {
@@ -127,16 +149,25 @@ async function importChaptersForManga(
   // Update manga counters
   if (inserted > 0) {
     const lastCh = filtered[filtered.length - 1];
-    const [lastInserted] = await db.select({ id: schema.chapters.id })
+    const [lastInserted] = await db
+      .select({ id: schema.chapters.id })
       .from(schema.chapters)
-      .where(and(eq(schema.chapters.mangaId, mangaId), eq(schema.chapters.number, lastCh.chapter ?? '0')))
+      .where(
+        and(
+          eq(schema.chapters.mangaId, mangaId),
+          eq(schema.chapters.number, lastCh.chapter ?? '0'),
+        ),
+      )
       .limit(1);
 
-    await db.update(schema.manga).set({
-      chaptersCount: filtered.length,
-      lastChapterId: lastInserted?.id ?? null,
-      chapterUpdatedAt: new Date(),
-    }).where(eq(schema.manga.id, mangaId));
+    await db
+      .update(schema.manga)
+      .set({
+        chaptersCount: filtered.length,
+        lastChapterId: lastInserted?.id ?? null,
+        chapterUpdatedAt: new Date(),
+      })
+      .where(eq(schema.manga.id, mangaId));
   }
 
   return inserted;
@@ -144,11 +175,12 @@ async function importChaptersForManga(
 
 async function main() {
   // Get all weebdex manga sources
-  const sources = await db.select({
-    mangaId: schema.mangaSources.mangaId,
-    externalId: schema.mangaSources.externalId,
-    title: schema.manga.title,
-  })
+  const sources = await db
+    .select({
+      mangaId: schema.mangaSources.mangaId,
+      externalId: schema.mangaSources.externalId,
+      title: schema.manga.title,
+    })
     .from(schema.mangaSources)
     .innerJoin(schema.manga, eq(schema.manga.id, schema.mangaSources.mangaId))
     .where(eq(schema.mangaSources.source, 'weebdex' as any));
@@ -164,15 +196,24 @@ async function main() {
       const count = await importChaptersForManga(mangaId, title, externalId);
       totalChapters += count;
       if (count > 0) mangaWithChapters++;
-      console.log(`  [${i + 1}/${sources.length}] ${title} → ${count} chapters`);
+      console.log(
+        `  [${i + 1}/${sources.length}] ${title} → ${count} chapters`,
+      );
     } catch (err) {
-      console.log(`  [${i + 1}/${sources.length}] ${title} → FAIL: ${(err as Error).message}`);
+      console.log(
+        `  [${i + 1}/${sources.length}] ${title} → FAIL: ${(err as Error).message}`,
+      );
     }
   }
 
-  console.log(`\nDone: ${totalChapters} chapters imported for ${mangaWithChapters}/${sources.length} manga`);
+  console.log(
+    `\nDone: ${totalChapters} chapters imported for ${mangaWithChapters}/${sources.length} manga`,
+  );
 }
 
 main()
-  .catch((err) => { console.error('Seed failed:', err); process.exit(1); })
+  .catch((err) => {
+    console.error('Seed failed:', err);
+    process.exit(1);
+  })
   .finally(() => client.end());
