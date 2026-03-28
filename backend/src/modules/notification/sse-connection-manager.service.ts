@@ -19,7 +19,9 @@ export class SseConnectionManagerService {
     const userConns = this.connections.get(userId)!;
 
     // Evict oldest connection if limit reached
-    if (userConns.size >= SseConnectionManagerService.MAX_CONNECTIONS_PER_USER) {
+    if (
+      userConns.size >= SseConnectionManagerService.MAX_CONNECTIONS_PER_USER
+    ) {
       const oldest = userConns.values().next().value;
       if (oldest) {
         oldest.complete();

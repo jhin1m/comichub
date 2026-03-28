@@ -114,7 +114,12 @@ export class ChapterService {
     dto: CreateChapterDto,
   ): Promise<ChapterListItem> {
     const [mangaRow] = await this.db
-      .select({ id: manga.id, title: manga.title, slug: manga.slug, cover: manga.cover })
+      .select({
+        id: manga.id,
+        title: manga.title,
+        slug: manga.slug,
+        cover: manga.cover,
+      })
       .from(manga)
       .where(and(eq(manga.id, mangaId), isNull(manga.deletedAt)))
       .limit(1);

@@ -183,12 +183,18 @@ export class MangaService {
     }
 
     if (excludeTypes) {
-      const types = excludeTypes.split(',').map((s) => s.trim()).filter(Boolean) as MangaType[];
+      const types = excludeTypes
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean) as MangaType[];
       if (types.length) conditions.push(notInArray(manga.type, types));
     }
 
     if (excludeDemographics) {
-      const demos = excludeDemographics.split(',').map((s) => s.trim()).filter(Boolean);
+      const demos = excludeDemographics
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (demos.length) conditions.push(notInArray(manga.demographic, demos));
     }
 
@@ -245,7 +251,10 @@ export class MangaService {
     return { slug: row.slug };
   }
 
-  async findBySlug(slug: string, isAuthenticated = false): Promise<MangaDetail> {
+  async findBySlug(
+    slug: string,
+    isAuthenticated = false,
+  ): Promise<MangaDetail> {
     const whereConditions = [eq(manga.slug, slug), isNull(manga.deletedAt)];
     if (!isAuthenticated) {
       whereConditions.push(eq(manga.isNsfw, false));
@@ -309,7 +318,9 @@ export class MangaService {
     const slug = dto.slug ?? slugify(dto.title);
 
     if (!slug) {
-      throw new BadRequestException('Could not generate a valid slug from the provided title');
+      throw new BadRequestException(
+        'Could not generate a valid slug from the provided title',
+      );
     }
 
     const [existing] = await this.db

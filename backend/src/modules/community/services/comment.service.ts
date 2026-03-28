@@ -310,7 +310,12 @@ export class CommentService {
       .orderBy(comments.createdAt);
   }
 
-  async create(userId: number, dto: CreateCommentDto, userName?: string, userAvatar?: string | null) {
+  async create(
+    userId: number,
+    dto: CreateCommentDto,
+    userName?: string,
+    userAvatar?: string | null,
+  ) {
     if (dto.parentId) {
       await this.validateDepth(dto.parentId);
     }
@@ -340,21 +345,31 @@ export class CommentService {
           dto.commentableType === CommentableType.MANGA
             ? dto.commentableId
             : null;
-        if (dto.commentableType === CommentableType.MANGA && dto.commentableId) {
+        if (
+          dto.commentableType === CommentableType.MANGA &&
+          dto.commentableId
+        ) {
           const [m] = await this.db
             .select({ slug: manga.slug })
             .from(manga)
             .where(eq(manga.id, dto.commentableId))
             .limit(1);
           event.mangaSlug = m?.slug ?? null;
-        } else if (dto.commentableType === CommentableType.CHAPTER && dto.commentableId) {
+        } else if (
+          dto.commentableType === CommentableType.CHAPTER &&
+          dto.commentableId
+        ) {
           const [ch] = await this.db
             .select({ mangaId: chapters.mangaId })
             .from(chapters)
             .where(eq(chapters.id, dto.commentableId))
             .limit(1);
           if (ch?.mangaId) {
-            const [m] = await this.db.select({ slug: manga.slug }).from(manga).where(eq(manga.id, ch.mangaId)).limit(1);
+            const [m] = await this.db
+              .select({ slug: manga.slug })
+              .from(manga)
+              .where(eq(manga.id, ch.mangaId))
+              .limit(1);
             event.mangaSlug = m?.slug ?? null;
           } else {
             event.mangaSlug = null;
@@ -420,9 +435,7 @@ export class CommentService {
 
       // If existing reaction: remove it (and if it's the opposite type, we'll insert the new one)
       if (existing) {
-        await tx
-          .delete(commentLikes)
-          .where(eq(commentLikes.id, existing.id));
+        await tx.delete(commentLikes).where(eq(commentLikes.id, existing.id));
 
         // Decrement the old counter
         if (existing.isDislike) {
@@ -486,7 +499,8 @@ export class CommentService {
         disliked: isDislike,
         likesCount: c?.likesCount ?? 0,
         dislikesCount: c?.dislikesCount ?? 0,
-        emitLike: !isDislike && !!(commentData.userId && commentData.userId !== userId),
+        emitLike:
+          !isDislike && !!(commentData.userId && commentData.userId !== userId),
       };
     });
 
@@ -498,21 +512,31 @@ export class CommentService {
       event.likerAvatar = userAvatar ?? null;
       event.commentOwnerId = commentData.userId!;
       event.commentPreview = (commentData.content ?? '').slice(0, 100);
-      if (commentData.commentableType === 'manga' && commentData.commentableId) {
+      if (
+        commentData.commentableType === 'manga' &&
+        commentData.commentableId
+      ) {
         const [m] = await this.db
           .select({ slug: manga.slug })
           .from(manga)
           .where(eq(manga.id, commentData.commentableId))
           .limit(1);
         event.mangaSlug = m?.slug ?? null;
-      } else if (commentData.commentableType === 'chapter' && commentData.commentableId) {
+      } else if (
+        commentData.commentableType === 'chapter' &&
+        commentData.commentableId
+      ) {
         const [ch] = await this.db
           .select({ mangaId: chapters.mangaId })
           .from(chapters)
           .where(eq(chapters.id, commentData.commentableId))
           .limit(1);
         if (ch?.mangaId) {
-          const [m] = await this.db.select({ slug: manga.slug }).from(manga).where(eq(manga.id, ch.mangaId)).limit(1);
+          const [m] = await this.db
+            .select({ slug: manga.slug })
+            .from(manga)
+            .where(eq(manga.id, ch.mangaId))
+            .limit(1);
           event.mangaSlug = m?.slug ?? null;
         } else {
           event.mangaSlug = null;
@@ -528,8 +552,19 @@ export class CommentService {
   }
 
   /** Backward-compatible wrapper */
-  async toggleLike(commentId: number, userId: number, likerName?: string, likerAvatar?: string | null) {
-    return this.toggleReaction(commentId, userId, false, likerName, likerAvatar);
+  async toggleLike(
+    commentId: number,
+    userId: number,
+    likerName?: string,
+    likerAvatar?: string | null,
+  ) {
+    return this.toggleReaction(
+      commentId,
+      userId,
+      false,
+      likerName,
+      likerAvatar,
+    );
   }
 
   async toggleDislike(commentId: number, userId: number) {

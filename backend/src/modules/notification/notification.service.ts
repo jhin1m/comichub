@@ -107,7 +107,10 @@ export class NotificationService {
     }
 
     const followerIds = followerRows.map((r) => r.userId);
-    this.sseManager.pushToUsers(followerIds, { type: 'chapter.created', ...payload });
+    this.sseManager.pushToUsers(followerIds, {
+      type: 'chapter.created',
+      ...payload,
+    });
   }
 
   async createSingle(

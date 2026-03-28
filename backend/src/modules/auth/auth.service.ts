@@ -113,15 +113,25 @@ export class AuthService {
     );
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync({ ...payload }, {
-        secret: accessSecret,
-        expiresIn: accessExpiry as `${number}${'s' | 'm' | 'h' | 'd' | 'w'}` | number,
-      }),
+      this.jwtService.signAsync(
+        { ...payload },
+        {
+          secret: accessSecret,
+          expiresIn: accessExpiry as
+            | `${number}${'s' | 'm' | 'h' | 'd' | 'w'}`
+            | number,
+        },
+      ),
 
-      this.jwtService.signAsync({ ...payload }, {
-        secret: refreshSecret,
-        expiresIn: refreshExpiry as `${number}${'s' | 'm' | 'h' | 'd' | 'w'}` | number,
-      }),
+      this.jwtService.signAsync(
+        { ...payload },
+        {
+          secret: refreshSecret,
+          expiresIn: refreshExpiry as
+            | `${number}${'s' | 'm' | 'h' | 'd' | 'w'}`
+            | number,
+        },
+      ),
     ]);
 
     // Store refresh token in Redis (rotate on each use)

@@ -72,7 +72,8 @@ export class SearchQueryDto extends PaginationDto {
   excludeGenres?: string;
 
   @ApiPropertyOptional({
-    description: 'Comma-separated manga types to exclude (e.g. manhwa,doujinshi)',
+    description:
+      'Comma-separated manga types to exclude (e.g. manhwa,doujinshi)',
   })
   @IsOptional()
   @IsString()

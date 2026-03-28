@@ -140,7 +140,8 @@ export class MangaQueryDto extends PaginationDto {
   minRating?: number;
 
   @ApiPropertyOptional({
-    description: 'Comma-separated manga types to exclude (e.g. manhwa,doujinshi)',
+    description:
+      'Comma-separated manga types to exclude (e.g. manhwa,doujinshi)',
   })
   @IsOptional()
   @IsString()

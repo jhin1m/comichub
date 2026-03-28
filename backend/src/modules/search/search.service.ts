@@ -40,7 +40,19 @@ export class SearchService {
   ) {}
 
   async search(query: SearchQueryDto): Promise<PaginatedResult<MangaListItem>> {
-    const { page, limit, offset, q, genre, status, type, sort, excludeGenres, excludeTypes, excludeDemographics } = query;
+    const {
+      page,
+      limit,
+      offset,
+      q,
+      genre,
+      status,
+      type,
+      sort,
+      excludeGenres,
+      excludeTypes,
+      excludeDemographics,
+    } = query;
 
     const conditions: SQL[] = [isNull(manga.deletedAt)];
 
@@ -81,7 +93,10 @@ export class SearchService {
     }
 
     if (excludeGenres) {
-      const slugs = excludeGenres.split(',').map((s) => s.trim()).filter(Boolean);
+      const slugs = excludeGenres
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (slugs.length) {
         const genreRows = await this.db
           .select({ id: genres.id })
@@ -101,12 +116,18 @@ export class SearchService {
     }
 
     if (excludeTypes) {
-      const types = excludeTypes.split(',').map((s) => s.trim()).filter(Boolean) as MangaType[];
+      const types = excludeTypes
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean) as MangaType[];
       if (types.length) conditions.push(notInArray(manga.type, types));
     }
 
     if (excludeDemographics) {
-      const demos = excludeDemographics.split(',').map((s) => s.trim()).filter(Boolean);
+      const demos = excludeDemographics
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (demos.length) conditions.push(notInArray(manga.demographic, demos));
     }
 
