@@ -64,6 +64,13 @@
       "when": 1774511840270,
       "tag": "0008_comic_import_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774857416000,
+      "tag": "0009_bookmark_folders",
+      "breakpoints": true
     }
   ]
 }

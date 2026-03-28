@@ -1,14 +1,24 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { follows, manga } from '../../../database/schema/index.js';
 import type { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import type { FollowItem, PaginatedResult } from '../types/user.types.js';
+import { BookmarkService } from '../../bookmark/services/bookmark.service.js';
 
 @Injectable()
 export class FollowService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDB) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDB,
+    @Inject(forwardRef(() => BookmarkService))
+    private readonly bookmarkService: BookmarkService,
+  ) {}
 
   async toggleFollow(
     userId: number,
@@ -21,35 +31,17 @@ export class FollowService {
 
     if (!mangaRow) throw new NotFoundException('Manga not found');
 
-    return this.db.transaction(async (tx) => {
-      const existing = await tx.query.follows.findFirst({
-        where: and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)),
-      });
-
-      if (existing) {
-        await tx
-          .delete(follows)
-          .where(and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)));
-
-        const [updated] = await tx
-          .update(manga)
-          .set({ followersCount: sql`greatest(${manga.followersCount} - 1, 0)` })
-          .where(eq(manga.id, mangaId))
-          .returning({ followersCount: manga.followersCount });
-
-        return { followed: false, followersCount: updated?.followersCount ?? 0 };
-      }
-
-      await tx.insert(follows).values({ userId, mangaId });
-
-      const [updated] = await tx
-        .update(manga)
-        .set({ followersCount: sql`${manga.followersCount} + 1` })
-        .where(eq(manga.id, mangaId))
-        .returning({ followersCount: manga.followersCount });
-
-      return { followed: true, followersCount: updated?.followersCount ?? 0 };
+    const existing = await this.db.query.follows.findFirst({
+      where: and(eq(follows.userId, userId), eq(follows.mangaId, mangaId)),
     });
+
+    if (existing) {
+      const result = await this.bookmarkService.removeBookmark(userId, mangaId);
+      return { followed: false, followersCount: result.followersCount };
+    }
+
+    const result = await this.bookmarkService.addBookmark(userId, mangaId);
+    return { followed: true, followersCount: result.followersCount };
   }
 
   async isFollowed(
@@ -85,6 +77,7 @@ export class FollowService {
         .select({
           id: follows.id,
           mangaId: follows.mangaId,
+          folderId: follows.folderId,
           createdAt: follows.createdAt,
           manga: {
             id: manga.id,

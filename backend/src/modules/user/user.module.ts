@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
+import { BookmarkModule } from '../bookmark/bookmark.module.js';
 import { UserService } from './services/user.service.js';
 import { FollowService } from './services/follow.service.js';
 import { HistoryService } from './services/history.service.js';
@@ -11,8 +12,13 @@ import { AdminUserController } from './controllers/admin-user.controller.js';
 import { ContentPreferencesController } from './controllers/content-preferences.controller.js';
 
 @Module({
-  imports: [AuthModule],
-  providers: [UserService, FollowService, HistoryService, ContentPreferencesService],
+  imports: [AuthModule, forwardRef(() => BookmarkModule)],
+  providers: [
+    UserService,
+    FollowService,
+    HistoryService,
+    ContentPreferencesService,
+  ],
   controllers: [
     ContentPreferencesController,
     UserController,
@@ -20,6 +26,11 @@ import { ContentPreferencesController } from './controllers/content-preferences.
     HistoryController,
     AdminUserController,
   ],
-  exports: [UserService, FollowService, HistoryService, ContentPreferencesService],
+  exports: [
+    UserService,
+    FollowService,
+    HistoryService,
+    ContentPreferencesService,
+  ],
 })
 export class UserModule {}

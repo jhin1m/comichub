@@ -162,9 +162,7 @@ export class UserService {
   async listUsers(
     query: UserQueryDto,
   ): Promise<
-    PaginatedResult<
-      Omit<typeof users.$inferSelect, 'password' | 'googleId'>
-    >
+    PaginatedResult<Omit<typeof users.$inferSelect, 'password' | 'googleId'>>
   > {
     const { page, limit, offset, search } = query;
 

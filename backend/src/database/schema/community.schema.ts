@@ -98,6 +98,34 @@ export const ratings = pgTable(
   ],
 );
 
+// bookmark_folders — user-owned folders for organizing followed manga
+export const bookmarkFolders = pgTable(
+  'bookmark_folders',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 50 }).notNull(),
+    slug: varchar('slug', { length: 50 }).notNull(),
+    order: integer('order').default(0).notNull(),
+    isDefault: boolean('is_default').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('bookmark_folders_user_slug_idx').on(table.userId, table.slug),
+    index('bookmark_folders_user_idx').on(table.userId),
+  ],
+);
+
+export const DEFAULT_BOOKMARK_FOLDERS = [
+  { name: 'Reading', slug: 'reading', order: 0 },
+  { name: 'Completed', slug: 'completed', order: 1 },
+  { name: 'On-Hold', slug: 'on-hold', order: 2 },
+  { name: 'Plan to Read', slug: 'plan-to-read', order: 3 },
+  { name: 'Dropped', slug: 'dropped', order: 4 },
+] as const;
+
 // follows — user follows manga
 export const follows = pgTable(
   'follows',
@@ -109,10 +137,14 @@ export const follows = pgTable(
     mangaId: integer('manga_id')
       .notNull()
       .references(() => manga.id, { onDelete: 'cascade' }),
+    folderId: integer('folder_id').references(() => bookmarkFolders.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
     uniqueIndex('follows_user_manga_idx').on(table.userId, table.mangaId),
+    index('follows_folder_idx').on(table.folderId),
   ],
 );
 
@@ -190,4 +222,7 @@ export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
 export type Rating = typeof ratings.$inferSelect;
 export type Follow = typeof follows.$inferSelect;
+export type NewFollow = typeof follows.$inferInsert;
+export type BookmarkFolder = typeof bookmarkFolders.$inferSelect;
+export type NewBookmarkFolder = typeof bookmarkFolders.$inferInsert;
 export type ReadingHistory = typeof readingHistory.$inferSelect;

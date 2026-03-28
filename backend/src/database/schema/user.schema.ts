@@ -53,7 +53,10 @@ export const userContentPreferences = pgTable('user_content_preferences', {
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
   hideNsfw: boolean('hide_nsfw').default(true).notNull(),
-  excludedTypes: jsonb('excluded_types').$type<string[]>().default([]).notNull(),
+  excludedTypes: jsonb('excluded_types')
+    .$type<string[]>()
+    .default([])
+    .notNull(),
   excludedDemographics: jsonb('excluded_demographics')
     .$type<string[]>()
     .default([])
@@ -73,7 +76,6 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
-export type UserContentPreferences =
-  typeof userContentPreferences.$inferSelect;
+export type UserContentPreferences = typeof userContentPreferences.$inferSelect;
 export type NewUserContentPreferences =
   typeof userContentPreferences.$inferInsert;

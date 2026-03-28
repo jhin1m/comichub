@@ -49,12 +49,21 @@ describe('Follows Integration', () => {
       ctx.db.query.users.findFirst.mockResolvedValue(factory.user());
       ctx.db.query.follows.findFirst.mockResolvedValue(null); // not following
 
+      // Support both .where() await and .where().limit() await (BookmarkService chain)
       ctx.db.select.mockImplementation(() => ({
         from: () => ({
-          where: () => Promise.resolve([{ id: 1, followersCount: 0 }]),
+          where: () => ({
+            limit: () => Promise.resolve([{ id: 1, followersCount: 0 }]),
+            then: (resolve: any) => resolve([{ id: 1, followersCount: 0 }]),
+          }),
         }),
       }));
-      ctx.db.insert.mockReturnValue({ values: () => Promise.resolve() });
+      ctx.db.insert.mockReturnValue({
+        values: () => ({
+          onConflictDoNothing: () => Promise.resolve(),
+          then: (resolve: any) => resolve(),
+        }),
+      });
       ctx.db.update.mockReturnValue({
         set: () => ({
           where: () => ({
@@ -77,20 +86,33 @@ describe('Follows Integration', () => {
       ctx.db.query.users.findFirst.mockResolvedValue(factory.user());
       ctx.db.query.follows.findFirst.mockResolvedValue({ id: 5, userId: 1, mangaId: 1 });
 
+      // Support both .where() await and .where().limit() await (BookmarkService chain)
       ctx.db.select.mockImplementation(() => ({
         from: () => ({
-          where: () => Promise.resolve([{ id: 1, followersCount: 1 }]),
-        }),
-      }));
-      ctx.db.delete.mockReturnValue({
-        where: () => Promise.resolve(),
-      });
-      ctx.db.update.mockReturnValue({
-        set: () => ({
           where: () => ({
-            returning: () => Promise.resolve([{ followersCount: 0 }]),
+            limit: () => Promise.resolve([{ id: 1, followersCount: 1 }]),
+            then: (resolve: any) => resolve([{ id: 1, followersCount: 1 }]),
           }),
         }),
+      }));
+
+      // BookmarkService.removeBookmark uses a transaction with delete+update
+      ctx.db.transaction.mockImplementation(async (fn: any) => {
+        const tx = {
+          delete: () => ({
+            where: () => ({
+              returning: () => Promise.resolve([{ id: 5 }]),
+            }),
+          }),
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: () => Promise.resolve([{ followersCount: 0 }]),
+              }),
+            }),
+          }),
+        };
+        return fn(tx);
       });
 
       const res = await ctx.req

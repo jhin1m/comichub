@@ -1,9 +1,5 @@
 import { relations } from 'drizzle-orm';
-import {
-  users,
-  userProfiles,
-  userContentPreferences,
-} from './user.schema.js';
+import { users, userProfiles, userContentPreferences } from './user.schema.js';
 import {
   manga,
   genres,
@@ -25,6 +21,7 @@ import {
   commentLikes,
   ratings,
   follows,
+  bookmarkFolders,
   readingHistory,
   chapterReports,
   stickers,
@@ -53,6 +50,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   commentLikes: many(commentLikes),
   ratings: many(ratings),
   follows: many(follows),
+  bookmarkFolders: many(bookmarkFolders),
   readingHistory: many(readingHistory),
   chapterReports: many(chapterReports),
   achievements: many(userAchievements),
@@ -161,7 +159,10 @@ export const mangaSourcesRelations = relations(mangaSources, ({ one }) => ({
 }));
 
 export const chapterSourcesRelations = relations(chapterSources, ({ one }) => ({
-  chapter: one(chapters, { fields: [chapterSources.chapterId], references: [chapters.id] }),
+  chapter: one(chapters, {
+    fields: [chapterSources.chapterId],
+    references: [chapters.id],
+  }),
 }));
 
 export const mangaLinksRelations = relations(mangaLinks, ({ one }) => ({
@@ -187,9 +188,24 @@ export const ratingsRelations = relations(ratings, ({ one }) => ({
   manga: one(manga, { fields: [ratings.mangaId], references: [manga.id] }),
 }));
 
+export const bookmarkFoldersRelations = relations(
+  bookmarkFolders,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [bookmarkFolders.userId],
+      references: [users.id],
+    }),
+    follows: many(follows),
+  }),
+);
+
 export const followsRelations = relations(follows, ({ one }) => ({
   user: one(users, { fields: [follows.userId], references: [users.id] }),
   manga: one(manga, { fields: [follows.mangaId], references: [manga.id] }),
+  folder: one(bookmarkFolders, {
+    fields: [follows.folderId],
+    references: [bookmarkFolders.id],
+  }),
 }));
 
 export const readingHistoryRelations = relations(readingHistory, ({ one }) => ({

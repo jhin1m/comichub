@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { FollowService } from './follow.service.js';
+import { BookmarkService } from '../../bookmark/services/bookmark.service.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
@@ -29,6 +30,11 @@ function buildChain(resolvedValue: any = []) {
 
 const mangaFixture = { id: 1, followersCount: 10 };
 
+const mockBookmarkService = {
+  addBookmark: vi.fn().mockResolvedValue({ bookmarked: true, folderId: 1, followersCount: 11 }),
+  removeBookmark: vi.fn().mockResolvedValue({ bookmarked: false, followersCount: 9 }),
+};
+
 describe('FollowService', () => {
   let service: FollowService;
   let mockDb: any;
@@ -45,8 +51,15 @@ describe('FollowService', () => {
       transaction: vi.fn((cb: (tx: any) => Promise<any>) => cb(mockDb)),
     };
 
+    vi.mocked(mockBookmarkService.addBookmark).mockResolvedValue({ bookmarked: true, folderId: 1, followersCount: 11 });
+    vi.mocked(mockBookmarkService.removeBookmark).mockResolvedValue({ bookmarked: false, followersCount: 9 });
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FollowService, { provide: DRIZZLE, useValue: mockDb }],
+      providers: [
+        FollowService,
+        { provide: DRIZZLE, useValue: mockDb },
+        { provide: BookmarkService, useValue: mockBookmarkService },
+      ],
     }).compile();
 
     service = module.get<FollowService>(FollowService);
@@ -69,25 +82,21 @@ describe('FollowService', () => {
     it('should unfollow when already following', async () => {
       mockDb.select.mockReturnValue(buildChain([mangaFixture]));
       mockDb.query.follows.findFirst.mockResolvedValue({ id: 1 });
-      mockDb.delete.mockReturnValue(buildChain([]));
-      mockDb.update.mockReturnValue(buildChain([{ followersCount: 9 }]));
 
       const result = await service.toggleFollow(10, 1);
       expect(result.followed).toBe(false);
       expect(result.followersCount).toBe(9);
-      expect(mockDb.delete).toHaveBeenCalled();
+      expect(mockBookmarkService.removeBookmark).toHaveBeenCalledWith(10, 1);
     });
 
     it('should follow when not yet following', async () => {
       mockDb.select.mockReturnValue(buildChain([mangaFixture]));
       mockDb.query.follows.findFirst.mockResolvedValue(null);
-      mockDb.insert.mockReturnValue(buildChain([]));
-      mockDb.update.mockReturnValue(buildChain([{ followersCount: 11 }]));
 
       const result = await service.toggleFollow(10, 1);
       expect(result.followed).toBe(true);
       expect(result.followersCount).toBe(11);
-      expect(mockDb.insert).toHaveBeenCalled();
+      expect(mockBookmarkService.addBookmark).toHaveBeenCalledWith(10, 1);
     });
   });
 

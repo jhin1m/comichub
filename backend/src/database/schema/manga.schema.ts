@@ -89,7 +89,9 @@ export const manga = pgTable(
     originalLanguage: varchar('original_language', { length: 10 }),
     status: mangaStatusEnum('status').default('ongoing').notNull(),
     type: mangaTypeEnum('type').default('manga').notNull(),
-    contentRating: contentRatingEnum('content_rating').default('safe').notNull(),
+    contentRating: contentRatingEnum('content_rating')
+      .default('safe')
+      .notNull(),
     nativeTitle: varchar('native_title', { length: 500 }),
     romanizedTitle: varchar('romanized_title', { length: 500 }),
     views: bigint('views', { mode: 'number' }).default(0).notNull(),
@@ -206,7 +208,11 @@ export const chapters = pgTable(
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
-    uniqueIndex('chapters_manga_number_lang_idx').on(table.mangaId, table.number, table.language),
+    uniqueIndex('chapters_manga_number_lang_idx').on(
+      table.mangaId,
+      table.number,
+      table.language,
+    ),
     uniqueIndex('chapters_manga_slug_idx').on(table.mangaId, table.slug),
     index('chapters_manga_order_idx').on(table.mangaId, table.order),
   ],
@@ -241,7 +247,9 @@ export const mangaSources = pgTable(
   'manga_sources',
   {
     id: serial('id').primaryKey(),
-    mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+    mangaId: integer('manga_id')
+      .notNull()
+      .references(() => manga.id, { onDelete: 'cascade' }),
     source: importSourceEnum('source').notNull(),
     externalId: varchar('external_id', { length: 100 }).notNull(),
     externalSlug: varchar('external_slug', { length: 300 }),
@@ -249,7 +257,10 @@ export const mangaSources = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('manga_sources_source_ext_id_idx').on(table.source, table.externalId),
+    uniqueIndex('manga_sources_source_ext_id_idx').on(
+      table.source,
+      table.externalId,
+    ),
     index('manga_sources_manga_id_idx').on(table.mangaId),
   ],
 );
@@ -259,14 +270,19 @@ export const chapterSources = pgTable(
   'chapter_sources',
   {
     id: serial('id').primaryKey(),
-    chapterId: integer('chapter_id').notNull().references(() => chapters.id, { onDelete: 'cascade' }),
+    chapterId: integer('chapter_id')
+      .notNull()
+      .references(() => chapters.id, { onDelete: 'cascade' }),
     source: importSourceEnum('source').notNull(),
     externalId: varchar('external_id', { length: 100 }).notNull(),
     lastSyncedAt: timestamp('last_synced_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('chapter_sources_source_ext_id_idx').on(table.source, table.externalId),
+    uniqueIndex('chapter_sources_source_ext_id_idx').on(
+      table.source,
+      table.externalId,
+    ),
     index('chapter_sources_chapter_id_idx').on(table.chapterId),
   ],
 );
@@ -276,7 +292,9 @@ export const mangaLinks = pgTable(
   'manga_links',
   {
     id: serial('id').primaryKey(),
-    mangaId: integer('manga_id').notNull().references(() => manga.id, { onDelete: 'cascade' }),
+    mangaId: integer('manga_id')
+      .notNull()
+      .references(() => manga.id, { onDelete: 'cascade' }),
     type: varchar('type', { length: 30 }).notNull(), // 'mal', 'anilist', 'kitsu', 'amazon', etc.
     externalId: varchar('external_id', { length: 100 }),
     url: varchar('url', { length: 500 }),
