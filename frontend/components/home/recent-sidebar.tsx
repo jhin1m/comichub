@@ -57,7 +57,7 @@ function SidebarItem({ item }: { item: MangaListItem }) {
         </p>
         <div className="text-xs text-muted font-rajdhani">
           <span className="text-secondary">
-            {item.chaptersCount > 0 ? `Ch.${item.chaptersCount}` : 'Ch.0'}
+            {item.latestChapterNumber ? `Ch.${item.latestChapterNumber}` : 'Ch.0'}
           </span>
           {' · '}
           {formatRelativeDate(item.updatedAt)}

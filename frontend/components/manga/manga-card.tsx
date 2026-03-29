@@ -2,6 +2,7 @@ import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatRelativeDate } from '@/lib/utils';
+import { QuickBookmarkButton } from '@/components/manga/quick-bookmark-button';
 import type { MangaListItem } from '@/types/manga.types';
 
 // Returns true if manga was updated within the last 7 days
@@ -65,12 +66,15 @@ export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
             N
           </span>
         )}
+
+        {/* Quick bookmark button — visible on mobile, shown on hover on PC */}
+        <QuickBookmarkButton mangaId={item.id} />
       </div>
 
       {/* Chapter + time */}
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="font-rajdhani font-semibold text-secondary">
-          {item.chaptersCount > 0 ? `Ch.${item.chaptersCount}` : 'No ch.'}
+          {item.latestChapterNumber ? `Ch.${item.latestChapterNumber}` : 'No ch.'}
         </span>
         <span className="font-rajdhani text-muted">{formatRelativeDate(item.updatedAt)}</span>
       </div>

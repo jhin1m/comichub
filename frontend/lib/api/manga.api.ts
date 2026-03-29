@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-import type { MangaListItem, MangaDetail, PaginatedResult, MangaQueryParams } from '@/types/manga.types';
+import type { MangaListItem, MangaDetail, PaginatedResult, MangaQueryParams, GroupDetailResponse } from '@/types/manga.types';
 
 export type RankingPeriod = 'daily' | 'weekly' | 'alltime' | 'toprated';
 
@@ -51,4 +51,9 @@ export const mangaApi = {
   /** Report a chapter */
   reportChapter: (chapterId: number, type: string, description?: string) =>
     apiClient.post(`/chapters/${chapterId}/report`, { type, description }).then((r) => r.data),
+};
+
+export const groupApi = {
+  detail: (slug: string, page = 1, limit = 20) =>
+    apiClient.get<GroupDetailResponse>(`/groups/${slug}/manga`, { params: { page, limit } }).then((r) => r.data),
 };

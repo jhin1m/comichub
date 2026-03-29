@@ -16,7 +16,7 @@ interface Props {
   mangaSlug: string;
 }
 
-type SortField = 'number' | 'date' | 'views';
+type SortField = 'number' | 'date';
 type SortDir = 'asc' | 'desc';
 
 const CHAPTERS_PER_PAGE = 50;
@@ -110,8 +110,6 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
           return (a.order - b.order) * dir;
         case 'date':
           return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
-        case 'views':
-          return (a.viewCount - b.viewCount) * dir;
         default:
           return 0;
       }
@@ -119,6 +117,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
 
     return list;
   }, [chapters, query, sortField, sortDir, language]);
+
 
   // Reset page when filters change
   const totalPages = Math.ceil(filtered.length / CHAPTERS_PER_PAGE);
@@ -138,11 +137,13 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDir === 'desc' ? (
-      <CaretDownIcon size={12} className="text-accent" />
+    const isActive = sortField === field;
+    const icon = isActive && sortDir === 'asc' ? 'up' : 'down';
+    const cls = isActive ? 'text-accent' : 'text-muted/40';
+    return icon === 'down' ? (
+      <CaretDownIcon size={12} className={cls} />
     ) : (
-      <CaretUpIcon size={12} className="text-accent" />
+      <CaretUpIcon size={12} className={cls} />
     );
   };
 
@@ -214,13 +215,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
           Chapter <SortIcon field="number" />
         </button>
         <span className="flex-1" />
-        <button
-          onClick={() => handleSort('views')}
-          aria-label="Sort by views"
-          className="flex items-center gap-1 hover:text-secondary transition-colors w-17.5 justify-end shrink-0"
-        >
-          Views <SortIcon field="views" />
-        </button>
+        <span className="w-17.5 text-right shrink-0">Views</span>
         <button
           onClick={() => handleSort('date')}
           aria-label="Sort by date"

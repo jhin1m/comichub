@@ -10,6 +10,7 @@ export interface MangaListItem {
   type: MangaType;
   views: number;
   chaptersCount: number;
+  latestChapterNumber: string | null;
   averageRating: string;
   updatedAt: string;
 }
@@ -38,9 +39,16 @@ export interface ChapterListItem {
   title: string | null;
   slug: string;
   language: string;
+  volume: string | null;
   viewCount: number;
   order: number;
   createdAt: string;
+  groups?: TaxonomyItem[];
+}
+
+export interface GroupDetailResponse {
+  group: TaxonomyItem & { releaseCount: number; titleCount: number };
+  manga: PaginatedResult<MangaListItem>;
 }
 
 export interface ChapterWithImages extends ChapterListItem {

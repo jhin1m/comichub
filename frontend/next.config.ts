@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*weebdex.org',
       },
+      {
+        protocol: 'https',
+        hostname: '*.weebdex.net',
+      },
     ],
   },
 };
