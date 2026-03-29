@@ -27,35 +27,35 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
       tabIndex={0}
       aria-label={`Read chapter ${chapter.number}`}
       onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
-      className={`group flex items-center px-3 py-2.5 border-b border-default/40 hover:bg-hover transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset outline-none ${
+      className={`group flex items-center px-4 py-3.5 border-b border-default/40 hover:bg-hover transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset outline-none ${
         striped ? 'bg-surface/50' : ''
       }`}
     >
       {/* Flag + Chapter number + Volume */}
-      <div className="flex items-center gap-2 shrink-0 min-w-0">
+      <div className="flex items-center gap-2.5 shrink-0 min-w-0">
         <LanguageFlag lang={chapter.language} />
-        <span className="text-sm font-rajdhani font-semibold text-secondary group-hover:text-accent transition-colors whitespace-nowrap">
+        <span className="text-base font-rajdhani font-bold text-secondary group-hover:text-accent transition-colors whitespace-nowrap">
           Ch. {chapter.number}
         </span>
         {chapter.volume && (
-          <span className="text-[10px] font-medium text-accent/80 bg-accent/10 px-1.5 py-0.5 rounded whitespace-nowrap">
+          <span className="text-xs font-medium text-accent/80 bg-accent/10 px-2 py-0.5 rounded whitespace-nowrap">
             Vol. {chapter.volume}
           </span>
         )}
       </div>
 
       {/* Separator */}
-      <span className="text-muted/30 mx-1 shrink-0">—</span>
+      <span className="text-muted/30 mx-2 shrink-0">—</span>
 
       {/* Title + Groups (fills remaining space) */}
       <div className="flex-1 min-w-0 px-1">
         {chapter.title && (
-          <span className="text-xs text-secondary truncate block">
+          <span className="text-sm text-secondary truncate block">
             {chapter.title}
           </span>
         )}
         {chapter.groups && chapter.groups.length > 0 && (
-          <span className="text-[10px] text-muted truncate block">
+          <span className="text-xs text-muted truncate block mt-0.5">
             {chapter.groups.map((g, i) => (
               <span key={g.id}>
                 {i > 0 && ', '}
@@ -73,14 +73,14 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
       </div>
 
       {/* Views */}
-      <div className="flex items-center gap-1 w-17.5 justify-end shrink-0 text-xs text-muted">
-        <Eye size={11} className="opacity-60" />
+      <div className="flex items-center gap-1.5 w-20 justify-end shrink-0 text-sm text-muted hidden sm:flex">
+        <Eye size={14} className="opacity-60" />
         <span>{formatCount(chapter.viewCount)}</span>
       </div>
 
       {/* Date */}
-      <div className="flex items-center gap-1 w-20 justify-end shrink-0 text-xs text-muted">
-        <Clock size={11} className="opacity-60" />
+      <div className="flex items-center gap-1.5 w-24 justify-end shrink-0 text-sm text-muted">
+        <Clock size={14} className="opacity-60" />
         <span>{formatRelativeDate(chapter.createdAt)}</span>
       </div>
     </div>

@@ -46,11 +46,11 @@ export function MangaDescription({ description }: Props) {
       {needsToggle && (
         <button
           onClick={() => setClamped((c) => !c)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-accent/80 hover:text-accent transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent/80 hover:text-accent transition-colors"
         >
           {clamped ? 'Show more' : 'Show less'}
           <CaretDownIcon
-            size={12}
+            size={14}
             weight="bold"
             className={`transition-transform duration-200 ${clamped ? '' : 'rotate-180'}`}
           />

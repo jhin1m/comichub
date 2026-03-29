@@ -63,8 +63,8 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
 
   return (
     <div className="space-y-3">
-      <h3 className="flex items-center gap-2 text-sm font-bold text-primary uppercase tracking-wider font-rajdhani">
-        <SparkleIcon size={16} weight="fill" className="text-accent" />
+      <h3 className="flex items-center gap-2 text-base font-bold text-primary uppercase tracking-wider font-rajdhani">
+        <SparkleIcon size={18} weight="fill" className="text-accent" />
         Recommendations
       </h3>
 
@@ -104,14 +104,14 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0 py-0.5 space-y-0.5">
-                  <p className="text-[10px] font-medium text-muted uppercase tracking-wide">
+                  <p className="text-xs font-medium text-muted uppercase tracking-wide">
                     {item.type}
                   </p>
-                  <p className="text-xs font-semibold text-primary line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
+                  <p className="text-sm font-semibold text-primary line-clamp-2 leading-snug group-hover:text-accent transition-colors duration-150">
                     {item.title}
                   </p>
-                  <span className="flex items-center gap-1 text-[10px] text-secondary">
-                    <StarIcon size={10} weight="fill" className="text-warning shrink-0" />
+                  <span className="flex items-center gap-1 text-xs text-secondary">
+                    <StarIcon size={12} weight="fill" className="text-warning shrink-0" />
                     {Number(item.averageRating).toFixed(1)}
                   </span>
                 </div>

@@ -17,7 +17,7 @@ interface Props {
 function StatItem({ icon: Icon, value }: { icon: typeof Eye; value: string }) {
   return (
     <span className="flex items-center gap-1.5 font-rajdhani font-medium">
-      <Icon size={14} className="text-muted" />
+      <Icon size={16} className="text-muted" />
       {value}
     </span>
   );
@@ -59,7 +59,7 @@ export function MangaCoverHero({ manga }: Props) {
         </h1>
 
         {manga.altTitles?.length > 0 && (
-          <p className="text-muted text-xs leading-relaxed line-clamp-2">
+          <p className="text-muted text-sm leading-relaxed line-clamp-2">
             {manga.altTitles.join(' / ')}
           </p>
         )}

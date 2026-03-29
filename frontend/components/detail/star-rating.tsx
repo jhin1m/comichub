@@ -23,7 +23,7 @@ function getStarStates(rating: number): StarState[] {
   });
 }
 
-function StarIcon({ state, size = 22, gradientId }: { state: StarState; size?: number; gradientId: string }) {
+function StarIcon({ state, size = 24, gradientId }: { state: StarState; size?: number; gradientId: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       {state === 'half' && (
@@ -141,7 +141,7 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
               onMouseMove={(e) => handleMouseMove(e, i)}
               onClick={(e) => handleClick(e, i)}
             >
-              <StarIcon state={state} size={22} gradientId={`${componentId}-star-${i}`} />
+              <StarIcon state={state} size={24} gradientId={`${componentId}-star-${i}`} />
             </button>
           ))}
         </div>
@@ -153,7 +153,7 @@ export default function StarRating({ mangaId, averageRating, totalRatings }: Pro
       </div>
 
       {/* Sub-label */}
-      <p className="mt-1.5 text-xs text-muted font-rajdhani">
+      <p className="mt-1.5 text-sm text-muted font-rajdhani">
         Score{' '}
         <span className="font-semibold text-secondary">{displayScore}</span>
         {' · '}

@@ -45,11 +45,13 @@ function TaxonomyLinks({
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, scrollable, children }: { label: string; scrollable?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-4 py-1.5 border-b border-default last:border-0">
-      <span className="text-muted shrink-0 font-rajdhani font-semibold w-18">{label}</span>
-      <span className="text-primary text-left flex-1">{children}</span>
+    <div className="flex items-start gap-4 py-2 border-b border-default last:border-0">
+      <span className="text-muted shrink-0 font-rajdhani font-semibold w-20">{label}</span>
+      <span className={`text-primary text-left flex-1 ${scrollable ? 'max-h-[3lh] overflow-y-auto' : ''}`}>
+        {children}
+      </span>
     </div>
   );
 }
@@ -66,19 +68,19 @@ export function MangaMetadata({ manga }: Props) {
         <span className="font-rajdhani font-semibold">{score}</span> by {formatCount(manga.totalRatings)} users
       </Row>
       <Row label="Type">{TYPE_LABELS[manga.type] ?? manga.type}</Row>
-      <Row label="Authors">
+      <Row label="Authors" scrollable>
         <TaxonomyLinks
           items={manga.authors}
           href={(a) => `/author/${a.slug}`}
         />
       </Row>
-      <Row label="Artists">
+      <Row label="Artists" scrollable>
         <TaxonomyLinks
           items={manga.artists}
           href={(a) => `/artist/${a.slug}`}
         />
       </Row>
-      <Row label="Genres">
+      <Row label="Genres" scrollable>
         <TaxonomyLinks
           items={manga.genres}
           href={(g) => `/browse?genre=${g.slug}`}

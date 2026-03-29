@@ -141,38 +141,38 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
     const icon = isActive && sortDir === 'asc' ? 'up' : 'down';
     const cls = isActive ? 'text-accent' : 'text-muted/40';
     return icon === 'down' ? (
-      <CaretDownIcon size={12} className={cls} />
+      <CaretDownIcon size={14} className={cls} />
     ) : (
-      <CaretUpIcon size={12} className={cls} />
+      <CaretUpIcon size={14} className={cls} />
     );
   };
 
   return (
     <div className="space-y-0">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-2.5">
-          <ListBulletsIcon size={16} className="text-accent" />
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">
+          <ListBulletsIcon size={20} className="text-accent" />
+          <h2 className="text-base font-semibold text-primary uppercase tracking-wider font-rajdhani">
             Chapters
           </h2>
-          <span className="text-xs text-muted">
+          <span className="text-sm text-muted">
             ({filtered.length})
           </span>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           {/* Language filter */}
           {languages.length > 1 && (
             <div className="relative">
               <GlobeIcon
-                size={12}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
               />
               <select
                 value={language}
                 onChange={(e) => { setLanguage(e.target.value); setPage(1); }}
-                className="appearance-none pl-7 pr-6 py-1.5 text-xs bg-elevated border border-default rounded-md text-primary focus:outline-none focus:border-accent/40 transition-colors cursor-pointer"
+                className="appearance-none pl-8 pr-7 py-2 text-sm bg-elevated border border-default rounded-lg text-primary focus:outline-none focus:border-accent/40 transition-colors cursor-pointer"
               >
                 <option value="all">All Languages</option>
                 {languages.map((lang) => (
@@ -182,53 +182,53 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
                 ))}
               </select>
               <CaretDownIcon
-                size={10}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+                size={12}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
               />
             </div>
           )}
 
           {/* Search */}
-          <div className="relative flex-1 sm:flex-none sm:w-50">
+          <div className="relative flex-1 sm:flex-none sm:w-56">
             <MagnifyingGlassIcon
-              size={12}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
             />
             <input
               type="text"
               placeholder="Search chapter..."
               value={query}
               onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-              className="w-full pl-7 pr-3 py-1.5 text-xs bg-elevated border border-default rounded-md text-primary placeholder:text-muted focus:outline-none focus:border-accent/40 transition-colors"
+              className="w-full pl-8 pr-3 py-2 text-sm bg-elevated border border-default rounded-lg text-primary placeholder:text-muted focus:outline-none focus:border-accent/40 transition-colors"
             />
           </div>
         </div>
       </div>
 
       {/* Table header */}
-      <div className="flex items-center px-3 py-2 bg-elevated/60 border-b border-default text-xs text-muted select-none">
+      <div className="flex items-center px-4 py-2.5 bg-elevated/60 border-b border-default text-sm text-muted select-none">
         <button
           onClick={() => handleSort('number')}
           aria-label="Sort by chapter number"
-          className="flex items-center gap-1 hover:text-secondary transition-colors w-35 shrink-0"
+          className="flex items-center gap-1.5 hover:text-secondary transition-colors w-40 shrink-0"
         >
           Chapter <SortIcon field="number" />
         </button>
         <span className="flex-1" />
-        <span className="w-17.5 text-right shrink-0">Views</span>
+        <span className="w-20 text-right shrink-0 hidden sm:block">Views</span>
         <button
           onClick={() => handleSort('date')}
           aria-label="Sort by date"
-          className="flex items-center gap-1 hover:text-secondary transition-colors w-20 justify-end shrink-0"
+          className="flex items-center gap-1.5 hover:text-secondary transition-colors w-24 justify-end shrink-0"
         >
           Date <SortIcon field="date" />
         </button>
       </div>
 
       {/* Chapter rows */}
-      <div className="max-h-150 overflow-y-auto chapter-list-scroll">
+      <div className="max-h-[640px] overflow-y-auto chapter-list-scroll">
         {paginated.length === 0 ? (
-          <p className="text-sm text-muted py-8 text-center">No chapters found.</p>
+          <p className="text-base text-muted py-10 text-center">No chapters found.</p>
         ) : (
           paginated.map((chapter, index) => (
             <ChapterListItemRow
@@ -243,7 +243,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-5">
           <Pagination
             currentPage={safePage}
             totalPages={totalPages}
