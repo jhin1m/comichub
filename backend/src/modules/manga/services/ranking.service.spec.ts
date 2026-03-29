@@ -5,7 +5,7 @@ import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildSelectChain(resolvedValue: any = []) {
   const chain: any = {};
-  ['select', 'from', 'where', 'orderBy', 'limit', 'offset'].forEach((m) => {
+  ['select', 'from', 'leftJoin', 'where', 'orderBy', 'limit', 'offset'].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   chain.then = (resolve: any) => resolve(resolvedValue);

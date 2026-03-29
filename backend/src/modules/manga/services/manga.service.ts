@@ -31,6 +31,7 @@ import {
   mangaAuthors,
   mangaGroups,
   chapters,
+  chapterGroups,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
 import { CreateMangaDto, MangaType } from '../dto/create-manga.dto.js';
@@ -226,10 +227,12 @@ export class MangaService {
           type: manga.type,
           views: manga.views,
           chaptersCount: manga.chaptersCount,
+          latestChapterNumber: chapters.number,
           averageRating: manga.averageRating,
           updatedAt: manga.updatedAt,
         })
         .from(manga)
+        .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
         .where(where)
         .orderBy(orderBy)
         .limit(limit)
@@ -238,6 +241,71 @@ export class MangaService {
     ]);
 
     return { data: rows as MangaListItem[], total: countResult, page, limit };
+  }
+
+  async findMangaByGroup(
+    slug: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    group: { id: number; name: string; slug: string; titleCount: number; releaseCount: number };
+    manga: PaginatedResult<MangaListItem>;
+  }> {
+    limit = Math.min(Math.max(limit, 1), 100);
+    const [groupRow] = await this.db
+      .select({ id: groups.id, name: groups.name, slug: groups.slug })
+      .from(groups)
+      .where(eq(groups.slug, slug))
+      .limit(1);
+    if (!groupRow) throw new NotFoundException('Group not found');
+
+    const releaseCount = await this.db.$count(
+      chapterGroups,
+      eq(chapterGroups.groupId, groupRow.id),
+    );
+
+    // Derive manga from chapterGroups → chapters → manga (mangaGroups may be empty)
+    const mangaIdsQuery = this.db
+      .selectDistinct({ mangaId: chapters.mangaId })
+      .from(chapterGroups)
+      .innerJoin(chapters, eq(chapterGroups.chapterId, chapters.id))
+      .where(eq(chapterGroups.groupId, groupRow.id));
+
+    const mangaIdRows = await mangaIdsQuery;
+    const mangaIds = mangaIdRows.map((r) => r.mangaId);
+    const titleCount = mangaIds.length;
+
+    const offset = (page - 1) * limit;
+    const rows =
+      mangaIds.length > 0
+        ? await this.db
+            .select({
+              id: manga.id,
+              title: manga.title,
+              slug: manga.slug,
+              cover: manga.cover,
+              status: manga.status,
+              type: manga.type,
+              views: manga.views,
+              chaptersCount: manga.chaptersCount,
+              latestChapterNumber: chapters.number,
+              averageRating: manga.averageRating,
+              updatedAt: manga.updatedAt,
+            })
+            .from(manga)
+            .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
+            .where(
+              and(inArray(manga.id, mangaIds), isNull(manga.deletedAt)),
+            )
+            .orderBy(desc(manga.updatedAt))
+            .limit(limit)
+            .offset(offset)
+        : [];
+
+    return {
+      group: { ...groupRow, titleCount, releaseCount },
+      manga: { data: rows as MangaListItem[], total: titleCount, page, limit },
+    };
   }
 
   async findRandom(): Promise<{ slug: string }> {
@@ -295,6 +363,7 @@ export class MangaService {
             title: chapters.title,
             slug: chapters.slug,
             language: chapters.language,
+            volume: chapters.volume,
             viewCount: chapters.viewCount,
             order: chapters.order,
             createdAt: chapters.createdAt,
@@ -304,13 +373,43 @@ export class MangaService {
           .orderBy(asc(chapters.order)),
       ]);
 
+    const chapterIds = chapterList.map((ch) => ch.id);
+    const chapterGroupRows =
+      chapterIds.length > 0
+        ? await this.db
+            .select({
+              chapterId: chapterGroups.chapterId,
+              id: groups.id,
+              name: groups.name,
+              slug: groups.slug,
+            })
+            .from(chapterGroups)
+            .innerJoin(groups, eq(chapterGroups.groupId, groups.id))
+            .where(inArray(chapterGroups.chapterId, chapterIds))
+        : [];
+
+    const groupsByChapter = new Map<
+      number,
+      { id: number; name: string; slug: string }[]
+    >();
+    for (const row of chapterGroupRows) {
+      const arr = groupsByChapter.get(row.chapterId) ?? [];
+      arr.push({ id: row.id, name: row.name, slug: row.slug });
+      groupsByChapter.set(row.chapterId, arr);
+    }
+
+    const chaptersWithGroups = chapterList.map((ch) => ({
+      ...ch,
+      groups: groupsByChapter.get(ch.id) ?? [],
+    }));
+
     return {
       ...m,
       genres: genreList,
       artists: artistList,
       authors: authorList,
       groups: groupList,
-      chapters: chapterList as unknown as MangaDetail['chapters'],
+      chapters: chaptersWithGroups as unknown as MangaDetail['chapters'],
     } as unknown as MangaDetail;
   }
 

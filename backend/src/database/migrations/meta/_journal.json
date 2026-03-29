@@ -71,6 +71,20 @@
       "when": 1774857416000,
       "tag": "0009_bookmark_folders",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774944910000,
+      "tag": "0010_add_source_url_to_chapter_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1775030000000,
+      "tag": "0011_add_chapter_published_at_and_groups",
+      "breakpoints": true
     }
   ]
 }

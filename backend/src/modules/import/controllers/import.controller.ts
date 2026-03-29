@@ -61,6 +61,18 @@ export class ImportController {
     return this.importService.syncManga(id);
   }
 
+  @Post('manga/:id/chapters')
+  @ApiOperation({ summary: 'Import chapters for a manga from external source (admin only)' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, description: 'Chapters imported' })
+  @ApiResponse({ status: 404, description: 'Manga or source not found' })
+  importChapters(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('lang') lang?: string,
+  ) {
+    return this.importService.importChapters(id, lang);
+  }
+
   @Get('sources/:mangaId')
   @ApiOperation({ summary: 'Get import sources for a manga (admin only)' })
   @ApiParam({ name: 'mangaId', type: Number })

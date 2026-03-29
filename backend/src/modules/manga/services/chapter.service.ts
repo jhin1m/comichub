@@ -5,12 +5,14 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { eq, isNull, and, gt, lt, asc, desc, sql } from 'drizzle-orm';
+import { eq, isNull, and, gt, lt, asc, desc, sql, inArray } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
   chapters,
   chapterImages,
+  chapterGroups,
+  groups,
   manga,
 } from '../../../database/schema/index.js';
 // slugify import removed — slug generation handled by DB or caller
@@ -31,12 +33,14 @@ export class ChapterService {
   ) {}
 
   async findByManga(mangaId: number): Promise<ChapterListItem[]> {
-    return this.db
+    const chapterList = await this.db
       .select({
         id: chapters.id,
         number: chapters.number,
         title: chapters.title,
         slug: chapters.slug,
+        language: chapters.language,
+        volume: chapters.volume,
         viewCount: chapters.viewCount,
         order: chapters.order,
         createdAt: chapters.createdAt,
@@ -44,6 +48,36 @@ export class ChapterService {
       .from(chapters)
       .where(and(eq(chapters.mangaId, mangaId), isNull(chapters.deletedAt)))
       .orderBy(asc(chapters.order));
+
+    const chapterIds = chapterList.map((ch) => ch.id);
+    const chapterGroupRows =
+      chapterIds.length > 0
+        ? await this.db
+            .select({
+              chapterId: chapterGroups.chapterId,
+              id: groups.id,
+              name: groups.name,
+              slug: groups.slug,
+            })
+            .from(chapterGroups)
+            .innerJoin(groups, eq(chapterGroups.groupId, groups.id))
+            .where(inArray(chapterGroups.chapterId, chapterIds))
+        : [];
+
+    const groupsByChapter = new Map<
+      number,
+      { id: number; name: string; slug: string }[]
+    >();
+    for (const row of chapterGroupRows) {
+      const arr = groupsByChapter.get(row.chapterId) ?? [];
+      arr.push({ id: row.id, name: row.name, slug: row.slug });
+      groupsByChapter.set(row.chapterId, arr);
+    }
+
+    return chapterList.map((ch) => ({
+      ...ch,
+      groups: groupsByChapter.get(ch.id) ?? [],
+    }));
   }
 
   async findOne(id: number): Promise<ChapterWithImages> {
@@ -55,13 +89,20 @@ export class ChapterService {
 
     if (!chapter) throw new NotFoundException('Chapter not found');
 
-    const images = await this.db
-      .select()
-      .from(chapterImages)
-      .where(eq(chapterImages.chapterId, id))
-      .orderBy(asc(chapterImages.order));
+    const [images, chapterGroupRows] = await Promise.all([
+      this.db
+        .select()
+        .from(chapterImages)
+        .where(eq(chapterImages.chapterId, id))
+        .orderBy(asc(chapterImages.order)),
+      this.db
+        .select({ id: groups.id, name: groups.name, slug: groups.slug })
+        .from(chapterGroups)
+        .innerJoin(groups, eq(chapterGroups.groupId, groups.id))
+        .where(eq(chapterGroups.chapterId, id)),
+    ]);
 
-    return { ...chapter, images };
+    return { ...chapter, images, groups: chapterGroupRows };
   }
 
   async getNavigation(id: number): Promise<ChapterNavigation> {

@@ -10,6 +10,7 @@ import {
   mangaArtists,
   mangaAuthors,
   mangaGroups,
+  chapterGroups,
   chapters,
   chapterImages,
   mangaSources,
@@ -104,6 +105,7 @@ export const authorsRelations = relations(authors, ({ many }) => ({
 
 export const groupsRelations = relations(groups, ({ many }) => ({
   manga: many(mangaGroups),
+  chapters: many(chapterGroups),
 }));
 
 // Pivot relation bridges
@@ -139,9 +141,21 @@ export const mangaGroupsRelations = relations(mangaGroups, ({ one }) => ({
   }),
 }));
 
+export const chapterGroupsRelations = relations(chapterGroups, ({ one }) => ({
+  chapter: one(chapters, {
+    fields: [chapterGroups.chapterId],
+    references: [chapters.id],
+  }),
+  group: one(groups, {
+    fields: [chapterGroups.groupId],
+    references: [groups.id],
+  }),
+}));
+
 export const chaptersRelations = relations(chapters, ({ one, many }) => ({
   manga: one(manga, { fields: [chapters.mangaId], references: [manga.id] }),
   images: many(chapterImages),
+  groups: many(chapterGroups),
   reports: many(chapterReports),
   readingHistory: many(readingHistory),
   sources: many(chapterSources),

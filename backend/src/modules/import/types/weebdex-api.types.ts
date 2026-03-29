@@ -39,4 +39,20 @@ export interface WeebDexChapter {
   volume?: string;
   chapter?: string;
   language: string;
+  published_at?: string;
+  relationships?: {
+    groups?: WeebDexScanlationGroup[];
+  };
+}
+
+export interface WeebDexScanlationGroup {
+  id: string;
+  name?: string;
+}
+
+export interface WeebDexChapterDetail {
+  id: string;
+  node: string;
+  data: { name: string; dimensions: [number, number] }[];
+  data_optimized?: { name: string; dimensions: [number, number] }[];
 }

@@ -25,10 +25,12 @@ describe('Manga CRUD Integration', () => {
       // findAll uses two parallel calls: select + $count
       ctx.db.select.mockReturnValue({
         from: () => ({
-          where: () => ({
-            orderBy: () => ({
-              limit: () => ({
-                offset: () => Promise.resolve(mangaList),
+          leftJoin: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: () => ({
+                  offset: () => Promise.resolve(mangaList),
+                }),
               }),
             }),
           }),
@@ -44,7 +46,7 @@ describe('Manga CRUD Integration', () => {
 
     it('200 — accepts valid query params without authentication', async () => {
       ctx.db.select.mockReturnValue({
-        from: () => ({ where: () => ({ orderBy: () => ({ limit: () => ({ offset: () => Promise.resolve([]) }) }) }) }),
+        from: () => ({ leftJoin: () => ({ where: () => ({ orderBy: () => ({ limit: () => ({ offset: () => Promise.resolve([]) }) }) }) }) }),
       });
       ctx.db.$count = () => Promise.resolve(0);
 

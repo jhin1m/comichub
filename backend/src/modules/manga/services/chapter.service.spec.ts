@@ -19,6 +19,7 @@ function buildChain(resolvedValue: any = []) {
     'insert',
     'values',
     'delete',
+    'innerJoin',
   ];
   methods.forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);

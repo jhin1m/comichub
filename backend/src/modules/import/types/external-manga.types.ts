@@ -31,6 +31,13 @@ export interface ExternalChapter {
   title?: string;
   volume?: string;
   language: string;
+  publishedAt?: string;
+  groups?: ExternalGroup[];
+}
+
+export interface ExternalGroup {
+  externalId: string;
+  name: string;
 }
 
 export interface ExternalChapterImage {

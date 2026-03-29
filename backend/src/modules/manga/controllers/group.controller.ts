@@ -6,7 +6,9 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   ParseIntPipe,
+  DefaultValuePipe,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -19,6 +21,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { TaxonomyService } from '../services/taxonomy.service.js';
+import { MangaService } from '../services/manga.service.js';
 import { CreateTaxonomyDto, UpdateTaxonomyDto } from '../dto/taxonomy.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
@@ -27,7 +30,10 @@ import { RolesGuard } from '../../../common/guards/roles.guard.js';
 @ApiTags('groups')
 @Controller('groups')
 export class GroupController {
-  constructor(private readonly taxonomyService: TaxonomyService) {}
+  constructor(
+    private readonly taxonomyService: TaxonomyService,
+    private readonly mangaService: MangaService,
+  ) {}
 
   @Public()
   @Get()
@@ -35,6 +41,17 @@ export class GroupController {
   @ApiResponse({ status: 200, description: 'Group list' })
   findAll() {
     return this.taxonomyService.findAll('groups');
+  }
+
+  @Public()
+  @Get(':slug/manga')
+  @ApiOperation({ summary: 'Get manga list for a translation group' })
+  findManga(
+    @Param('slug') slug: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.mangaService.findMangaByGroup(slug, page, limit);
   }
 
   @Public()

@@ -18,6 +18,8 @@ import type {
   WeebDexSearchResponse,
   WeebDexChapterResponse,
   WeebDexChapter,
+  WeebDexChapterDetail,
+  WeebDexScanlationGroup,
 } from '../types/weebdex-api.types.js';
 import { ImportService } from '../services/import.service.js';
 
@@ -106,10 +108,18 @@ export class WeebDexAdapter implements SourceAdapter, OnModuleInit {
   }
 
   async fetchChapterImages(
-    _chapterExternalId: string,
+    chapterExternalId: string,
   ): Promise<ExternalChapterImage[]> {
-    // Chapter image fetching deferred to phase 2 (S3 pipeline)
-    return [];
+    const data = await this.request<WeebDexChapterDetail>(
+      `/chapter/${chapterExternalId}`,
+    );
+    const images = data.data_optimized ?? data.data;
+    return images.map((img, idx) => ({
+      url: `${data.node}/data/${chapterExternalId}/${img.name}`,
+      pageNumber: idx + 1,
+      width: img.dimensions?.[0],
+      height: img.dimensions?.[1],
+    }));
   }
 
   private normalizeManga(raw: WeebDexManga): ExternalManga {
@@ -181,12 +191,18 @@ export class WeebDexAdapter implements SourceAdapter, OnModuleInit {
   }
 
   private normalizeChapter(raw: WeebDexChapter): ExternalChapter {
+    const groups = (raw.relationships?.groups ?? [])
+      .filter((g): g is WeebDexScanlationGroup & { name: string } => !!g.name)
+      .map((g) => ({ externalId: g.id, name: g.name }));
+
     return {
       externalId: raw.id,
       number: parseFloat(raw.chapter ?? '0'),
       title: raw.title,
       volume: raw.volume,
       language: raw.language,
+      publishedAt: raw.published_at,
+      groups: groups.length > 0 ? groups : undefined,
     };
   }
 }

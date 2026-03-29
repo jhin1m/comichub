@@ -388,9 +388,68 @@ describe('WeebDexAdapter', () => {
   });
 
   describe('image URL construction', () => {
-    // fetchChapterImages is deferred to phase 2 (S3 pipeline) — returns [] for now
-    it('should return empty array (deferred to phase 2)', async () => {
+    beforeEach(() => {
+      vi.stubGlobal('fetch', vi.fn());
+    });
+
+    it('should construct image URLs from chapter detail response', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            id: 'ch-123',
+            node: 'https://s01.weebdex.net',
+            data: [
+              { name: 'page1.png', dimensions: [1260, 1791] },
+              { name: 'page2.png', dimensions: [1260, 1791] },
+            ],
+            data_optimized: [
+              { name: 'page1.webp', dimensions: [1200, 1706] },
+              { name: 'page2.webp', dimensions: [1200, 1706] },
+            ],
+          }),
+      });
+
       const result = await adapter.fetchChapterImages('ch-123');
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        url: 'https://s01.weebdex.net/data/ch-123/page1.webp',
+        pageNumber: 1,
+        width: 1200,
+        height: 1706,
+      });
+    });
+
+    it('should fall back to data when data_optimized is absent', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            id: 'ch-abc',
+            node: 'https://s01.weebdex.net',
+            data: [{ name: 'a.png', dimensions: [720, 1024] }],
+          }),
+      });
+
+      const result = await adapter.fetchChapterImages('ch-abc');
+      expect(result[0].url).toBe('https://s01.weebdex.net/data/ch-abc/a.png');
+      expect(result[0].pageNumber).toBe(1);
+      expect(result[0].width).toBe(720);
+    });
+
+    it('should return empty array when data is empty', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            id: 'ch-empty',
+            node: 'https://s01.weebdex.net',
+            data: [],
+          }),
+      });
+
+      const result = await adapter.fetchChapterImages('ch-empty');
       expect(result).toEqual([]);
     });
   });

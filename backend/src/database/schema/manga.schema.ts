@@ -185,6 +185,23 @@ export const mangaGroups = pgTable(
   ],
 );
 
+// chapter_groups — many-to-many: chapters ↔ scanlation groups
+export const chapterGroups = pgTable(
+  'chapter_groups',
+  {
+    chapterId: integer('chapter_id')
+      .notNull()
+      .references(() => chapters.id, { onDelete: 'cascade' }),
+    groupId: integer('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    uniqueIndex('chapter_groups_unique_idx').on(table.chapterId, table.groupId),
+    index('chapter_groups_group_id_idx').on(table.groupId),
+  ],
+);
+
 // chapters — ordered list per manga
 export const chapters = pgTable(
   'chapters',
@@ -198,6 +215,7 @@ export const chapters = pgTable(
     slug: varchar('slug', { length: 520 }).notNull(),
     language: varchar('language', { length: 10 }).default('vi').notNull(),
     volume: varchar('volume', { length: 20 }),
+    publishedAt: timestamp('published_at'),
     viewCount: bigint('view_count', { mode: 'number' }).default(0).notNull(),
     order: integer('order').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -227,6 +245,7 @@ export const chapterImages = pgTable(
       .notNull()
       .references(() => chapters.id, { onDelete: 'cascade' }),
     imageUrl: varchar('image_url', { length: 1000 }).notNull(),
+    sourceUrl: varchar('source_url', { length: 1000 }),
     pageNumber: integer('page_number').notNull(),
     order: integer('order').notNull(),
     width: integer('width'),

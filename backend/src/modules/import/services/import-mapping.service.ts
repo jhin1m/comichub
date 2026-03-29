@@ -7,21 +7,28 @@ import {
   genres,
   artists,
   authors,
+  groups,
   mangaGenres,
   mangaArtists,
   mangaAuthors,
   mangaSources,
   mangaLinks,
+  chapters,
+  chapterSources,
+  chapterImages,
+  chapterGroups,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
 import type {
   ExternalManga,
   ExternalLink,
+  ExternalChapter,
+  ExternalChapterImage,
   ImportResult,
 } from '../types/external-manga.types.js';
 import type { ImportSource } from '../types/import-source.enum.js';
 
-type TaxonomyTable = typeof genres | typeof artists | typeof authors;
+type TaxonomyTable = typeof genres | typeof artists | typeof authors | typeof groups;
 
 @Injectable()
 export class ImportMappingService {
@@ -224,6 +231,136 @@ export class ImportMappingService {
 
       return { mangaId, slug: inserted.slug, created: true };
     });
+  }
+
+  async upsertChapters(
+    mangaId: number,
+    externalChapters: ExternalChapter[],
+    source: ImportSource,
+  ): Promise<{ chapterId: number; externalId: string; isNew: boolean }[]> {
+    const results: { chapterId: number; externalId: string; isNew: boolean }[] = [];
+
+    for (const ext of externalChapters) {
+      const [existing] = await this.db
+        .select({ chapterId: chapterSources.chapterId })
+        .from(chapterSources)
+        .where(
+          and(
+            eq(chapterSources.source, source),
+            eq(chapterSources.externalId, ext.externalId),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        results.push({ chapterId: existing.chapterId, externalId: ext.externalId, isNew: false });
+        continue;
+      }
+
+      const slug = `chapter-${ext.number}`;
+      const [existingChapter] = await this.db
+        .select({ id: chapters.id })
+        .from(chapters)
+        .where(
+          and(
+            eq(chapters.mangaId, mangaId),
+            eq(chapters.number, String(ext.number)),
+            eq(chapters.language, ext.language),
+          ),
+        )
+        .limit(1);
+
+      let chapterId: number;
+      if (existingChapter) {
+        chapterId = existingChapter.id;
+      } else {
+        const [inserted] = await this.db
+          .insert(chapters)
+          .values({
+            mangaId,
+            number: String(ext.number),
+            title: ext.title ?? null,
+            slug,
+            language: ext.language,
+            volume: ext.volume ?? null,
+            publishedAt: ext.publishedAt ? new Date(ext.publishedAt) : null,
+            order: Math.round(ext.number * 10),
+          })
+          .onConflictDoNothing()
+          .returning({ id: chapters.id });
+
+        if (!inserted) {
+          const [found] = await this.db
+            .select({ id: chapters.id })
+            .from(chapters)
+            .where(
+              and(
+                eq(chapters.mangaId, mangaId),
+                eq(chapters.number, String(ext.number)),
+                eq(chapters.language, ext.language),
+              ),
+            )
+            .limit(1);
+          if (!found) continue;
+          chapterId = found.id;
+        } else {
+          chapterId = inserted.id;
+        }
+      }
+
+      await this.db
+        .insert(chapterSources)
+        .values({
+          chapterId,
+          source,
+          externalId: ext.externalId,
+          lastSyncedAt: new Date(),
+        })
+        .onConflictDoNothing();
+
+      // Link scanlation groups to chapter
+      if (ext.groups?.length) {
+        const groupIds = await this.resolveByName(groups, ext.groups.map((g) => g.name));
+        if (groupIds.length) {
+          await this.db
+            .insert(chapterGroups)
+            .values(groupIds.map((groupId) => ({ chapterId, groupId })))
+            .onConflictDoNothing();
+        }
+      }
+
+      results.push({ chapterId, externalId: ext.externalId, isNew: !existingChapter });
+    }
+
+    return results;
+  }
+
+  async insertChapterImages(
+    chapterId: number,
+    images: ExternalChapterImage[],
+  ): Promise<number> {
+    if (!images.length) return 0;
+
+    const [existing] = await this.db
+      .select({ id: chapterImages.id })
+      .from(chapterImages)
+      .where(eq(chapterImages.chapterId, chapterId))
+      .limit(1);
+
+    if (existing) return 0;
+
+    const records = images.map((img, idx) => ({
+      chapterId,
+      imageUrl: img.url,
+      sourceUrl: img.url,
+      pageNumber: img.pageNumber,
+      order: idx + 1,
+      width: img.width ?? null,
+      height: img.height ?? null,
+    }));
+
+    await this.db.insert(chapterImages).values(records);
+    return records.length;
   }
 
   private async syncPivotsTx(
