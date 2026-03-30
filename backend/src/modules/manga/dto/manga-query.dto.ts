@@ -7,6 +7,7 @@ import {
   IsString,
   IsBoolean,
   IsNumber,
+  MaxLength,
   Matches,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -26,6 +27,12 @@ export enum SortOrder {
 }
 
 export class MangaQueryDto extends PaginationDto {
+  @ApiPropertyOptional({ description: 'Search by title (ILIKE)', maxLength: 200 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  search?: string;
+
   @ApiPropertyOptional({ enum: MangaStatus })
   @IsOptional()
   @IsEnum(MangaStatus)

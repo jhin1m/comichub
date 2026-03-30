@@ -15,6 +15,8 @@ import {
   notInArray,
   gte,
   lte,
+  ilike,
+  or,
   sql,
   SQL,
 } from 'drizzle-orm';
@@ -56,6 +58,7 @@ export class MangaService {
       page,
       limit,
       offset,
+      search,
       status,
       type,
       genre,
@@ -78,6 +81,16 @@ export class MangaService {
     } = query;
 
     const conditions: SQL[] = [isNull(manga.deletedAt)];
+
+    if (search) {
+      const escaped = search.replace(/[%_\\]/g, '\\$&');
+      conditions.push(
+        or(
+          ilike(manga.title, `%${escaped}%`),
+          sql`${manga.altTitles}::text ILIKE ${`%${escaped}%`}`,
+        )!,
+      );
+    }
 
     if (status) conditions.push(eq(manga.status, status));
     if (type) conditions.push(eq(manga.type, type));
