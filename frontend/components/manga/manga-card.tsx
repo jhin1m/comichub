@@ -76,7 +76,7 @@ export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
         <span className="font-rajdhani font-semibold text-secondary">
           {item.latestChapterNumber ? `Ch.${item.latestChapterNumber}` : 'No ch.'}
         </span>
-        <span className="font-rajdhani text-muted">{formatRelativeDate(item.updatedAt)}</span>
+        <span className="font-rajdhani text-muted" suppressHydrationWarning>{formatRelativeDate(item.updatedAt)}</span>
       </div>
 
       {/* Title */}

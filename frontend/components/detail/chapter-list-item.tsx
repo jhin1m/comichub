@@ -81,7 +81,7 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
       {/* Date */}
       <div className="flex items-center gap-1.5 w-24 justify-end shrink-0 text-sm text-muted">
         <Clock size={14} className="opacity-60" />
-        <span>{formatRelativeDate(chapter.createdAt)}</span>
+        <span suppressHydrationWarning>{formatRelativeDate(chapter.createdAt)}</span>
       </div>
     </div>
   );

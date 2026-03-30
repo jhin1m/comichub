@@ -226,7 +226,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
       </div>
 
       {/* Chapter rows */}
-      <div className="max-h-[640px] overflow-y-auto chapter-list-scroll">
+      <div className="max-h-[640px] overflow-y-auto overflow-x-hidden chapter-list-scroll">
         {paginated.length === 0 ? (
           <p className="text-base text-muted py-10 text-center">No chapters found.</p>
         ) : (

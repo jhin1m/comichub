@@ -36,7 +36,7 @@ export function MangaDescription({ description }: Props) {
     <div className="space-y-1.5">
       <p
         ref={innerRef}
-        className={`text-secondary text-sm leading-relaxed whitespace-pre-line transition-[max-height] duration-300 ease-in-out overflow-hidden ${
+        className={`text-secondary text-sm leading-relaxed whitespace-pre-line break-words transition-[max-height] duration-300 ease-in-out overflow-hidden ${
           clamped ? 'max-h-[4.5em]' : 'max-h-[80em]'
         }`}
       >

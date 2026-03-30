@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.weebdex.net',
       },
+      {
+        protocol: 'https',
+        hostname: '*.comix.to',
+      },
     ],
   },
 };

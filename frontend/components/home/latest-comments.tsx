@@ -46,7 +46,7 @@ function CommentItem({ comment }: { comment: RecentComment }) {
       {/* User + time */}
       <div className="flex items-center justify-between text-xs text-muted font-rajdhani">
         <span className="truncate max-w-[60%]">{comment.userName}</span>
-        <span className="shrink-0">{formatRelativeDate(comment.createdAt)}</span>
+        <span className="shrink-0" suppressHydrationWarning>{formatRelativeDate(comment.createdAt)}</span>
       </div>
     </Link>
   );

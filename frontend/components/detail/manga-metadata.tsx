@@ -49,7 +49,7 @@ function Row({ label, scrollable, children }: { label: string; scrollable?: bool
   return (
     <div className="flex items-start gap-4 py-2 border-b border-default last:border-0">
       <span className="text-muted shrink-0 font-rajdhani font-semibold w-20">{label}</span>
-      <span className={`text-primary text-left flex-1 ${scrollable ? 'max-h-[3lh] overflow-y-auto' : ''}`}>
+      <span className={`text-primary text-left flex-1 min-w-0 break-words ${scrollable ? 'max-h-[3lh] overflow-y-auto' : ''}`}>
         {children}
       </span>
     </div>

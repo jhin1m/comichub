@@ -46,11 +46,11 @@ export default async function MangaDetailPage({ params }: Props) {
           {/* Hero content */}
           <div className="relative z-10 max-w-350 mx-auto px-4 py-8 md:py-10">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 <MangaCoverHero manga={manga} />
                 <MobileDetailsBar manga={manga} />
               </div>
-              <div className="hidden lg:block">
+              <div className="hidden lg:block min-w-0">
                 <MangaSidebar manga={manga} />
               </div>
             </div>
@@ -60,11 +60,11 @@ export default async function MangaDetailPage({ params }: Props) {
         {/* ===== BELOW HERO — chapters, comments, sidebar ===== */}
         <main className="max-w-350 mx-auto px-4 py-8">
           <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
-            <div className="space-y-8">
+            <div className="space-y-8 min-w-0">
               <ChapterList chapters={manga.chapters} mangaSlug={slug} />
               <CommentSection commentableType="manga" commentableId={manga.id} />
             </div>
-            <aside>
+            <aside className="min-w-0">
               <SimilarManga genres={manga.genres} currentMangaId={manga.id} />
             </aside>
           </section>

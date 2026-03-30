@@ -60,7 +60,7 @@ function SidebarItem({ item }: { item: MangaListItem }) {
             {item.latestChapterNumber ? `Ch.${item.latestChapterNumber}` : 'Ch.0'}
           </span>
           {' · '}
-          {formatRelativeDate(item.updatedAt)}
+          <span suppressHydrationWarning>{formatRelativeDate(item.updatedAt)}</span>
         </div>
       </div>
     </Link>
