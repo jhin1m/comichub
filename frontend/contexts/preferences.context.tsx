@@ -36,10 +36,18 @@ function readLocalStorage(): ContentPreferences | null {
   }
 }
 
+function writeCookie(prefs: ContentPreferences) {
+  if (typeof window === 'undefined') return;
+  try {
+    document.cookie = `content-prefs=${encodeURIComponent(JSON.stringify(prefs))}; path=/; max-age=31536000; SameSite=Lax`;
+  } catch { /* ignore */ }
+}
+
 function writeLocalStorage(prefs: ContentPreferences) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    writeCookie(prefs);
   } catch {
     // ignore quota errors
   }
@@ -52,10 +60,14 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const prevUserRef = useRef<typeof user>(undefined);
   const prevLoadingRef = useRef(loading);
 
-  // Mount: read from localStorage
+  // Mount: read from localStorage and sync to cookie for RSC access
   useEffect(() => {
     const stored = readLocalStorage();
-    if (stored) setPreferences({ ...DEFAULT_PREFERENCES, ...stored });
+    if (stored) {
+      const merged = { ...DEFAULT_PREFERENCES, ...stored };
+      setPreferences(merged);
+      writeCookie(merged);
+    }
     setIsLoaded(true);
   }, []);
 
