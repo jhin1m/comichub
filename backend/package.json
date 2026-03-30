@@ -21,7 +21,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "npx tsx --env-file=.env src/database/seed/seed.ts"
+    "db:seed": "npx tsx --env-file=.env src/database/seed/seed.ts",
+    "import:weebdex": "npx tsx --tsconfig tsconfig.json src/scripts/weebdex-import.ts",
+    "import:mangabaka": "npx tsx --tsconfig tsconfig.json src/scripts/mangabaka-import.ts",
+    "import:comix": "npx tsx --tsconfig tsconfig.json src/scripts/comix-import.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1013.0",

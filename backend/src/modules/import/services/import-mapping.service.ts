@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -52,9 +52,8 @@ export class ImportMappingService {
     const foundSlugs = new Set(existing.map((r) => r.slug));
     const missing = slugs.filter((s) => !foundSlugs.has(s));
 
-    let inserted: { id: number }[] = [];
     if (missing.length) {
-      inserted = await this.db
+      await this.db
         .insert(t)
         .values(
           missing.map(
@@ -65,15 +64,19 @@ export class ImportMappingService {
               },
           ),
         )
-        .onConflictDoNothing()
-        .returning({ id: t.id });
+        .onConflictDoNothing();
+      // Re-query to get correct IDs (positional mapping breaks when conflicts occur)
+      const newlyResolved = await this.db
+        .select({ id: t.id, slug: t.slug })
+        .from(t)
+        .where(inArray(t.slug, missing));
+      existing.push(...newlyResolved);
     }
 
     // Preserve input order
-    const idBySlug = new Map([
-      ...existing.map((r) => [r.slug, r.id] as [string, number]),
-      ...inserted.map((r, i) => [missing[i], r.id] as [string, number]),
-    ]);
+    const idBySlug = new Map(
+      existing.map((r) => [r.slug, r.id] as [string, number]),
+    );
     return slugs
       .map((s) => idBySlug.get(s))
       .filter((id): id is number => id !== undefined);
@@ -93,19 +96,21 @@ export class ImportMappingService {
     const foundSlugs = new Set(existing.map((r) => r.slug));
     const missing = slugs.filter((s) => !foundSlugs.has(s));
 
-    let inserted: { id: number }[] = [];
     if (missing.length) {
-      inserted = await this.db
+      await this.db
         .insert(genres)
         .values(missing.map((s) => ({ name: slugMap.get(s)!, slug: s, group })))
-        .onConflictDoNothing()
-        .returning({ id: genres.id });
+        .onConflictDoNothing();
+      const newlyResolved = await this.db
+        .select({ id: genres.id, slug: genres.slug })
+        .from(genres)
+        .where(inArray(genres.slug, missing));
+      existing.push(...newlyResolved);
     }
 
-    const idBySlug = new Map([
-      ...existing.map((r) => [r.slug, r.id] as [string, number]),
-      ...inserted.map((r, i) => [missing[i], r.id] as [string, number]),
-    ]);
+    const idBySlug = new Map(
+      existing.map((r) => [r.slug, r.id] as [string, number]),
+    );
     return slugs
       .map((s) => idBySlug.get(s))
       .filter((id): id is number => id !== undefined);
@@ -338,19 +343,30 @@ export class ImportMappingService {
   async insertChapterImages(
     chapterId: number,
     images: ExternalChapterImage[],
+    groupId?: number | null,
   ): Promise<number> {
     if (!images.length) return 0;
 
-    const [existing] = await this.db
+    // Check if images already exist for this exact chapter+group combo (symmetric for null)
+    const existingQuery = this.db
       .select({ id: chapterImages.id })
       .from(chapterImages)
-      .where(eq(chapterImages.chapterId, chapterId))
+      .where(
+        and(
+          eq(chapterImages.chapterId, chapterId),
+          groupId != null
+            ? eq(chapterImages.groupId, groupId)
+            : isNull(chapterImages.groupId),
+        ),
+      )
       .limit(1);
 
+    const [existing] = await existingQuery;
     if (existing) return 0;
 
     const records = images.map((img, idx) => ({
       chapterId,
+      groupId: groupId ?? null,
       imageUrl: img.url,
       sourceUrl: img.url,
       pageNumber: img.pageNumber,

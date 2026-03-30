@@ -33,6 +33,7 @@ export const importSourceEnum = pgEnum('import_source', [
   'mangabaka',
   'comick',
   'weebdex',
+  'comix',
 ]);
 export const contentRatingEnum = pgEnum('content_rating', [
   'safe',
@@ -236,7 +237,7 @@ export const chapters = pgTable(
   ],
 );
 
-// chapter_images — individual pages stored in S3
+// chapter_images — individual pages; group_id allows multiple image sets per chapter (one per scanlation group)
 export const chapterImages = pgTable(
   'chapter_images',
   {
@@ -244,6 +245,9 @@ export const chapterImages = pgTable(
     chapterId: integer('chapter_id')
       .notNull()
       .references(() => chapters.id, { onDelete: 'cascade' }),
+    groupId: integer('group_id').references(() => groups.id, {
+      onDelete: 'set null',
+    }),
     imageUrl: varchar('image_url', { length: 1000 }).notNull(),
     sourceUrl: varchar('source_url', { length: 1000 }),
     pageNumber: integer('page_number').notNull(),
@@ -253,11 +257,14 @@ export const chapterImages = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex('chapter_images_chapter_page_idx').on(
+    // DB migration adds NULLS NOT DISTINCT so (chapterId, pageNumber, NULL) is also unique
+    uniqueIndex('chapter_images_chapter_page_group_idx').on(
       table.chapterId,
       table.pageNumber,
+      table.groupId,
     ),
     index('chapter_images_chapter_order_idx').on(table.chapterId, table.order),
+    index('chapter_images_group_idx').on(table.groupId),
   ],
 );
 

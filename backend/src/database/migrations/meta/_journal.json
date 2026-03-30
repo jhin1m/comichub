@@ -85,6 +85,20 @@
       "when": 1775030000000,
       "tag": "0011_add_chapter_published_at_and_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1775120000000,
+      "tag": "0012_add_comix_import_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1775210000000,
+      "tag": "0013_add_group_id_to_chapter_images",
+      "breakpoints": true
     }
   ]
 }
