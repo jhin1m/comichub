@@ -71,13 +71,13 @@ export function MangaMetadata({ manga }: Props) {
       <Row label="Authors" scrollable>
         <TaxonomyLinks
           items={manga.authors}
-          href={(a) => `/author/${a.slug}`}
+          href={(a) => `/browse?author=${a.id}`}
         />
       </Row>
       <Row label="Artists" scrollable>
         <TaxonomyLinks
           items={manga.artists}
-          href={(a) => `/artist/${a.slug}`}
+          href={(a) => `/browse?artist=${a.id}`}
         />
       </Row>
       <Row label="Genres" scrollable>

@@ -24,8 +24,8 @@ function StatItem({ icon: Icon, value }: { icon: typeof Eye; value: string }) {
 }
 
 export function MangaCoverHero({ manga }: Props) {
-  const firstChapter = manga.chapters[manga.chapters.length - 1];
-  const latestChapter = manga.chapters[0];
+  const firstChapter = manga.chapters[0];
+  const latestChapter = manga.chapters[manga.chapters.length - 1];
 
   return (
     <div className="space-y-4">
