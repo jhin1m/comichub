@@ -19,29 +19,21 @@ export class HistoryService {
     userId: number,
     dto: UpsertHistoryDto,
   ): Promise<{ message: string }> {
-    const existing = await this.db.query.readingHistory.findFirst({
-      where: and(
-        eq(readingHistory.userId, userId),
-        eq(readingHistory.mangaId, dto.mangaId),
-      ),
-    });
-
-    if (existing) {
-      await this.db
-        .update(readingHistory)
-        .set({
-          chapterId: dto.chapterId ?? existing.chapterId,
-          lastReadAt: new Date(),
-        })
-        .where(eq(readingHistory.id, existing.id));
-    } else {
-      await this.db.insert(readingHistory).values({
+    await this.db
+      .insert(readingHistory)
+      .values({
         userId,
         mangaId: dto.mangaId,
         chapterId: dto.chapterId ?? null,
         lastReadAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [readingHistory.userId, readingHistory.mangaId],
+        set: {
+          chapterId: dto.chapterId ?? readingHistory.chapterId,
+          lastReadAt: new Date(),
+        },
       });
-    }
 
     return { message: 'History updated' };
   }
