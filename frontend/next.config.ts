@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // allowedDevOrigins: ['usb-wages-ada-radiation.trycloudflare.com'],
+  output: 'standalone',
   images: {
     remotePatterns: [
       {

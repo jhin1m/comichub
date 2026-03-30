@@ -15,6 +15,7 @@ import { NotificationModule } from './modules/notification/notification.module.j
 import { SitemapModule } from './modules/sitemap/sitemap.module.js';
 import { ImportModule } from './modules/import/import.module.js';
 import { BookmarkModule } from './modules/bookmark/bookmark.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 
 @Module({
@@ -34,6 +35,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
     SitemapModule,
     ImportModule,
     BookmarkModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
