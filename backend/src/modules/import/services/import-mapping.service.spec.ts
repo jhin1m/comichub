@@ -495,8 +495,6 @@ describe('ImportMappingService', () => {
         {
           externalId: '123',
           title: 'Manga',
-          nativeTitle: 'Native',
-          romanizedTitle: 'Romanized',
           altTitles: ['Alt1', 'Alt2'],
           description: 'Description',
           coverUrl: 'https://example.com/cover.jpg',

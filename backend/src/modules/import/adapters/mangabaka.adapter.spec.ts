@@ -72,8 +72,8 @@ describe('MangaBakaAdapter', () => {
 
       expect(result.externalId).toBe('123');
       expect(result.title).toBe('Test Manga');
-      expect(result.nativeTitle).toBe('テスト漫画');
-      expect(result.romanizedTitle).toBe('Tesuto Manga');
+      expect(result.altTitles).toContain('テスト漫画');
+      expect(result.altTitles).toContain('Tesuto Manga');
       expect(result.description).toBe('A test manga');
       expect(result.year).toBe(2020);
       expect(result.authors).toEqual(['Author A']);
@@ -418,7 +418,6 @@ describe('MangaBakaAdapter', () => {
       const result = await adapter.fetchManga('1');
       expect(result.externalId).toBe('1');
       expect(result.title).toBe('Manga');
-      expect(result.nativeTitle).toBeUndefined();
       expect(result.altTitles).toEqual([]);
       expect(result.authors).toEqual([]);
       expect(result.artists).toEqual([]);

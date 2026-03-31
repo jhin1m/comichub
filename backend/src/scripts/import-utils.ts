@@ -102,7 +102,6 @@ export async function resolveByName(
 // ─── Manga insert helper ─────────────────────────────────────────
 export interface MangaInsertData {
   title: string;
-  nativeTitle: string | null;
   altTitles: string[];
   description: string | null;
   coverUrl: string | null;
@@ -148,7 +147,7 @@ export async function upsertManga(data: MangaInsertData): Promise<{ mangaId: num
 
   // Insert manga
   const [inserted] = await db.insert(schema.manga).values({
-    title: data.title, nativeTitle: data.nativeTitle, altTitles: data.altTitles,
+    title: data.title, altTitles: data.altTitles,
     description: data.description, cover: data.coverUrl,
     originalLanguage: data.originalLanguage,
     status: (data.status || 'ongoing') as typeof schema.manga.$inferInsert.status,

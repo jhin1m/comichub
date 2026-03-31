@@ -39,7 +39,6 @@ async function importOneManga(externalId: string): Promise<{ mangaId: number; is
   const raw = await api<any>(`/manga/${externalId}`);
   const rels = raw.relationships ?? {};
   const tags = rels.tags ?? [];
-  const nativeTitle = raw.alt_titles?.['ja']?.[0] ?? raw.alt_titles?.['ko']?.[0] ?? raw.alt_titles?.['zh']?.[0] ?? null;
   const altTitles = raw.alt_titles ? Object.values(raw.alt_titles).flat() as string[] : [];
   const coverUrl = rels.cover?.id && rels.cover?.ext
     ? `https://weebdex.org/covers/${raw.id}/${rels.cover.id}${rels.cover.ext}` : null;
@@ -47,7 +46,7 @@ async function importOneManga(externalId: string): Promise<{ mangaId: number; is
   const inferType = (lang?: string) => lang === 'ko' ? 'manhwa' : lang === 'zh' ? 'manhua' : 'manga';
 
   return upsertManga({
-    title: raw.title, nativeTitle, altTitles,
+    title: raw.title, altTitles,
     description: raw.description ?? null, coverUrl,
     originalLanguage: raw.language ?? null,
     status: raw.status ?? 'ongoing',

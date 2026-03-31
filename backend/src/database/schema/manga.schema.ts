@@ -93,8 +93,6 @@ export const manga = pgTable(
     contentRating: contentRatingEnum('content_rating')
       .default('suggestive')
       .notNull(),
-    nativeTitle: varchar('native_title', { length: 500 }),
-    romanizedTitle: varchar('romanized_title', { length: 500 }),
     views: bigint('views', { mode: 'number' }).default(0).notNull(),
     viewsDay: integer('views_day').default(0).notNull(),
     viewsWeek: integer('views_week').default(0).notNull(),

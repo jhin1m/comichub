@@ -1,8 +1,6 @@
 export interface ExternalManga {
   externalId: string;
   title: string;
-  nativeTitle?: string;
-  romanizedTitle?: string;
   altTitles: string[];
   description?: string;
   coverUrl?: string;

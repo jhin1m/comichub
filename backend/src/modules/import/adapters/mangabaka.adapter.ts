@@ -59,9 +59,11 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
     return {
       externalId: String(raw.id),
       title: raw.title,
-      nativeTitle: raw.native_title,
-      romanizedTitle: raw.romanized_title,
-      altTitles: this.flattenAltTitles(raw.secondary_titles),
+      altTitles: this.mergeAltTitles(
+        this.flattenAltTitles(raw.secondary_titles),
+        raw.native_title,
+        raw.romanized_title,
+      ),
       description: raw.description,
       coverUrl: raw.cover?.x300?.url ?? raw.cover?.raw?.url,
       status: this.normalizeStatus(raw.status),
@@ -88,6 +90,21 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
       .flat()
       .map((entry) => entry.title)
       .filter(Boolean);
+  }
+
+  /** Merge native/romanized titles into altTitles, deduplicating */
+  private mergeAltTitles(
+    altTitles: string[],
+    ...extras: (string | undefined | null)[]
+  ): string[] {
+    const set = new Set(altTitles);
+    for (const t of extras) {
+      if (t && !set.has(t)) {
+        set.add(t);
+        altTitles.push(t);
+      }
+    }
+    return altTitles;
   }
 
   private normalizeStatus(status?: string): ExternalManga['status'] {

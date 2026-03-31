@@ -172,8 +172,6 @@ async function importManga(raw: WDManga): Promise<string> {
     authorIds.push(await resolveTaxonomy(schema.authors, a.name));
 
   const altTitles = raw.alt_titles ? Object.values(raw.alt_titles).flat() : [];
-  const nativeTitle =
-    raw.alt_titles?.['ja']?.[0] ?? raw.alt_titles?.['ko']?.[0] ?? null;
   const coverUrl = rels?.cover
     ? `https://weebdex.org/covers/${raw.id}/${rels.cover.id}${rels.cover.ext}`
     : null;
@@ -204,7 +202,6 @@ async function importManga(raw: WDManga): Promise<string> {
       status: statusMap(raw.status) as any,
       type: inferType(raw.language) as any,
       contentRating: (raw.content_rating ?? 'safe') as any,
-      nativeTitle,
       demographic: raw.demographic ?? null,
       year: raw.year ?? null,
     })

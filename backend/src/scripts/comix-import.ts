@@ -108,7 +108,6 @@ function extractIdFromUrl(key: string, url: string): string | null {
 async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boolean }> {
   const hashId = raw.hash_id;
   const altTitles = raw.alt_titles ?? [];
-  const nativeTitle = altTitles[0] ?? null;
   const coverUrl = raw.poster?.large ?? raw.poster?.medium ?? null;
 
   // External links — extract IDs from URLs
@@ -124,7 +123,6 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
 
   const { mangaId, isNew } = await upsertManga({
     title: raw.title,
-    nativeTitle,
     altTitles,
     description: raw.synopsis ?? null,
     coverUrl,

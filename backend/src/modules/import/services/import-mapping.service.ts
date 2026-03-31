@@ -158,8 +158,6 @@ export class ImportMappingService {
 
     const mangaValues = {
       title: external.title,
-      nativeTitle: external.nativeTitle ?? null,
-      romanizedTitle: external.romanizedTitle ?? null,
       altTitles: external.altTitles,
       description: external.description ?? null,
       cover: external.coverUrl ?? null,

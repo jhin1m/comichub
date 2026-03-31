@@ -131,13 +131,6 @@ export class WeebDexAdapter implements SourceAdapter, OnModuleInit {
       ? Object.values(raw.alt_titles).flat()
       : [];
 
-    // Native title: prefer ja, then ko, then zh from alt_titles
-    const nativeTitle =
-      raw.alt_titles?.['ja']?.[0] ??
-      raw.alt_titles?.['ko']?.[0] ??
-      raw.alt_titles?.['zh']?.[0] ??
-      undefined;
-
     const tags = rels?.tags ?? [];
     const genres = tags.filter((t) => t.group === 'genre').map((t) => t.name);
     const themes = tags.filter((t) => t.group === 'theme').map((t) => t.name);
@@ -150,7 +143,6 @@ export class WeebDexAdapter implements SourceAdapter, OnModuleInit {
     return {
       externalId: raw.id,
       title: raw.title,
-      nativeTitle,
       altTitles,
       description: raw.description,
       coverUrl: this.extractCoverUrl(raw),

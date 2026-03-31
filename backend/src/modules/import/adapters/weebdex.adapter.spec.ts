@@ -73,7 +73,7 @@ describe('WeebDexAdapter', () => {
       expect(result.title).toBeTruthy();
     });
 
-    it('should extract nativeTitle from ja/ko/zh keys', async () => {
+    it('should include ja/ko/zh titles in altTitles', async () => {
       const raw = {
         id: 'manga-123',
         title: 'English',
@@ -89,7 +89,8 @@ describe('WeebDexAdapter', () => {
       });
 
       const result = await adapter.fetchManga('manga-123');
-      expect(result.nativeTitle).toBe('Japanese Title');
+      expect(result.altTitles).toContain('Japanese Title');
+      expect(result.altTitles).toContain('English');
     });
 
     it('should flatten altTitles from array of Record objects', async () => {

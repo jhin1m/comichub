@@ -65,11 +65,13 @@ function api<T>(path: string) {
 
 // ─── Normalize MangaBaka series → upsert data ───────────────────
 function normalizeSeries(raw: any) {
-  // Native title: prefer ja, then ko, then zh from titles array
+  // Merge all titles (including native/romanized) into altTitles
   const titles: any[] = raw.titles ?? [];
-  const nativeTitle = titles.find((t: any) => t.language === 'ja' && t.traits?.includes('native'))?.title
-    ?? raw.native_title ?? null;
   const altTitles = titles.map((t: any) => t.title).filter(Boolean);
+  // Append native_title and romanized_title if not already present
+  for (const extra of [raw.native_title, raw.romanized_title]) {
+    if (extra && !altTitles.includes(extra)) altTitles.push(extra);
+  }
 
   // Cover: prefer x300, fallback to raw
   const coverUrl = raw.cover?.x300?.x1 ?? raw.cover?.raw?.url ?? null;
@@ -100,7 +102,7 @@ function normalizeSeries(raw: any) {
   }
 
   return {
-    title: raw.title, nativeTitle, altTitles,
+    title: raw.title, altTitles,
     description: raw.description ?? null, coverUrl,
     originalLanguage: null as string | null,
     status: normalizeStatus(raw.status),
