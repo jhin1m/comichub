@@ -81,13 +81,17 @@ export class ChapterService {
   }
 
   async findOne(id: number): Promise<ChapterWithImages> {
-    const [chapter] = await this.db
-      .select()
+    const [row] = await this.db
+      .select({
+        chapter: chapters,
+        mangaTitle: manga.title,
+      })
       .from(chapters)
+      .innerJoin(manga, eq(chapters.mangaId, manga.id))
       .where(and(eq(chapters.id, id), isNull(chapters.deletedAt)))
       .limit(1);
 
-    if (!chapter) throw new NotFoundException('Chapter not found');
+    if (!row) throw new NotFoundException('Chapter not found');
 
     const [images, chapterGroupRows] = await Promise.all([
       this.db
@@ -102,7 +106,7 @@ export class ChapterService {
         .where(eq(chapterGroups.chapterId, id)),
     ]);
 
-    return { ...chapter, images, groups: chapterGroupRows };
+    return { ...row.chapter, mangaTitle: row.mangaTitle, images, groups: chapterGroupRows };
   }
 
   async getNavigation(id: number): Promise<ChapterNavigation> {

@@ -110,12 +110,12 @@ describe('ChapterService', () => {
       let callCount = 0;
       mockDb.select.mockImplementation(() => {
         callCount++;
-        if (callCount === 1) return buildChain([chapter]);
+        if (callCount === 1) return buildChain([{ chapter, mangaTitle: 'Test Manga' }]);
         return buildChain(images);
       });
 
       const result = await service.findOne(1);
-      expect(result).toMatchObject({ id: 1, number: '1' });
+      expect(result).toMatchObject({ id: 1, number: '1', mangaTitle: 'Test Manga' });
       expect(result.images).toEqual(images);
     });
   });
@@ -209,7 +209,7 @@ describe('ChapterService', () => {
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
-        if (selectCall === 1) return buildChain([chapter]); // findOne → chapter
+        if (selectCall === 1) return buildChain([{ chapter, mangaTitle: 'Test Manga' }]); // findOne → chapter+manga join
         return buildChain([]); // findOne → images
       });
       mockDb.update.mockReturnValue(

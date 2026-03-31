@@ -5,16 +5,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { chapterApi } from '@/lib/api/chapter.api';
 import { ChapterReader } from '@/components/reader/chapter-reader';
+import { buildMeta, JsonLd, buildBreadcrumbJsonLd, SITE_URL } from '@/lib/seo';
 
 interface Props {
   params: Promise<{ slug: string; chapterId: string }>;
-}
-
-function formatSlugToTitle(slug: string): string {
-  return slug
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
 }
 
 const getChapter = cache((id: number) =>
@@ -24,16 +18,24 @@ const getChapter = cache((id: number) =>
 export default async function ChapterReaderPage({ params }: Props) {
   const { slug, chapterId } = await params;
   const id = Number(chapterId);
+  if (!Number.isFinite(id) || id <= 0) notFound();
 
   try {
     const [chapter, nav] = await getChapter(id);
     return (
-      <ChapterReader
-        chapter={chapter}
-        nav={nav}
-        slug={slug}
-        mangaTitle={formatSlugToTitle(slug)}
-      />
+      <>
+        <JsonLd data={buildBreadcrumbJsonLd([
+          { name: 'Home', url: SITE_URL },
+          { name: chapter.mangaTitle, url: `${SITE_URL}/manga/${slug}` },
+          { name: `Ch. ${chapter.number}`, url: `${SITE_URL}/manga/${slug}/${chapterId}` },
+        ])} />
+        <ChapterReader
+          chapter={chapter}
+          nav={nav}
+          slug={slug}
+          mangaTitle={chapter.mangaTitle}
+        />
+      </>
     );
   } catch {
     notFound();
@@ -43,13 +45,15 @@ export default async function ChapterReaderPage({ params }: Props) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, chapterId } = await params;
   const id = Number(chapterId);
+  if (!Number.isFinite(id) || id <= 0) return { title: 'Chapter Not Found' };
   try {
     const [chapter] = await getChapter(id);
-    const title = formatSlugToTitle(slug);
-    return {
-      title: `Ch. ${chapter.number} - ${title} - ComicHub`,
-    };
+    return buildMeta({
+      title: `Ch. ${chapter.number} - ${chapter.mangaTitle}`,
+      description: `Read Chapter ${chapter.number} of ${chapter.mangaTitle} online on ComicHub`,
+      path: `/manga/${slug}/${chapterId}`,
+    });
   } catch {
-    return { title: 'Chapter Not Found - ComicHub' };
+    return { title: 'Chapter Not Found' };
   }
 }

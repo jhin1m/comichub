@@ -53,6 +53,7 @@ export interface GroupDetailResponse {
 
 export interface ChapterWithImages extends ChapterListItem {
   mangaId: number;
+  mangaTitle: string;
   images: ChapterImage[];
 }
 
