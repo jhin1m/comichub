@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { Suspense, useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ClockIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCard } from '@/components/manga/manga-card';
@@ -23,34 +24,21 @@ interface Props {
   initialData: PaginatedResult<MangaListItem>;
 }
 
-export function LatestUpdatesSection({ initialData }: Props) {
+function LatestUpdatesSectionInner({ initialData }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const sectionRef = useRef<HTMLElement>(null);
-  const [page, setPage] = useState(initialData.page);
+
+  const urlPage = Number(searchParams.get('page')) || 1;
+
   const [items, setItems] = useState(initialData.data);
   const [total, setTotal] = useState(initialData.total);
   const [typeFilter, setTypeFilter] = useState('all');
   const [isPending, startTransition] = useTransition();
   const { params: prefParams, isLoaded: prefsLoaded } = usePreferencesParams();
   const hasRefetched = useRef(false);
-
-  // Re-fetch once preferences are loaded to apply filters on initial data
-  useEffect(() => {
-    if (!prefsLoaded || hasRefetched.current) return;
-    const hasFilters = prefParams.excludeTypes || prefParams.excludeDemographics
-      || prefParams.excludeGenres || prefParams.nsfw === false;
-    if (!hasFilters) return;
-    hasRefetched.current = true;
-    fetchData(1, typeFilter).then((result) => {
-      setPage(result.page);
-      setItems(result.data);
-      setTotal(result.total);
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefsLoaded]);
-
-  const totalPages = Math.ceil(total / LIMIT);
-  const hasPrev = page > 1;
-  const hasNext = page < totalPages;
+  const currentDataPage = useRef(1);
 
   async function fetchData(targetPage: number, type: string) {
     const params: Record<string, string> = {
@@ -69,26 +57,60 @@ export function LatestUpdatesSection({ initialData }: Props) {
     return res.data;
   }
 
-  function goToPage(nextPage: number) {
+  // Fetch when URL page changes (browser back/forward or deep link)
+  useEffect(() => {
+    if (urlPage === currentDataPage.current) return;
     startTransition(async () => {
       try {
-        const result = await fetchData(nextPage, typeFilter);
-        setPage(result.page);
+        const result = await fetchData(urlPage, typeFilter);
+        currentDataPage.current = result.page;
         setItems(result.data);
         setTotal(result.total);
-        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch {
         // fetch failed — keep current data
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlPage]);
+
+  // Re-fetch once preferences are loaded to apply filters
+  useEffect(() => {
+    if (!prefsLoaded || hasRefetched.current) return;
+    const hasFilters = prefParams.excludeTypes || prefParams.excludeDemographics
+      || prefParams.excludeGenres || prefParams.nsfw === false;
+    if (!hasFilters) return;
+    hasRefetched.current = true;
+    fetchData(urlPage, typeFilter).then((result) => {
+      currentDataPage.current = result.page;
+      setItems(result.data);
+      setTotal(result.total);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefsLoaded]);
+
+  const totalPages = Math.ceil(total / LIMIT);
+
+  function pushUrl(targetPage: number) {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (targetPage <= 1) sp.delete('page');
+    else sp.set('page', String(targetPage));
+    const query = sp.toString();
+    router.push(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+  }
+
+  function goToPage(nextPage: number) {
+    pushUrl(nextPage);
+    sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function onTypeChange(value: string) {
     setTypeFilter(value);
+    currentDataPage.current = 1;
+    pushUrl(1);
     startTransition(async () => {
       try {
         const result = await fetchData(1, value);
-        setPage(result.page);
+        currentDataPage.current = result.page;
         setItems(result.data);
         setTotal(result.total);
       } catch {
@@ -154,12 +176,20 @@ export function LatestUpdatesSection({ initialData }: Props) {
       {totalPages > 1 && (
         <div className="flex justify-center mt-6">
           <Pagination
-            currentPage={page}
+            currentPage={urlPage}
             totalPages={totalPages}
             onPageChange={goToPage}
           />
         </div>
       )}
     </section>
+  );
+}
+
+export function LatestUpdatesSection(props: Props) {
+  return (
+    <Suspense>
+      <LatestUpdatesSectionInner {...props} />
+    </Suspense>
   );
 }
