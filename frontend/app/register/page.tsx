@@ -1,6 +1,14 @@
 import Link from 'next/link';
+import { buildMeta } from '@/lib/seo';
 import { RegisterForm } from '@/components/auth/register-form';
 import { OAuthButton } from '@/components/auth/oauth-button';
+
+export const metadata = buildMeta({
+  title: 'Register',
+  description: 'Create a ComicHub account to bookmark manga and track reading progress.',
+  path: '/register',
+  noIndex: true,
+});
 
 export default function RegisterPage() {
   return (

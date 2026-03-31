@@ -103,6 +103,13 @@ Unified coding standards for ComicHub monorepo: NestJS backend + Next.js 16 fron
 - **Error handling**: Catch and display meaningful messages
 - **Loading states**: Show spinners, disable buttons during requests
 
+### SEO & Metadata
+- **Utility**: `lib/seo.tsx` provides `buildMeta()`, `JsonLd()`, and JSON-LD builders
+- **Metadata**: Use `buildMeta()` for all pages (title, description, OG, Twitter, canonical)
+- **Auth/Private Pages**: Set `noIndex: true` to prevent indexing (login, profile, bookmarks, settings)
+- **JSON-LD**: Embed structured data (WebSite, Organization, CreativeWork, BreadcrumbList) via `<JsonLd>` component
+- **Zero Dependencies**: Uses Next.js built-in Metadata API — no external packages required
+
 ### File Naming
 - **Components**: PascalCase file matching export (e.g., `LoginForm.tsx`)
 - **Utils/Hooks**: kebab-case (e.g., `use-auth.ts`, `format-date.ts`)

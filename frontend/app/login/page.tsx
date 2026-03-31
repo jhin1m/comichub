@@ -1,6 +1,14 @@
 import Link from 'next/link';
+import { buildMeta } from '@/lib/seo';
 import { LoginForm } from '@/components/auth/login-form';
 import { OAuthButton } from '@/components/auth/oauth-button';
+
+export const metadata = buildMeta({
+  title: 'Login',
+  description: 'Sign in to your ComicHub account.',
+  path: '/login',
+  noIndex: true,
+});
 
 export default function LoginPage() {
   return (

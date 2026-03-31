@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { mangaApi } from '@/lib/api/manga.api';
+import { buildMeta, JsonLd, buildMangaJsonLd, buildBreadcrumbJsonLd, SITE_URL } from '@/lib/seo';
 import { MangaCoverHero } from '@/components/detail/manga-cover-hero';
 import { MangaSidebar } from '@/components/detail/manga-sidebar';
 import { MobileDetailsBar } from '@/components/detail/mobile-details-bar';
@@ -24,6 +25,12 @@ export default async function MangaDetailPage({ params }: Props) {
     const manga = await getManga(slug);
     return (
       <>
+        <JsonLd data={buildMangaJsonLd(manga)} />
+        <JsonLd data={buildBreadcrumbJsonLd([
+          { name: 'Home', url: SITE_URL },
+          { name: 'Browse', url: `${SITE_URL}/browse` },
+          { name: manga.title, url: `${SITE_URL}/manga/${slug}` },
+        ])} />
         {/* ===== HERO SECTION — full-width blurred backdrop ===== */}
         <section className="relative overflow-hidden border-b border-default">
           {/* Blurred cover background */}
@@ -80,11 +87,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
     const manga = await getManga(slug);
-    return {
-      title: `${manga.title} - ComicHub`,
-      description: manga.description?.slice(0, 160) ?? `Read ${manga.title} on ComicHub`,
-    };
+    return buildMeta({
+      title: manga.title,
+      description: manga.description?.replace(/<[^>]*>/g, '').slice(0, 160) ?? `Read ${manga.title} online on ComicHub`,
+      path: `/manga/${slug}`,
+      image: manga.cover,
+    });
   } catch {
-    return { title: 'Manga Not Found - ComicHub' };
+    return { title: 'Manga Not Found' };
   }
 }

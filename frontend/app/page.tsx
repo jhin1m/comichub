@@ -1,11 +1,19 @@
 export const revalidate = 60;
 
+import { buildMeta } from '@/lib/seo';
 import { mangaApi } from '@/lib/api/manga.api';
 import { commentApi, type RecentComment } from '@/lib/api/comment.api';
 import { MangaCarousel } from '@/components/home/manga-carousel';
 import { LatestUpdatesSection } from '@/components/home/latest-updates-section';
 import { RecentSidebar } from '@/components/home/recent-sidebar';
 import type { MangaListItem, PaginatedResult } from '@/types/manga.types';
+
+export const metadata = buildMeta({
+  title: 'ComicHub — Read Manga Online',
+  description: 'Read manga, manhwa, and manhua online for free on ComicHub. Daily updates, thousands of titles.',
+  path: '/',
+  absoluteTitle: true,
+});
 
 export default async function HomePage() {
   let daily: MangaListItem[] = [];

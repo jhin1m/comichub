@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { CaretLeft, CaretRight, Users } from '@phosphor-icons/react/ssr';
 import { groupApi } from '@/lib/api/manga.api';
+import { buildMeta } from '@/lib/seo';
 import { Badge } from '@/components/ui/badge';
 import PageWrapper from '@/components/layout/page-wrapper';
 import { formatRelativeDate, formatCount, statusVariant } from '@/lib/utils';
@@ -258,11 +259,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1);
   try {
     const { group } = await getGroupDetail(slug, page);
-    return {
-      title: `${group.name} - Scanlation Group - ComicHub`,
+    return buildMeta({
+      title: `${group.name} - Scanlation Group`,
       description: `${group.releaseCount} releases in ${group.titleCount} titles by ${group.name} on ComicHub.`,
-    };
+      path: `/groups/${slug}`,
+    });
   } catch {
-    return { title: 'Group Not Found - ComicHub' };
+    return { title: 'Group Not Found' };
   }
 }
