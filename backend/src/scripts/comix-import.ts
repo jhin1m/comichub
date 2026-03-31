@@ -14,6 +14,7 @@ import {
   db, schema, sqlClient, flag, hasFlag, apiFetch, upsertManga,
   resolveByName, eq, and, desc, count,
 } from './import-utils.js';
+import { nsfwToContentRating } from '../common/utils/content-rating.util.js';
 
 // ─── CLI args ────────────────────────────────────────────────────
 const PAGE_FROM = parseInt(flag('from', '1'), 10);
@@ -130,7 +131,7 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
     originalLanguage: raw.original_language ?? null,
     status: normalizeStatus(raw.status),
     type: normalizeType(raw.type),
-    contentRating: raw.is_nsfw ? 'suggestive' : 'safe',
+    contentRating: nsfwToContentRating(!!raw.is_nsfw),
     demographic: null,
     year: raw.year ?? null,
     genreNames: resolveTermIds(raw.term_ids ?? []).genres,

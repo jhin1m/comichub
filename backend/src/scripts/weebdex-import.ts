@@ -14,6 +14,7 @@ import {
   db, schema, sqlClient, flag, hasFlag, apiFetch, upsertManga,
   resolveByName, eq, and, desc, count,
 } from './import-utils.js';
+import { normalizeContentRating } from '../common/utils/content-rating.util.js';
 
 // ─── CLI args ────────────────────────────────────────────────────
 const PAGE_FROM = parseInt(flag('from', '1'), 10);
@@ -51,7 +52,7 @@ async function importOneManga(externalId: string): Promise<{ mangaId: number; is
     originalLanguage: raw.language ?? null,
     status: raw.status ?? 'ongoing',
     type: inferType(raw.language),
-    contentRating: raw.content_rating ?? 'safe',
+    contentRating: normalizeContentRating(raw.content_rating),
     demographic: raw.demographic ?? null,
     year: raw.year ?? null,
     genreNames: tags.filter((t: any) => t.group === 'genre').map((t: any) => t.name),

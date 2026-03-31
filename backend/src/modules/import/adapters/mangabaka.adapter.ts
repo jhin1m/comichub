@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { SourceAdapter } from './source-adapter.interface.js';
 import { ImportSource } from '../types/import-source.enum.js';
+import { normalizeContentRating } from '../../../common/utils/content-rating.util.js';
 import type {
   ExternalManga,
   ExternalLink,
@@ -126,18 +127,7 @@ export class MangaBakaAdapter implements SourceAdapter, OnModuleInit {
   private normalizeContentRating(
     rating?: string,
   ): ExternalManga['contentRating'] {
-    switch (rating) {
-      case 'safe':
-        return 'safe';
-      case 'suggestive':
-        return 'suggestive';
-      case 'erotica':
-        return 'erotica';
-      case 'pornographic':
-        return 'pornographic';
-      default:
-        return undefined;
-    }
+    return normalizeContentRating(rating) as ExternalManga['contentRating'];
   }
 
   private buildLinks(raw: MangaBakaSeries): ExternalLink[] {

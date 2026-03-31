@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
+import { normalizeContentRating } from '../../../common/utils/content-rating.util.js';
 import {
   manga,
   genres,
@@ -166,8 +167,7 @@ export class ImportMappingService {
       status: (external.status ??
         'ongoing') as (typeof manga.$inferInsert)['status'],
       type: (external.type ?? 'manga') as (typeof manga.$inferInsert)['type'],
-      contentRating: (external.contentRating ??
-        'safe') as (typeof manga.$inferInsert)['contentRating'],
+      contentRating: normalizeContentRating(external.contentRating) as (typeof manga.$inferInsert)['contentRating'],
       demographic: external.demographic ?? null,
       year: external.year ?? null,
     };

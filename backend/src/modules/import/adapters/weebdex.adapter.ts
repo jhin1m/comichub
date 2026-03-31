@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { SourceAdapter } from './source-adapter.interface.js';
 import { ImportSource } from '../types/import-source.enum.js';
+import { normalizeContentRating } from '../../../common/utils/content-rating.util.js';
 import type {
   ExternalManga,
   ExternalChapter,
@@ -156,7 +157,7 @@ export class WeebDexAdapter implements SourceAdapter, OnModuleInit {
       originalLanguage: raw.language,
       status: raw.status as ExternalManga['status'],
       type: this.inferType(raw.language),
-      contentRating: raw.content_rating as ExternalManga['contentRating'],
+      contentRating: normalizeContentRating(raw.content_rating) as ExternalManga['contentRating'],
       demographic: raw.demographic,
       year: raw.year,
       genres,

@@ -91,7 +91,7 @@ export const manga = pgTable(
     status: mangaStatusEnum('status').default('ongoing').notNull(),
     type: mangaTypeEnum('type').default('manga').notNull(),
     contentRating: contentRatingEnum('content_rating')
-      .default('safe')
+      .default('suggestive')
       .notNull(),
     nativeTitle: varchar('native_title', { length: 500 }),
     romanizedTitle: varchar('romanized_title', { length: 500 }),
@@ -105,7 +105,6 @@ export const manga = pgTable(
       .notNull(),
     totalRatings: integer('total_ratings').default(0).notNull(),
     isHot: boolean('is_hot').default(false).notNull(),
-    isNsfw: boolean('is_nsfw').default(false).notNull(),
     demographic: varchar('demographic', { length: 20 }),
     isReviewed: boolean('is_reviewed').default(false).notNull(),
     year: integer('year'),

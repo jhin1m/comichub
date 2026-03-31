@@ -99,6 +99,13 @@
       "when": 1775210000000,
       "tag": "0013_add_group_id_to_chapter_images",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1775300000000,
+      "tag": "0014_drop_is_nsfw_column",
+      "breakpoints": true
     }
   ]
 }

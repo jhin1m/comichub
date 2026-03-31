@@ -4,6 +4,18 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Changed - Content Rating Unification (2026-03-31)
+- **Unification**: Migrated from dual `isNsfw` boolean + `contentRating` enum to single source of truth: `contentRating`
+- **Normalizer**: Created centralized `normalizeContentRating()` utility in `backend/src/common/utils/content-rating.util.ts`
+- **Import Adapters**: Updated MangaBaka, WeebDex adapters and legacy scripts (comix, weebdex, mangabaka, import-utils) to use shared normalizer
+- **Backend Filtering**: Replaced `isNsfw` boolean filters with `contentRating` enum checks (`notInArray(contentRating, NSFW_RATINGS)`)
+- **Default Value**: Changed `contentRating` default from `'safe'` to `'suggestive'` (conservative fallback for missing source data)
+- **NSFW Mapping**: Updated Comix `is_nsfw: true` mapping from `'suggestive'` to `'erotica'` for correct filtering
+- **Frontend Types**: Updated `MangaDetail` type: `isNsfw: boolean` → `contentRating: 'safe'|'suggestive'|'erotica'|'pornographic'`
+- **Database**: Dropped `isNsfw` column (migration 0014), backfilled existing data into `contentRating`
+- **API Filters**: Added NSFW filtering to `findRandom` endpoint, aligned all list/detail endpoints to use contentRating
+- **Post-Review Fixes**: Aligned default values across normalizer/importer/DTO, fixed NSFW true→erotica mapping, removed unnecessary spreads
+
 ### Added - Frontend Testing Infrastructure
 - **Vitest** unit & component test runner with happy-dom environment
 - **Testing Library** for React component testing with accessible queries

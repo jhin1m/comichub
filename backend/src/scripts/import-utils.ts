@@ -153,7 +153,7 @@ export async function upsertManga(data: MangaInsertData): Promise<{ mangaId: num
     originalLanguage: data.originalLanguage,
     status: (data.status || 'ongoing') as typeof schema.manga.$inferInsert.status,
     type: (data.type || 'manga') as typeof schema.manga.$inferInsert.type,
-    contentRating: (data.contentRating || 'safe') as typeof schema.manga.$inferInsert.contentRating,
+    contentRating: (data.contentRating || 'suggestive') as typeof schema.manga.$inferInsert.contentRating,
     demographic: data.demographic, year: data.year, slug,
   }).returning({ id: schema.manga.id });
 

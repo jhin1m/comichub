@@ -36,6 +36,7 @@ import {
   chapterGroups,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
+import { NSFW_RATINGS } from '../../../common/utils/content-rating.util.js';
 import { CreateMangaDto, MangaType } from '../dto/create-manga.dto.js';
 import { UpdateMangaDto } from '../dto/update-manga.dto.js';
 import {
@@ -96,14 +97,9 @@ export class MangaService {
     if (type) conditions.push(eq(manga.type, type));
     if (language) conditions.push(eq(manga.originalLanguage, language));
     if (year) conditions.push(eq(manga.year, year));
-    // Default: hide NSFW unless explicitly requested
-    if (nsfw === true) {
-      // no filter — show all including NSFW
-    } else if (nsfw === false) {
-      conditions.push(eq(manga.isNsfw, false));
-    } else {
-      // nsfw param not provided — default to hiding NSFW
-      conditions.push(eq(manga.isNsfw, false));
+    // Default: hide NSFW (erotica/pornographic) unless explicitly requested
+    if (nsfw !== true) {
+      conditions.push(notInArray(manga.contentRating, NSFW_RATINGS));
     }
 
     // Genre filter via subquery on pivot
@@ -325,7 +321,9 @@ export class MangaService {
     const [row] = await this.db
       .select({ slug: manga.slug })
       .from(manga)
-      .where(isNull(manga.deletedAt))
+      .where(
+        and(isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS)),
+      )
       .orderBy(sql`RANDOM()`)
       .limit(1);
     if (!row) throw new NotFoundException('No manga found');
@@ -338,7 +336,7 @@ export class MangaService {
   ): Promise<MangaDetail> {
     const whereConditions = [eq(manga.slug, slug), isNull(manga.deletedAt)];
     if (!isAuthenticated) {
-      whereConditions.push(eq(manga.isNsfw, false));
+      whereConditions.push(notInArray(manga.contentRating, NSFW_RATINGS));
     }
     const [m] = await this.db
       .select()
@@ -454,7 +452,7 @@ export class MangaService {
         originalLanguage: dto.originalLanguage,
         status: dto.status,
         type: dto.type,
-        isNsfw: dto.isNsfw,
+        contentRating: dto.contentRating,
         demographic: dto.demographic,
         year: dto.year,
       })
@@ -482,7 +480,7 @@ export class MangaService {
     if (dto.status !== undefined) updates.status = dto.status;
     if (dto.type !== undefined) updates.type = dto.type;
     if (dto.slug !== undefined) updates.slug = dto.slug;
-    if (dto.isNsfw !== undefined) updates.isNsfw = dto.isNsfw;
+    if (dto.contentRating !== undefined) updates.contentRating = dto.contentRating;
     if (dto.demographic !== undefined) updates.demographic = dto.demographic;
     if (dto.year !== undefined) updates.year = dto.year;
 

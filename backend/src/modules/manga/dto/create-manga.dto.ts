@@ -5,7 +5,6 @@ import {
   IsEnum,
   IsArray,
   IsInt,
-  IsBoolean,
   MaxLength,
   IsNotEmpty,
   Max,
@@ -77,10 +76,17 @@ export class CreateMangaDto {
   @IsEnum(MangaType)
   type?: MangaType;
 
-  @ApiPropertyOptional({ example: false })
+  @ApiPropertyOptional({
+    description: 'Content rating',
+    enum: ['safe', 'suggestive', 'erotica', 'pornographic'],
+    default: 'suggestive',
+  })
   @IsOptional()
-  @IsBoolean()
-  isNsfw?: boolean;
+  @IsIn(['safe', 'suggestive', 'erotica', 'pornographic'], {
+    message:
+      'contentRating must be one of: safe, suggestive, erotica, pornographic',
+  })
+  contentRating?: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
 
   @ApiPropertyOptional({
     description: 'Demographic (shounen, shoujo, seinen, josei)',

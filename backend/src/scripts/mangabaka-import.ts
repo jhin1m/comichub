@@ -10,6 +10,7 @@
  *   pnpm run import:mangabaka -- --query manga --dry         # preview without importing
  */
 import { sqlClient, flag, hasFlag, apiFetch, upsertManga } from './import-utils.js';
+import { normalizeContentRating } from '../common/utils/content-rating.util.js';
 
 // ─── CLI args ────────────────────────────────────────────────────
 const QUERY = flag('query', 'manga');
@@ -104,7 +105,7 @@ function normalizeSeries(raw: any) {
     originalLanguage: null as string | null,
     status: normalizeStatus(raw.status),
     type: normalizeType(raw.type),
-    contentRating: raw.content_rating ?? 'safe',
+    contentRating: normalizeContentRating(raw.content_rating),
     demographic: null as string | null,
     year: raw.year ?? null,
     genreNames, themeNames,

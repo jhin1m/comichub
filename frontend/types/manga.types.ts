@@ -22,7 +22,7 @@ export interface MangaDetail extends MangaListItem {
   followersCount: number;
   totalRatings: number;
   isHot: boolean;
-  isNsfw: boolean;
+  contentRating: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
   year: number | null;
   chapterUpdatedAt: string | null;
   genres: TaxonomyItem[];
