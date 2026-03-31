@@ -29,6 +29,23 @@ const BASE = 'https://comix.to/api/v2';
 const SOURCE = 'comix';
 const LINK_MAP: Record<string, string> = { al: 'anilist', mal: 'mal', mu: 'mu' };
 
+// Comix.to term_id → demographic mapping (extracted from /browser filter)
+const DEMOGRAPHIC_IDS: Record<number, string> = {
+  1: 'shoujo', 2: 'shounen', 3: 'josei', 4: 'seinen',
+};
+
+// NSFW theme term_ids → content rating escalation (highest severity wins)
+const NSFW_RATING_MAP: Record<number, string> = {
+  87266: 'pornographic', // Hentai
+  87264: 'erotica',      // Adult
+  87267: 'erotica',      // Mature
+  87268: 'erotica',      // Smut
+  87265: 'suggestive',   // Ecchi
+};
+const RATING_SEVERITY: Record<string, number> = {
+  safe: 0, suggestive: 1, erotica: 2, pornographic: 3,
+};
+
 // Comix.to term_id → genre/theme name mapping (extracted from /genres page)
 const GENRE_IDS: Record<number, string> = {
   6: 'Action', 7: 'Adventure', 8: 'Boys Love', 9: 'Comedy', 10: 'Crime',
@@ -52,14 +69,27 @@ const THEME_IDS: Record<number, string> = {
   87264: 'Adult', 87265: 'Ecchi', 87266: 'Hentai', 87267: 'Mature', 87268: 'Smut',
 };
 
-function resolveTermIds(termIds: number[]): { genres: string[]; themes: string[] } {
+function resolveTermIds(termIds: number[]): {
+  genres: string[]; themes: string[]; demographic: string | null; contentRating: string;
+} {
   const genres: string[] = [];
   const themes: string[] = [];
+  let demographic: string | null = null;
+  let maxSeverity = 0;
+  let contentRating = 'safe';
+
   for (const id of termIds) {
+    if (DEMOGRAPHIC_IDS[id]) { demographic = DEMOGRAPHIC_IDS[id]; continue; }
     if (GENRE_IDS[id]) genres.push(GENRE_IDS[id]);
     else if (THEME_IDS[id]) themes.push(THEME_IDS[id]);
+    // Escalate content rating based on NSFW themes
+    const rating = NSFW_RATING_MAP[id];
+    if (rating && RATING_SEVERITY[rating] > maxSeverity) {
+      maxSeverity = RATING_SEVERITY[rating];
+      contentRating = rating;
+    }
   }
-  return { genres, themes };
+  return { genres, themes, demographic, contentRating };
 }
 
 function api<T>(path: string) {
@@ -121,6 +151,13 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
     }
   }
 
+  const resolved = resolveTermIds(raw.term_ids ?? []);
+
+  // Use theme-based rating if higher severity than is_nsfw flag
+  const flagRating = nsfwToContentRating(!!raw.is_nsfw);
+  const finalRating = (RATING_SEVERITY[resolved.contentRating] ?? 0) >= (RATING_SEVERITY[flagRating] ?? 0)
+    ? resolved.contentRating : flagRating;
+
   const { mangaId, isNew } = await upsertManga({
     title: raw.title,
     altTitles,
@@ -129,11 +166,11 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
     originalLanguage: raw.original_language ?? null,
     status: normalizeStatus(raw.status),
     type: normalizeType(raw.type),
-    contentRating: nsfwToContentRating(!!raw.is_nsfw),
-    demographic: null,
+    contentRating: finalRating,
+    demographic: resolved.demographic,
     year: raw.year ?? null,
-    genreNames: resolveTermIds(raw.term_ids ?? []).genres,
-    themeNames: resolveTermIds(raw.term_ids ?? []).themes,
+    genreNames: resolved.genres,
+    themeNames: resolved.themes,
     authorNames: [],
     artistNames: [],
     links,
