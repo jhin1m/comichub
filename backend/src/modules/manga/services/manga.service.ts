@@ -239,6 +239,8 @@ export class MangaService {
           latestChapterNumber: chapters.number,
           averageRating: manga.averageRating,
           updatedAt: manga.updatedAt,
+          contentRating: manga.contentRating,
+          isHot: manga.isHot,
         })
         .from(manga)
         .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
@@ -300,6 +302,8 @@ export class MangaService {
               latestChapterNumber: chapters.number,
               averageRating: manga.averageRating,
               updatedAt: manga.updatedAt,
+              contentRating: manga.contentRating,
+              isHot: manga.isHot,
             })
             .from(manga)
             .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))

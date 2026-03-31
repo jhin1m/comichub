@@ -1,4 +1,4 @@
-export type MangaStatus = 'ongoing' | 'completed' | 'hiatus' | 'dropped';
+export type MangaStatus = 'ongoing' | 'completed' | 'hiatus' | 'dropped' | 'cancelled';
 export type MangaType = 'manga' | 'manhwa' | 'manhua' | 'doujinshi';
 
 export interface MangaListItem {
@@ -13,6 +13,8 @@ export interface MangaListItem {
   latestChapterNumber: string | null;
   averageRating: string;
   updatedAt: string;
+  contentRating: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
+  isHot: boolean;
 }
 
 export interface MangaDetail extends MangaListItem {
@@ -21,8 +23,6 @@ export interface MangaDetail extends MangaListItem {
   originalLanguage: string | null;
   followersCount: number;
   totalRatings: number;
-  isHot: boolean;
-  contentRating: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
   year: number | null;
   chapterUpdatedAt: string | null;
   genres: TaxonomyItem[];

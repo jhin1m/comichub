@@ -10,6 +10,43 @@ function isNewRelease(updatedAt: string): boolean {
   return Date.now() - new Date(updatedAt).getTime() < 7 * 24 * 60 * 60 * 1000;
 }
 
+type CardBadge = { text: string; className: string };
+
+function getCardBadges(item: MangaListItem): CardBadge[] {
+  const badges: CardBadge[] = [];
+
+  // P1: Content Rating (when not safe)
+  if (item.contentRating === 'pornographic' || item.contentRating === 'erotica') {
+    badges.push({ text: '18+', className: 'bg-accent text-white' });
+  } else if (item.contentRating === 'suggestive') {
+    badges.push({ text: 'S', className: 'bg-warning text-white' });
+  }
+
+  // P2: HOT
+  if (badges.length < 2 && item.isHot) {
+    badges.push({ text: 'HOT', className: 'bg-accent text-white' });
+  }
+
+  // P3: NEW (7 days)
+  if (badges.length < 2 && isNewRelease(item.updatedAt)) {
+    badges.push({ text: 'NEW', className: 'bg-success text-white' });
+  }
+
+  // P4: Status (non-ongoing)
+  if (badges.length < 2 && item.status !== 'ongoing') {
+    const statusMap: Record<string, CardBadge> = {
+      completed: { text: 'END', className: 'bg-info text-white' },
+      hiatus: { text: 'HIATUS', className: 'bg-warning text-white' },
+      dropped: { text: 'DROP', className: 'bg-accent text-white' },
+      cancelled: { text: 'DROP', className: 'bg-accent text-white' },
+    };
+    const s = statusMap[item.status];
+    if (s) badges.push(s);
+  }
+
+  return badges;
+}
+
 // Rank 1=accent red, 2=orange, 3=blue, others=muted white outline
 const RANK_STYLES: Record<number, React.CSSProperties> = {
   1: { WebkitTextStroke: '1.5px #e63946', color: 'rgba(230,57,70,0.08)' },
@@ -27,7 +64,7 @@ interface Props {
 }
 
 export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
-  const showNew = isNewRelease(item.updatedAt);
+  const badges = getCardBadges(item);
   const rankStyle = rank ? (RANK_STYLES[rank] ?? RANK_DEFAULT) : null;
 
   return (
@@ -60,11 +97,15 @@ export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
           </span>
         )}
 
-        {/* "N" badge — new release within 7 days */}
-        {showNew && (
-          <span className="absolute top-1.5 left-1.5 bg-accent text-white text-[9px] font-bold px-1.5 py-0.5 rounded-xs tracking-wide uppercase">
-            N
-          </span>
+        {/* Priority badges — top-left stacked */}
+        {badges.length > 0 && (
+          <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
+            {badges.map((b) => (
+              <span key={b.text} className={`${b.className} text-[9px] font-rajdhani font-bold px-1.5 py-0.5 rounded-xs tracking-wide uppercase`}>
+                {b.text}
+              </span>
+            ))}
+          </div>
         )}
 
         {/* Quick bookmark button — visible on mobile, shown on hover on PC */}

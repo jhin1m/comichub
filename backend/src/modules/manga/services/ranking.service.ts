@@ -52,6 +52,8 @@ export class RankingService {
           latestChapterNumber: chapters.number,
           averageRating: manga.averageRating,
           updatedAt: manga.updatedAt,
+          contentRating: manga.contentRating,
+          isHot: manga.isHot,
         })
         .from(manga)
         .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
@@ -132,6 +134,8 @@ export class RankingService {
       latestChapterNumber: chapters.number,
       averageRating: manga.averageRating,
       updatedAt: manga.updatedAt,
+      contentRating: manga.contentRating,
+      isHot: manga.isHot,
     };
     const join = () =>
       this.db

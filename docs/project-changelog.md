@@ -4,6 +4,12 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Added - Manga Card Badge System (2026-03-31)
+- **Backend**: Added `contentRating` and `isHot` fields to `MangaListItem` return type across 4 list query endpoints: `findAll()`, `findMangaByGroup()`, `getHotManga()`, `queryRanking()`, and search endpoint `searchManga()`
+- **Frontend**: Implemented priority-based badge system on manga cards with max 2 badges: Content Rating (18+/S) > HOT > NEW (7 days) > Status (END/HIATUS/DROP)
+- **Styling**: Stacked badge layout (top-left, vertical), color-coded by priority (red/warning/success/info), uppercase labels, Rajdhani font
+- **Backward Compatibility**: Badge logic handles undefined fields gracefully during cache expiration periods
+
 ### Changed - Content Rating Unification (2026-03-31)
 - **Unification**: Migrated from dual `isNsfw` boolean + `contentRating` enum to single source of truth: `contentRating`
 - **Normalizer**: Created centralized `normalizeContentRating()` utility in `backend/src/common/utils/content-rating.util.ts`

@@ -14,7 +14,7 @@ import {
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
-import { manga, genres, mangaGenres } from '../../database/schema/index.js';
+import { manga, genres, mangaGenres, chapters } from '../../database/schema/index.js';
 import type {
   MangaListItem,
   PaginatedResult,
@@ -159,10 +159,14 @@ export class SearchService {
           type: manga.type,
           views: manga.views,
           chaptersCount: manga.chaptersCount,
+          latestChapterNumber: chapters.number,
           averageRating: manga.averageRating,
           updatedAt: manga.updatedAt,
+          contentRating: manga.contentRating,
+          isHot: manga.isHot,
         })
         .from(manga)
+        .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
         .where(where)
         .orderBy(orderBy)
         .limit(limit)
