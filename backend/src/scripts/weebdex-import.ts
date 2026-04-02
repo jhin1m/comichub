@@ -151,12 +151,13 @@ async function importChapters(mangaId: number, mangaExtId: string): Promise<{ ch
     page++;
   }
 
-  if (totalChapters > 0) {
-    const [latest] = await db.select({ id: schema.chapters.id })
-      .from(schema.chapters).where(eq(schema.chapters.mangaId, mangaId))
-      .orderBy(desc(schema.chapters.order)).limit(1);
-    const [{ total }] = await db.select({ total: count() })
-      .from(schema.chapters).where(eq(schema.chapters.mangaId, mangaId));
+  // Always sync counters — conflicts may leave chaptersCount stale
+  const [latest] = await db.select({ id: schema.chapters.id })
+    .from(schema.chapters).where(eq(schema.chapters.mangaId, mangaId))
+    .orderBy(desc(schema.chapters.order)).limit(1);
+  const [{ total }] = await db.select({ total: count() })
+    .from(schema.chapters).where(eq(schema.chapters.mangaId, mangaId));
+  if (total > 0) {
     await db.update(schema.manga).set({
       lastChapterId: latest?.id ?? null, chaptersCount: total, chapterUpdatedAt: new Date(),
     }).where(eq(schema.manga.id, mangaId));
@@ -196,12 +197,12 @@ async function main() {
     const tag = `[${i + 1}/${mangaList.length}]`;
     try {
       const { mangaId, isNew } = await importOneManga(m.id);
-      if (!isNew) { skipped++; continue; }
       const r = await importChapters(mangaId, m.id);
-      imported++;
+      if (isNew) imported++; else skipped++;
       totalCh += r.chapters;
       totalImg += r.images;
-      console.log(`${tag} ${m.title} → id:${mangaId}, +${r.chapters} ch, +${r.images} img`);
+      const label = isNew ? '→' : '↻';
+      console.log(`${tag} ${m.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`);
     } catch (err: any) {
       failed++;
       console.error(`${tag} FAIL ${m.title}: ${err.message}`);

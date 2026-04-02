@@ -319,7 +319,7 @@ export const mangaLinks = pgTable(
       .notNull()
       .references(() => manga.id, { onDelete: 'cascade' }),
     type: varchar('type', { length: 30 }).notNull(), // 'mal', 'anilist', 'kitsu', 'amazon', etc.
-    externalId: varchar('external_id', { length: 100 }),
+    externalId: varchar('external_id', { length: 500 }),
     url: varchar('url', { length: 500 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
