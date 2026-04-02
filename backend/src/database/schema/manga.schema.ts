@@ -118,6 +118,7 @@ export const manga = pgTable(
   (table) => [
     index('manga_status_type_idx').on(table.status, table.type),
     index('manga_created_at_idx').on(table.createdAt),
+    index('manga_updated_at_idx').on(table.updatedAt),
     index('manga_views_idx').on(table.views),
   ],
 );

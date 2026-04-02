@@ -82,7 +82,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
             className="flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors"
           >
             <CaretLeftIcon size={16} />
-            <span className="truncate max-w-[250px]">{mangaTitle}</span>
+            <span className="truncate max-w-62.5">{mangaTitle}</span>
           </Link>
           <div className="flex items-center gap-3 text-secondary">
             <span className="text-xs">Ch. {chapter.number}</span>
@@ -126,6 +126,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
           zoom={zoom}
           onZoomChange={setZoom}
           onSettingsClick={() => setSettingsOpen(true)}
+          scrollRef={scrollRef}
         />
       </div>
 

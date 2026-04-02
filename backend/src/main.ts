@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compression from 'compression';
 import { AppModule } from './app.module.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor.js';
@@ -12,6 +13,9 @@ async function bootstrap() {
   const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
 
   app.enableShutdownHooks();
+
+  // Compression — reduces JSON payload size ~70-80%, skip small responses
+  app.use(compression({ threshold: 1024 }));
 
   // Global prefix
   app.setGlobalPrefix('api/v1');

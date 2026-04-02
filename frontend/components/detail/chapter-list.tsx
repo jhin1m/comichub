@@ -9,11 +9,14 @@ import {
 } from '@phosphor-icons/react';
 import { ChapterListItemRow } from './chapter-list-item';
 import { Pagination } from '@/components/ui/pagination';
+import { useAuth } from '@/contexts/auth.context';
+import { userApi } from '@/lib/api/user.api';
 import type { ChapterListItem } from '@/types/manga.types';
 
 interface Props {
   chapters: ChapterListItem[];
   mangaSlug: string;
+  mangaId: number;
 }
 
 type SortField = 'number' | 'date';
@@ -68,12 +71,31 @@ function matchChapter(chapterNumber: string, query: string): boolean {
   return num.includes(q);
 }
 
-export function ChapterList({ chapters, mangaSlug }: Props) {
+export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('number');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [language, setLanguage] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [lastReadChapterId, setLastReadChapterId] = useState<number | null>(null);
+
+  // Fetch last-read chapter for logged-in users
+  const userId = user?.sub;
+  useEffect(() => {
+    if (!userId) { setLastReadChapterId(null); return; }
+    let cancelled = false;
+    userApi.getLastRead(mangaId)
+      .then((entry) => { if (!cancelled) setLastReadChapterId(entry?.chapterId ?? null); })
+      .catch(() => { if (!cancelled) setLastReadChapterId(null); });
+    return () => { cancelled = true; };
+  }, [userId, mangaId]);
+
+  const handleBookmark = (chapterId: number) => {
+    if (!user) return;
+    setLastReadChapterId(chapterId);
+    userApi.upsertHistory(mangaId, chapterId).catch(() => {});
+  };
 
   // Extract unique languages from chapters
   const languages = useMemo(() => {
@@ -153,7 +175,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4">
         <div className="flex items-center gap-2.5">
           <ListBulletsIcon size={20} className="text-accent" />
-          <h2 className="text-base font-semibold text-primary uppercase tracking-wider font-rajdhani">
+          <h2 className="font-semibold text-primary uppercase tracking-wider font-rajdhani">
             Chapters
           </h2>
           <span className="text-sm text-muted">
@@ -226,7 +248,7 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
       </div>
 
       {/* Chapter rows */}
-      <div className="max-h-[640px] overflow-y-auto overflow-x-hidden chapter-list-scroll">
+      <div className="max-h-200 overflow-y-auto overflow-x-hidden chapter-list-scroll">
         {paginated.length === 0 ? (
           <p className="text-base text-muted py-10 text-center">No chapters found.</p>
         ) : (
@@ -236,6 +258,8 @@ export function ChapterList({ chapters, mangaSlug }: Props) {
               chapter={chapter}
               mangaSlug={mangaSlug}
               striped={index % 2 === 1}
+              isLastRead={chapter.id === lastReadChapterId}
+              onBookmark={user ? handleBookmark : undefined}
             />
           ))
         )}

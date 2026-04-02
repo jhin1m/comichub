@@ -11,8 +11,10 @@ export class CacheInvalidationJob {
 
   @OnEvent('chapter.created')
   async onChapterCreated(_event?: NewChapterEvent): Promise<void> {
-    await this.deleteByPattern('cache:/api/v1/manga*');
-    await this.deleteByPattern('cache:/api/v1/rankings*');
+    await Promise.allSettled([
+      this.deleteByPattern('cache:/api/v1/manga*'),
+      this.deleteByPattern('cache:/api/v1/rankings*'),
+    ]);
     this.logger.debug('Invalidated manga + ranking caches (new chapter)');
   }
 

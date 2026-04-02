@@ -86,6 +86,28 @@ export class HistoryService {
     };
   }
 
+  async getEntryByManga(
+    userId: number,
+    mangaId: number,
+  ): Promise<{ chapterId: number; lastReadAt: Date } | null> {
+    const [row] = await this.db
+      .select({
+        chapterId: readingHistory.chapterId,
+        lastReadAt: readingHistory.lastReadAt,
+      })
+      .from(readingHistory)
+      .where(
+        and(
+          eq(readingHistory.userId, userId),
+          eq(readingHistory.mangaId, mangaId),
+        ),
+      )
+      .limit(1);
+
+    if (!row?.chapterId) return null;
+    return { chapterId: row.chapterId, lastReadAt: row.lastReadAt };
+  }
+
   async removeEntry(
     userId: number,
     mangaId: number,

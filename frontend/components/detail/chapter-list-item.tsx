@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, Clock } from '@phosphor-icons/react';
+import { Eye, BookmarkSimple } from '@phosphor-icons/react';
 import { LanguageFlag } from '@/components/ui/language-flag';
 import { formatRelativeDate, formatCount } from '@/lib/utils';
 import type { ChapterListItem } from '@/types/manga.types';
@@ -11,13 +11,20 @@ interface Props {
   chapter: ChapterListItem;
   mangaSlug: string;
   striped?: boolean;
+  isLastRead?: boolean;
+  onBookmark?: (chapterId: number) => void;
 }
 
-export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
+export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, onBookmark }: Props) {
   const router = useRouter();
 
   const handleRowClick = () => {
     router.push(`/manga/${mangaSlug}/${chapter.id}`);
+  };
+
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onBookmark?.(chapter.id);
   };
 
   return (
@@ -27,14 +34,14 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
       tabIndex={0}
       aria-label={`Read chapter ${chapter.number}`}
       onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
-      className={`group flex items-center px-4 py-3.5 border-b border-default/40 hover:bg-hover transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset outline-none ${
+      className={`group relative flex items-center px-4 py-3.5 border-b border-default/40 hover:bg-hover transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset outline-none ${
         striped ? 'bg-surface/50' : ''
-      }`}
+      } ${isLastRead ? 'bg-accent/8 border-l-3 border-l-accent' : ''}`}
     >
       {/* Flag + Chapter number + Volume */}
       <div className="flex items-center gap-2.5 shrink-0 min-w-0">
         <LanguageFlag lang={chapter.language} />
-        <span className="text-base font-rajdhani font-bold text-secondary group-hover:text-accent transition-colors whitespace-nowrap">
+        <span className="font-rajdhani font-bold text-secondary group-hover:text-accent transition-colors whitespace-nowrap">
           Ch. {chapter.number}
         </span>
         {chapter.volume && (
@@ -73,16 +80,28 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped }: Props) {
       </div>
 
       {/* Views */}
-      <div className="flex items-center gap-1.5 w-20 justify-end shrink-0 text-sm text-muted hidden sm:flex">
+      <div className="items-center gap-1.5 w-20 justify-end shrink-0 text-sm text-muted hidden sm:flex">
         <Eye size={14} className="opacity-60" />
         <span>{formatCount(chapter.viewCount)}</span>
       </div>
 
       {/* Date */}
-      <div className="flex items-center gap-1.5 w-24 justify-end shrink-0 text-sm text-muted">
-        <Clock size={14} className="opacity-60" />
-        <span suppressHydrationWarning>{formatRelativeDate(chapter.createdAt)}</span>
-      </div>
+      <span className="w-16 text-right shrink-0 text-sm text-muted" suppressHydrationWarning>
+        {formatRelativeDate(chapter.createdAt)}
+      </span>
+
+      {/* Bookmark */}
+      <button
+        onClick={handleBookmarkClick}
+        aria-label={isLastRead ? 'Last read chapter' : 'Mark as last read'}
+        className={`ml-2 shrink-0 p-1 rounded transition-colors ${
+          isLastRead
+            ? 'text-accent'
+            : 'text-muted hover:text-accent/70'
+        }`}
+      >
+        <BookmarkSimple size={16} weight={isLastRead ? 'fill' : 'regular'} />
+      </button>
     </div>
   );
 }

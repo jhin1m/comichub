@@ -68,7 +68,7 @@ export default async function MangaDetailPage({ params }: Props) {
         <main className="max-w-350 mx-auto px-4 py-8">
           <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
             <div className="space-y-8 min-w-0">
-              <ChapterList chapters={manga.chapters} mangaSlug={slug} />
+              <ChapterList chapters={manga.chapters} mangaSlug={slug} mangaId={manga.id} />
               <CommentSection commentableType="manga" commentableId={manga.id} />
             </div>
             <aside className="min-w-0">

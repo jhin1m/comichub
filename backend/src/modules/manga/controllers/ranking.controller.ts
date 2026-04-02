@@ -6,6 +6,7 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,12 +17,16 @@ import {
 } from '@nestjs/swagger';
 import { RankingService } from '../services/ranking.service.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
+import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
+import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 
 @ApiTags('rankings')
 @Controller('manga')
+@UseInterceptors(RedisCacheInterceptor)
+@CacheTTL(60)
 export class RankingController {
   constructor(private readonly rankingService: RankingService) {}
 

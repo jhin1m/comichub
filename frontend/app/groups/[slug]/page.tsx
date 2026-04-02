@@ -235,7 +235,7 @@ export default async function GroupDetailPage({ params, searchParams }: Props) {
             {/* Sidebar — Description */}
             <aside>
               <div className="bg-surface border border-default rounded p-4">
-                <h2 className="font-rajdhani font-bold text-base text-primary uppercase tracking-wider mb-3">
+                <h2 className="font-rajdhani font-bold text-primary uppercase tracking-wider mb-3">
                   Description
                 </h2>
                 <p className="text-sm text-muted">There is no description.</p>

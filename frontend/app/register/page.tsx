@@ -13,7 +13,7 @@ export const metadata = buildMeta({
 export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-base">
-      <div className="w-full max-w-[420px] bg-surface border border-default rounded-lg p-8 space-y-6">
+      <div className="w-full max-w-105 bg-surface border border-default rounded-lg p-8 space-y-6">
         <div className="border-t-4 border-accent -mx-8 -mt-8 mb-6 rounded-t-lg" />
         <h1 className="font-rajdhani font-bold text-3xl text-primary">Create Account</h1>
         <RegisterForm />

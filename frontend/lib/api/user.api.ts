@@ -12,6 +12,9 @@ export const userApi = {
   getFollows: (page = 1, limit = 20) =>
     apiClient.get<PaginatedResult<FollowItem>>('/users/me/follows', { params: { page, limit } }).then((r) => r.data),
 
+  getLastRead: (mangaId: number) =>
+    apiClient.get<{ chapterId: number; lastReadAt: string } | null>(`/users/me/history/${mangaId}`).then((r) => r.data),
+
   upsertHistory: (mangaId: number, chapterId: number) =>
     apiClient.post('/history', { mangaId, chapterId }).then((r) => r.data),
 

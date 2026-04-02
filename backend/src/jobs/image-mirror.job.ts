@@ -13,7 +13,7 @@ const CHAPTER_DELAY_MS = 2000;
 const MAX_WIDTH = 1200;
 const DOWNLOAD_TIMEOUT_MS = 30000;
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
-const ALLOWED_HOSTS = ['weebdex.org', 'weebdex.net'];
+
 
 
 @Injectable()
@@ -122,12 +122,6 @@ export class ImageMirrorJob {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:') {
       throw new Error(`Blocked non-HTTPS URL: ${url}`);
-    }
-    const isAllowed = ALLOWED_HOSTS.some(
-      (h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`),
-    );
-    if (!isAllowed) {
-      throw new Error(`Blocked disallowed host: ${parsed.hostname}`);
     }
 
     const res = await fetch(url, {

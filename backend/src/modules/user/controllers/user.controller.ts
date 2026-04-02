@@ -107,6 +107,16 @@ export class UserController {
     return this.historyService.getHistory(user.sub, pagination);
   }
 
+  @Get('me/history/:mangaId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get last-read chapter for a specific manga' })
+  getHistoryEntry(
+    @CurrentUser() user: JwtPayload,
+    @Param('mangaId', ParseIntPipe) mangaId: number,
+  ) {
+    return this.historyService.getEntryByManga(user.sub, mangaId);
+  }
+
   @Patch('me/history/:mangaId')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove manga from reading history' })

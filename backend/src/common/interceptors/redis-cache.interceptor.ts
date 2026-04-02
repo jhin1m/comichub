@@ -9,7 +9,7 @@ import { Reflector } from '@nestjs/core';
 import type { Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import type Redis from 'ioredis';
 import { CACHE_TTL_KEY } from '../decorators/cache-ttl.decorator.js';
 
@@ -36,6 +36,9 @@ export class RedisCacheInterceptor implements NestInterceptor {
     // Only cache GET requests for unauthenticated users
     if (request.method !== 'GET') return next.handle();
     if (request.headers.authorization) return next.handle();
+
+    const response = context.switchToHttp().getResponse<Response>();
+    response.setHeader('Cache-Control', `public, max-age=${ttl}`);
 
     const key = `cache:${request.url}`;
 

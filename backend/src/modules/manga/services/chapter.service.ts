@@ -122,35 +122,36 @@ export class ChapterService {
 
     if (!chapter) throw new NotFoundException('Chapter not found');
 
-    const [prevRow] = await this.db
-      .select({ id: chapters.id, number: chapters.number, slug: chapters.slug })
-      .from(chapters)
-      .where(
-        and(
-          eq(chapters.mangaId, chapter.mangaId),
-          isNull(chapters.deletedAt),
-          lt(chapters.order, chapter.order),
-        ),
-      )
-      .orderBy(desc(chapters.order))
-      .limit(1);
-
-    const [nextRow] = await this.db
-      .select({ id: chapters.id, number: chapters.number, slug: chapters.slug })
-      .from(chapters)
-      .where(
-        and(
-          eq(chapters.mangaId, chapter.mangaId),
-          isNull(chapters.deletedAt),
-          gt(chapters.order, chapter.order),
-        ),
-      )
-      .orderBy(asc(chapters.order))
-      .limit(1);
+    const [prevRows, nextRows] = await Promise.all([
+      this.db
+        .select({ id: chapters.id, number: chapters.number, slug: chapters.slug })
+        .from(chapters)
+        .where(
+          and(
+            eq(chapters.mangaId, chapter.mangaId),
+            isNull(chapters.deletedAt),
+            lt(chapters.order, chapter.order),
+          ),
+        )
+        .orderBy(desc(chapters.order))
+        .limit(1),
+      this.db
+        .select({ id: chapters.id, number: chapters.number, slug: chapters.slug })
+        .from(chapters)
+        .where(
+          and(
+            eq(chapters.mangaId, chapter.mangaId),
+            isNull(chapters.deletedAt),
+            gt(chapters.order, chapter.order),
+          ),
+        )
+        .orderBy(asc(chapters.order))
+        .limit(1),
+    ]);
 
     return {
-      prev: prevRow ?? null,
-      next: nextRow ?? null,
+      prev: prevRows[0] ?? null,
+      next: nextRows[0] ?? null,
     };
   }
 

@@ -9,6 +9,7 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  UseInterceptors,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ import { CreateMangaDto } from '../dto/create-manga.dto.js';
 import { UpdateMangaDto } from '../dto/update-manga.dto.js';
 import { MangaQueryDto } from '../dto/manga-query.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
+import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
+import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
@@ -31,6 +34,8 @@ import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
 @ApiTags('manga')
 @Controller('manga')
+@UseInterceptors(RedisCacheInterceptor)
+@CacheTTL(60)
 export class MangaController {
   constructor(private readonly mangaService: MangaService) {}
 

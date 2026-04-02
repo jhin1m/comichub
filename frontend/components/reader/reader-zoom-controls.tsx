@@ -1,18 +1,21 @@
 'use client';
 
+import type { RefObject } from 'react';
 import { MinusIcon, PlusIcon, GearSixIcon } from '@phosphor-icons/react';
+import { BackToTop } from '@/components/ui/back-to-top';
 
 interface Props {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   onSettingsClick: () => void;
+  scrollRef?: RefObject<HTMLElement | null>;
 }
 
 const ZOOM_STEP = 10;
 const ZOOM_MIN = 30;
 const ZOOM_MAX = 200;
 
-export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick }: Props) {
+export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick, scrollRef }: Props) {
   const decrease = () => onZoomChange(Math.max(ZOOM_MIN, zoom - ZOOM_STEP));
   const increase = () => onZoomChange(Math.min(ZOOM_MAX, zoom + ZOOM_STEP));
 
@@ -41,14 +44,17 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick }: Prop
         </button>
       </div>
 
-      {/* Settings gear */}
-      <button
-        onClick={onSettingsClick}
-        aria-label="Reader settings"
-        className="pointer-events-auto text-secondary hover:text-primary transition-colors p-2 bg-elevated/80 backdrop-blur-sm rounded-lg"
-      >
-        <GearSixIcon size={18} />
-      </button>
+      {/* Back to top + Settings gear — stacked vertically */}
+      <div className="pointer-events-auto flex flex-col gap-2">
+        <BackToTop scrollRef={scrollRef} />
+        <button
+          onClick={onSettingsClick}
+          aria-label="Reader settings"
+          className="text-secondary hover:text-primary transition-colors p-2 bg-elevated/80 backdrop-blur-sm rounded-lg"
+        >
+          <GearSixIcon size={18} />
+        </button>
+      </div>
     </div>
   );
 }

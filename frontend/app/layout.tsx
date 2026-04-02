@@ -5,6 +5,7 @@ import './globals.css';
 import Providers from './providers';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
+import { BackToTop } from '@/components/ui/back-to-top';
 import { JsonLd, buildWebSiteJsonLd, buildOrganizationJsonLd, SITE_URL } from '@/lib/seo';
 
 const rajdhani = Rajdhani({
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <div className="flex-1">{children}</div>
           <Footer />
+          <BackToTop className="fixed bottom-6 right-6 z-40" />
           <Toaster position="top-right" theme="dark" richColors />
         </Providers>
       </body>

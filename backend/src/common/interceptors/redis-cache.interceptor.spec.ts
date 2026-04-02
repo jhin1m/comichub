@@ -14,6 +14,9 @@ function buildContext(method = 'GET', url = '/manga', authHeader?: string) {
         url,
         headers: authHeader ? { authorization: authHeader } : {},
       }),
+      getResponse: vi.fn().mockReturnValue({
+        setHeader: vi.fn(),
+      }),
     }),
   } as any;
 }

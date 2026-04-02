@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
+  UseInterceptors,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -24,11 +25,15 @@ import { TaxonomyService } from '../services/taxonomy.service.js';
 import { MangaService } from '../services/manga.service.js';
 import { CreateTaxonomyDto, UpdateTaxonomyDto } from '../dto/taxonomy.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
+import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
+import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
 
 @ApiTags('groups')
 @Controller('groups')
+@UseInterceptors(RedisCacheInterceptor)
+@CacheTTL(300)
 export class GroupController {
   constructor(
     private readonly taxonomyService: TaxonomyService,
