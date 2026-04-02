@@ -1,15 +1,18 @@
 'use client';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/auth.context';
+import { TurnstileWidget, type TurnstileWidgetRef } from './turnstile-widget';
 
 const schema = z.object({
   email: z.email('Invalid email'),
-  password: z.string().min(6, 'Min 6 characters'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -17,6 +20,8 @@ type FormData = z.infer<typeof schema>;
 export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const {
     register,
@@ -27,13 +32,16 @@ export function LoginForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await login(data);
+      await login({ ...data, turnstileToken });
       router.push('/');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
         'Invalid credentials';
       setError('root', { message });
+    } finally {
+      turnstileRef.current?.reset();
+      setTurnstileToken('');
     }
   };
 
@@ -51,7 +59,13 @@ export function LoginForm() {
         error={errors.password?.message}
         {...register('password')}
       />
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-sm text-accent hover:underline">
+          Forgot password?
+        </Link>
+      </div>
       {errors.root && <p className="text-accent text-sm">{errors.root.message}</p>}
+      <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
       <Button variant="primary" type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? 'Signing in...' : 'Sign In'}
       </Button>

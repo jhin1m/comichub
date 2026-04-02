@@ -1,5 +1,12 @@
 import { apiClient } from '@/lib/api-client';
-import type { TokenResponse, AuthUser, LoginForm, RegisterForm } from '@/types/auth.types';
+import type {
+  TokenResponse,
+  AuthUser,
+  LoginForm,
+  RegisterForm,
+  ForgotPasswordForm,
+  ResetPasswordForm,
+} from '@/types/auth.types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
 
@@ -17,4 +24,10 @@ export const authApi = {
 
   me: () =>
     apiClient.get<AuthUser>('/auth/me').then((r) => r.data),
+
+  forgotPassword: (data: ForgotPasswordForm) =>
+    apiClient.post('/auth/forgot-password', data).then((r) => r.data),
+
+  resetPassword: (data: ResetPasswordForm) =>
+    apiClient.post('/auth/reset-password', data).then((r) => r.data),
 };

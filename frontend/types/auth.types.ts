@@ -16,10 +16,23 @@ export interface AuthUser {
 export interface LoginForm {
   email: string;
   password: string;
+  turnstileToken?: string;
 }
 
 export interface RegisterForm {
   name: string;
   email: string;
   password: string;
+  turnstileToken?: string;
+}
+
+export interface ForgotPasswordForm {
+  email: string;
+  turnstileToken?: string;
+}
+
+export interface ResetPasswordForm {
+  token: string;
+  newPassword: string;
+  turnstileToken?: string;
 }

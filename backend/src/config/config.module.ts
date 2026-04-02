@@ -7,6 +7,8 @@ import { s3Config } from './s3.config.js';
 import { jwtConfig } from './jwt.config.js';
 import { googleConfig } from './google.config.js';
 import { importConfig } from '../modules/import/config/import.config.js';
+import { turnstileConfig } from './turnstile.config.js';
+import { mailConfig } from './mail.config.js';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { importConfig } from '../modules/import/config/import.config.js';
         jwtConfig,
         googleConfig,
         importConfig,
+        turnstileConfig,
+        mailConfig,
       ],
       envFilePath: ['.env'],
     }),

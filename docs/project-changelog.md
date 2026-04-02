@@ -4,6 +4,16 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Added - Forgot Password + Cloudflare Turnstile (2026-04-02)
+- **Backend Auth**: Implemented password reset flow with 15min expiring tokens stored hashed in Redis, email delivery via Resend SMTP with nodemailer
+- **Backend Security**: Added Cloudflare Turnstile bot protection guard to login/register/forgot-password/reset-password endpoints with graceful dev-mode bypass
+- **Backend Endpoints**: Created POST `/auth/forgot-password` (generic response prevents email enumeration) and POST `/auth/reset-password` (single-use token validation)
+- **Frontend Auth**: Created `/forgot-password` page for email submission and `/reset-password?token=xxx` page for password reset with URL token extraction
+- **Frontend Components**: Integrated Turnstile widget into login/register forms and new password reset forms with auto-reset after submission
+- **Email Integration**: Configured SMTP vars (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM) for Resend SMTP provider
+- **UX**: Added "Forgot password?" link to login page, success states show confirmation message instead of redirect, error handling with inline messages
+- **Security**: Token hashed with SHA256 before Redis storage, bcrypt password hashing (12 rounds), refresh token revocation on password change, rate limiting (3 forgot/10min, 5 reset/10min)
+
 ### Added - Manga Card Badge System (2026-03-31)
 - **Backend**: Added `contentRating` and `isHot` fields to `MangaListItem` return type across 4 list query endpoints: `findAll()`, `findMangaByGroup()`, `getHotManga()`, `queryRanking()`, and search endpoint `searchManga()`
 - **Frontend**: Implemented priority-based badge system on manga cards with max 2 badges: Content Rating (18+/S) > HOT > NEW (7 days) > Status (END/HIATUS/DROP)

@@ -21,10 +21,13 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { TokenResponseDto } from './dto/token-response.dto.js';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard.js';
 import { GoogleAuthGuard } from './guards/google-auth.guard.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { TurnstileGuard } from '../../common/guards/turnstile.guard.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { JwtPayload } from './types/jwt-payload.type.js';
@@ -40,6 +43,7 @@ export class AuthController {
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 600000 } })
+  @UseGuards(TurnstileGuard)
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register with email/password' })
@@ -50,6 +54,7 @@ export class AuthController {
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 600000 } })
+  @UseGuards(TurnstileGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login, receive access + refresh tokens' })
@@ -118,6 +123,28 @@ export class AuthController {
     });
 
     return res.redirect(`${frontendUrl}/auth/callback?oauth=success`);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 600000 } })
+  @UseGuards(TurnstileGuard)
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto.email);
+    return { message: 'If that email is registered, a reset link has been sent.' };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 600000 } })
+  @UseGuards(TurnstileGuard)
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
+    return { message: 'Password has been reset successfully.' };
   }
 
   @UseGuards(JwtAuthGuard)

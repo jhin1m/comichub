@@ -1,25 +1,23 @@
 'use client';
 import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/auth.context';
+import { authApi } from '@/lib/api/auth.api';
 import { TurnstileWidget, type TurnstileWidgetRef } from './turnstile-widget';
 
 const schema = z.object({
-  name: z.string().min(2, 'Min 2 characters'),
   email: z.email('Invalid email'),
-  password: z.string().min(6, 'Min 6 characters'),
 });
 
 type FormData = z.infer<typeof schema>;
 
-export function RegisterForm() {
-  const { register: authRegister } = useAuth();
-  const router = useRouter();
+export function ForgotPasswordForm() {
+  const [submitted, setSubmitted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
@@ -32,12 +30,13 @@ export function RegisterForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await authRegister({ ...data, turnstileToken });
-      router.push('/');
+      await authApi.forgotPassword({ ...data, turnstileToken });
+      setSubmitted(true);
+      toast.success('Check your email for a reset link');
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        'Registration failed';
+        'Something went wrong. Please try again.';
       setError('root', { message });
     } finally {
       turnstileRef.current?.reset();
@@ -45,31 +44,40 @@ export function RegisterForm() {
     }
   };
 
+  if (submitted) {
+    return (
+      <div className="space-y-4 text-center">
+        <p className="text-secondary">
+          If that email is registered, you'll receive a password reset link shortly.
+        </p>
+        <Link href="/login" className="text-accent hover:underline text-sm">
+          Back to login
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input
-        label="Name"
-        type="text"
-        error={errors.name?.message}
-        {...register('name')}
-      />
+      <p className="text-secondary text-sm">
+        Enter your email and we'll send you a link to reset your password.
+      </p>
       <Input
         label="Email"
         type="email"
         error={errors.email?.message}
         {...register('email')}
       />
-      <Input
-        label="Password"
-        type="password"
-        error={errors.password?.message}
-        {...register('password')}
-      />
       {errors.root && <p className="text-accent text-sm">{errors.root.message}</p>}
       <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} />
       <Button variant="primary" type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? 'Creating account...' : 'Create Account'}
+        {isSubmitting ? 'Sending...' : 'Send Reset Link'}
       </Button>
+      <p className="text-center">
+        <Link href="/login" className="text-sm text-accent hover:underline">
+          Back to login
+        </Link>
+      </p>
     </form>
   );
 }

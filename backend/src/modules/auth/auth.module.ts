@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { createResilientRedis } from '../../common/providers/redis.provider.js';
+import { MailService } from '../../common/services/mail.service.js';
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
@@ -12,11 +13,11 @@ import { GoogleStrategy } from './strategies/google.strategy.js';
 @Module({
   imports: [
     PassportModule,
-    // JwtModule registered with no defaults — each signAsync call uses explicit options
     JwtModule.register({}),
   ],
   providers: [
     AuthService,
+    MailService,
     JwtStrategy,
     JwtRefreshStrategy,
     GoogleStrategy,
