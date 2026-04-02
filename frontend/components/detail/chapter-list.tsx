@@ -81,7 +81,7 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
   const [lastReadChapterId, setLastReadChapterId] = useState<number | null>(null);
 
   // Fetch last-read chapter for logged-in users
-  const userId = user?.sub;
+  const userId = user?.id;
   useEffect(() => {
     if (!userId) { setLastReadChapterId(null); return; }
     let cancelled = false;
