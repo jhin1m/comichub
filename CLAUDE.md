@@ -46,8 +46,8 @@ No lint or test scripts configured in frontend yet.
 - **Response envelope**: `TransformInterceptor` wraps all responses in `{ success, data, message }` format
 - **Database**: PostgreSQL via Drizzle ORM with `postgres.js` driver. Inject DB with `@Inject(DRIZZLE)` using the `DrizzleDB` type from `drizzle.provider.ts`
 - **Schema**: Drizzle schema files in `src/database/schema/` — exported through barrel `index.ts`. Migrations output to `src/database/migrations/`
-- **Redis**: Optional — used for caching (`RedisCacheInterceptor`) and view counters. App works without it.
-- **Auth**: JWT access/refresh tokens + Google OAuth. JWT payload: `{ sub: number, uuid: string, email: string, role: 'admin' | 'user' }`
+- **Redis**: Optional — app degrades gracefully via `stubRedisClient()` when unavailable. See caching section below.
+- **Auth**: JWT access/refresh tokens + Google OAuth. Refresh tokens dual-written to Redis + `refresh_tokens` DB table (DB fallback when Redis down). JWT payload: `{ sub: number, uuid: string, email: string, role: 'admin' | 'user' }`
 - **Path alias**: `@/*` maps to `./src/*` (tsconfig paths)
 - **Module resolution**: `nodenext` — all local imports use `.js` extension
 - **Test framework**: Vitest with SWC plugin. Test files: `*.spec.ts` co-located with source. Setup: `tests/setup.ts`. Integration tests in `tests/integration/`
@@ -69,6 +69,24 @@ No lint or test scripts configured in frontend yet.
 - `@CurrentUser()` — extract user from request (or `@CurrentUser('sub')` for specific field)
 - `@Roles('admin')` — role-based access
 - `@CacheTTL(seconds)` — cache duration for Redis interceptor
+
+### Caching
+
+**3-layer cache: HTTP interceptor → Redis service cache → in-memory (taxonomy only)**
+
+- `RedisCacheInterceptor` caches public GET responses (skips authenticated users). Key: `cache:<url>`, TTL via `@CacheTTL(seconds)`.
+- `REDIS_AVAILABLE` token (inject `RedisStatus`) — check `redisStatus.available` before Redis-dependent logic.
+- View tracking: Redis up → buffer in Redis (flushed by `CounterFlushJob` every 5 min). Redis down → direct DB `sql\`views + 1\`` increment.
+- `TaxonomyService` has in-memory `Map` cache (10 min TTL, 100 max entries) — benefits authenticated users who bypass HTTP cache.
+- Cache invalidation: event-driven (`chapter.created`, `manga.updated`) + cron-based (`rankings:*` every 5 min).
+
+**When adding new features:**
+- New public GET endpoint → add `@CacheTTL(seconds)` + `@UseInterceptors(RedisCacheInterceptor)` if data is not realtime
+- New service using Redis → inject `REDIS_AVAILABLE` if fallback behavior is needed when Redis is down
+- New frontend page with stable data → add `export const revalidate = seconds` for ISR
+- No caching needed for: authenticated-only endpoints, admin endpoints, realtime data (chat, notifications)
+
+**Current TTLs:** manga 180s, ranking 300s, search 120s, taxonomy 600s, stats 3600s, ranking service 900s. Homepage ISR 180s, detail page ISR 300s.
 
 ### Frontend (Next.js 16 + Tailwind CSS v4 + Radix UI)
 
