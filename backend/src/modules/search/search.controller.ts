@@ -20,7 +20,7 @@ class SuggestQueryDto {
 @ApiTags('search')
 @Controller('search')
 @UseInterceptors(RedisCacheInterceptor)
-@CacheTTL(30)
+@CacheTTL(120)
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 

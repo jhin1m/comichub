@@ -1,5 +1,10 @@
 import { relations } from 'drizzle-orm';
-import { users, userProfiles, userContentPreferences } from './user.schema.js';
+import {
+  users,
+  userProfiles,
+  userContentPreferences,
+  refreshTokens,
+} from './user.schema.js';
 import {
   manga,
   genres,
@@ -37,6 +42,10 @@ import {
 } from './gamification.schema.js';
 
 // ── User relations ──────────────────────────────────────────────
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, { fields: [refreshTokens.userId], references: [users.id] }),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
     fields: [users.id],
@@ -45,6 +54,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   contentPreferences: one(userContentPreferences, {
     fields: [users.id],
     references: [userContentPreferences.userId],
+  }),
+  refreshToken: one(refreshTokens, {
+    fields: [users.id],
+    references: [refreshTokens.userId],
   }),
   manga: many(manga),
   comments: many(comments),

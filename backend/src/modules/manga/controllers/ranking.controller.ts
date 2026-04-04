@@ -26,7 +26,7 @@ import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 @ApiTags('rankings')
 @Controller('manga')
 @UseInterceptors(RedisCacheInterceptor)
-@CacheTTL(60)
+@CacheTTL(300)
 export class RankingController {
   constructor(private readonly rankingService: RankingService) {}
 

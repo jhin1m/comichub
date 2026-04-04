@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ViewTrackingService } from './view-tracking.service.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
+import { REDIS_AVAILABLE } from '../../../common/providers/redis.provider.js';
 
 describe('ViewTrackingService', () => {
   let service: ViewTrackingService;
@@ -29,6 +30,7 @@ describe('ViewTrackingService', () => {
         ViewTrackingService,
         { provide: DRIZZLE, useValue: mockDb },
         { provide: 'REDIS_CLIENT', useValue: mockRedis },
+        { provide: REDIS_AVAILABLE, useValue: { available: true } },
       ],
     }).compile();
 

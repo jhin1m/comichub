@@ -1,10 +1,10 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { sql } from 'drizzle-orm';
+import { sql, lt } from 'drizzle-orm';
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../database/drizzle.provider.js';
 import type { DrizzleDB } from '../database/drizzle.provider.js';
-import { manga } from '../database/schema/index.js';
+import { manga, refreshTokens } from '../database/schema/index.js';
 
 @Injectable()
 export class ViewCounterResetJob {
@@ -23,6 +23,19 @@ export class ViewCounterResetJob {
       this.logger.log('Daily view counters reset');
     } catch (err) {
       this.logger.error('Failed to reset daily views', err);
+    }
+  }
+
+  /** Clean up expired refresh tokens from DB (daily at 1 AM) */
+  @Cron('0 1 * * *')
+  async cleanExpiredRefreshTokens(): Promise<void> {
+    try {
+      await this.db
+        .delete(refreshTokens)
+        .where(lt(refreshTokens.expiresAt, new Date()));
+      this.logger.log('Cleaned expired refresh tokens');
+    } catch (err) {
+      this.logger.error('Failed to clean expired refresh tokens', err);
     }
   }
 

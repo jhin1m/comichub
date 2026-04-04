@@ -1,10 +1,11 @@
-export const dynamic = 'force-dynamic';
+export const revalidate = 300;
 
 import { cache } from 'react';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { mangaApi } from '@/lib/api/manga.api';
+import { commentApi } from '@/lib/api/comment.api';
 import { buildMeta, JsonLd, buildMangaJsonLd, buildBreadcrumbJsonLd, SITE_URL } from '@/lib/seo';
 import { MangaCoverHero } from '@/components/detail/manga-cover-hero';
 import { MangaSidebar } from '@/components/detail/manga-sidebar';
@@ -23,6 +24,12 @@ export default async function MangaDetailPage({ params }: Props) {
   const { slug } = await params;
   try {
     const manga = await getManga(slug);
+    // Fetch comment count (non-blocking — default to 0 on failure)
+    let commentCount = 0;
+    try {
+      const comments = await commentApi.listForManga(manga.id, { limit: 1 });
+      commentCount = comments.total;
+    } catch { /* non-critical */ }
     return (
       <>
         <JsonLd data={buildMangaJsonLd(manga)} />
@@ -33,9 +40,9 @@ export default async function MangaDetailPage({ params }: Props) {
         ])} />
         {/* ===== HERO SECTION — full-width blurred backdrop ===== */}
         <section className="relative overflow-hidden border-b border-default">
-          {/* Blurred cover background */}
-          {manga.cover && (
-            <div className="absolute inset-0" aria-hidden="true">
+          {/* Blurred cover background + accent gradients */}
+          <div className="absolute inset-0" aria-hidden="true">
+            {manga.cover && (
               <Image
                 src={manga.cover}
                 alt=""
@@ -45,16 +52,20 @@ export default async function MangaDetailPage({ params }: Props) {
                 quality={10}
                 priority
               />
-              <div className="absolute inset-0 bg-linear-to-r from-base via-base/95 to-base/80" />
-              <div className="absolute inset-0 bg-linear-to-t from-base via-transparent to-base/60" />
-            </div>
-          )}
+            )}
+            {/* Base overlay gradients */}
+            <div className="absolute inset-0 bg-linear-to-r from-base via-base/95 to-base/80" />
+            <div className="absolute inset-0 bg-linear-to-t from-base via-transparent to-base/60" />
+            {/* Accent color glow — top-right warm, bottom-left cool */}
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent/[0.06] blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-info/[0.04] blur-3xl" />
+          </div>
 
           {/* Hero content */}
           <div className="relative z-10 max-w-350 mx-auto px-4 py-8 md:py-10">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
               <div className="space-y-4 min-w-0">
-                <MangaCoverHero manga={manga} />
+                <MangaCoverHero manga={manga} commentCount={commentCount} />
                 <MobileDetailsBar manga={manga} />
               </div>
               <div className="hidden lg:block min-w-0">

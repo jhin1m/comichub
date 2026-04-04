@@ -33,7 +33,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard.js';
 @ApiTags('groups')
 @Controller('groups')
 @UseInterceptors(RedisCacheInterceptor)
-@CacheTTL(300)
+@CacheTTL(600)
 export class GroupController {
   constructor(
     private readonly taxonomyService: TaxonomyService,

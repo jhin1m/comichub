@@ -79,7 +79,7 @@ describe('RankingService', () => {
       expect(mockDb.select).toHaveBeenCalled();
       expect(mockRedis.setex).toHaveBeenCalledWith(
         'rankings:daily',
-        600,
+        900,
         expect.any(String),
       );
       expect(result).toHaveLength(1);
@@ -92,7 +92,7 @@ describe('RankingService', () => {
 
       expect(mockRedis.setex).toHaveBeenCalledWith(
         'rankings:weekly',
-        600,
+        900,
         expect.any(String),
       );
     });
@@ -104,7 +104,7 @@ describe('RankingService', () => {
 
       expect(mockRedis.setex).toHaveBeenCalledWith(
         'rankings:alltime',
-        600,
+        900,
         expect.any(String),
       );
     });
@@ -116,7 +116,7 @@ describe('RankingService', () => {
 
       expect(mockRedis.setex).toHaveBeenCalledWith(
         'rankings:toprated',
-        600,
+        900,
         expect.any(String),
       );
     });

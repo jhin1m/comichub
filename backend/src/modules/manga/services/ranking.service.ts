@@ -6,7 +6,7 @@ import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { manga, chapters } from '../../../database/schema/index.js';
 import type { MangaListItem, PaginatedResult } from '../types/manga.types.js';
 
-const RANKING_TTL = 600; // 10 minutes
+const RANKING_TTL = 900; // 15 minutes
 const HOT_RANKED_TTL = 3600; // 1 hour
 
 type RankingType = 'daily' | 'weekly' | 'alltime' | 'toprated';

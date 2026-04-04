@@ -2,7 +2,11 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
-import { createResilientRedis } from '../../common/providers/redis.provider.js';
+import {
+  createResilientRedis,
+  REDIS_AVAILABLE,
+  type RedisStatus,
+} from '../../common/providers/redis.provider.js';
 import { MailService } from '../../common/services/mail.service.js';
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
@@ -22,12 +26,17 @@ import { GoogleStrategy } from './strategies/google.strategy.js';
     JwtRefreshStrategy,
     GoogleStrategy,
     {
+      provide: REDIS_AVAILABLE,
+      useValue: { available: false } as RedisStatus,
+    },
+    {
       provide: 'REDIS_CLIENT',
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => createResilientRedis(config),
+      inject: [ConfigService, REDIS_AVAILABLE],
+      useFactory: (config: ConfigService, status: RedisStatus) =>
+        createResilientRedis(config, status),
     },
   ],
   controllers: [AuthController],
-  exports: ['REDIS_CLIENT'],
+  exports: ['REDIS_CLIENT', REDIS_AVAILABLE],
 })
 export class AuthModule {}

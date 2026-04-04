@@ -8,13 +8,17 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { eq } from 'drizzle-orm';
+import { eq, gt, and } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'node:crypto';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
-import { users, type User } from '../../database/schema/index.js';
+import { users, refreshTokens, type User } from '../../database/schema/index.js';
 import { MailService } from '../../common/services/mail.service.js';
+import {
+  REDIS_AVAILABLE,
+  type RedisStatus,
+} from '../../common/providers/redis.provider.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { TokenResponseDto } from './dto/token-response.dto.js';
@@ -33,6 +37,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: import('ioredis').Redis,
     private readonly mailService: MailService,
+    @Inject(REDIS_AVAILABLE) private readonly redisStatus: RedisStatus,
   ) {}
 
   async register(dto: RegisterDto): Promise<TokenResponseDto> {
@@ -79,14 +84,34 @@ export class AuthService {
   }
 
   async logout(userId: number): Promise<void> {
-    await this.redis.del(`refresh:${userId}`);
+    await Promise.all([
+      this.redis.del(`refresh:${userId}`),
+      this.db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)),
+    ]);
   }
 
   async refresh(
     user: User & { refreshToken: string },
   ): Promise<TokenResponseDto> {
-    // Verify stored token matches
-    const stored = await this.redis.get(`refresh:${user.id}`);
+    // Try Redis first, fallback to DB
+    let stored = await this.redis.get(`refresh:${user.id}`);
+    if (!stored) {
+      const [row] = await this.db
+        .select({ token: refreshTokens.token })
+        .from(refreshTokens)
+        .where(
+          and(
+            eq(refreshTokens.userId, user.id),
+            gt(refreshTokens.expiresAt, new Date()),
+          ),
+        )
+        .limit(1);
+      if (row) {
+        stored = row.token;
+        // Re-populate Redis cache
+        await this.redis.setex(`refresh:${user.id}`, REFRESH_TTL, stored);
+      }
+    }
     if (!stored || stored !== user.refreshToken) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
@@ -98,6 +123,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
+    // Password reset requires Redis — abort silently if unavailable
+    if (!this.redisStatus.available) return;
+
     const user = await this.db.query.users.findFirst({
       where: eq(users.email, email),
     });
@@ -137,10 +165,13 @@ export class AuthService {
       .set({ password: hashed })
       .where(eq(users.id, Number(userId)));
 
-    // Delete reset token (single-use) + force re-login
+    // Delete reset token (single-use) + force re-login (Redis + DB)
     await Promise.all([
       this.redis.del(`pwd-reset:${hash}`),
       this.redis.del(`refresh:${userId}`),
+      this.db
+        .delete(refreshTokens)
+        .where(eq(refreshTokens.userId, Number(userId))),
     ]);
   }
 
@@ -187,7 +218,15 @@ export class AuthService {
       ),
     ]);
 
-    // Store refresh token in Redis (rotate on each use)
+    // Dual-write: DB first (authoritative), then Redis (best-effort cache)
+    const expiresAt = new Date(Date.now() + REFRESH_TTL * 1000);
+    await this.db
+      .insert(refreshTokens)
+      .values({ userId: user.id, token: refreshToken, expiresAt })
+      .onConflictDoUpdate({
+        target: refreshTokens.userId,
+        set: { token: refreshToken, expiresAt },
+      });
     await this.redis.setex(`refresh:${user.id}`, REFRESH_TTL, refreshToken);
 
     return { accessToken, refreshToken, expiresIn: 900 };

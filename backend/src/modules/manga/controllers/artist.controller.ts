@@ -31,7 +31,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard.js';
 @ApiTags('artists')
 @Controller('artists')
 @UseInterceptors(RedisCacheInterceptor)
-@CacheTTL(300)
+@CacheTTL(600)
 export class ArtistController {
   constructor(private readonly taxonomyService: TaxonomyService) {}
 

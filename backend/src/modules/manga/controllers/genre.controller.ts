@@ -30,7 +30,7 @@ import { RolesGuard } from '../../../common/guards/roles.guard.js';
 @ApiTags('genres')
 @Controller('genres')
 @UseInterceptors(RedisCacheInterceptor)
-@CacheTTL(300)
+@CacheTTL(600)
 export class GenreController {
   constructor(private readonly taxonomyService: TaxonomyService) {}
 

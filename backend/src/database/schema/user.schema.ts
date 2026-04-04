@@ -72,6 +72,18 @@ export const userContentPreferences = pgTable('user_content_preferences', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// refresh_tokens — DB fallback when Redis is unavailable
+export const refreshTokens = pgTable('refresh_tokens', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  token: text('token').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type UserProfile = typeof userProfiles.$inferSelect;
@@ -79,3 +91,4 @@ export type NewUserProfile = typeof userProfiles.$inferInsert;
 export type UserContentPreferences = typeof userContentPreferences.$inferSelect;
 export type NewUserContentPreferences =
   typeof userContentPreferences.$inferInsert;
+export type RefreshToken = typeof refreshTokens.$inferSelect;

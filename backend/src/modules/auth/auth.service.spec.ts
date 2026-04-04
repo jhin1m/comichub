@@ -4,7 +4,9 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service.js';
+import { MailService } from '../../common/services/mail.service.js';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
+import { REDIS_AVAILABLE } from '../../common/providers/redis.provider.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 
@@ -29,9 +31,24 @@ describe('AuthService', () => {
           findFirst: vi.fn(),
         },
       },
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn(),
+      insert: vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      }),
+      delete: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      }),
     };
 
     // Mock Redis
@@ -75,6 +92,8 @@ describe('AuthService', () => {
         { provide: 'REDIS_CLIENT', useValue: mockRedis },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: MailService, useValue: { sendResetPassword: vi.fn() } },
+        { provide: REDIS_AVAILABLE, useValue: { available: true } },
       ],
     }).compile();
 
@@ -121,7 +140,15 @@ describe('AuthService', () => {
       };
 
       mockDb.query.users.findFirst.mockResolvedValue(null);
-      mockDb.returning.mockResolvedValue([newUser]);
+      // Chain: insert().values().returning() for users table
+      mockDb.insert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([newUser]),
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
       mockJwtService.signAsync
         .mockResolvedValueOnce('access-token')
         .mockResolvedValueOnce('refresh-token');
@@ -131,8 +158,6 @@ describe('AuthService', () => {
 
       expect(mockDb.query.users.findFirst).toHaveBeenCalled();
       expect(mockDb.insert).toHaveBeenCalled();
-      expect(mockDb.values).toHaveBeenCalled();
-      expect(mockDb.returning).toHaveBeenCalled();
       expect(result).toEqual({
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
@@ -161,7 +186,14 @@ describe('AuthService', () => {
       };
 
       mockDb.query.users.findFirst.mockResolvedValue(null);
-      mockDb.returning.mockResolvedValue([newUser]);
+      mockDb.insert.mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([newUser]),
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
       mockJwtService.signAsync
         .mockResolvedValueOnce('access-token-2')
         .mockResolvedValueOnce('refresh-token-2');

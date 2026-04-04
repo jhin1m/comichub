@@ -35,7 +35,7 @@ import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 @ApiTags('manga')
 @Controller('manga')
 @UseInterceptors(RedisCacheInterceptor)
-@CacheTTL(60)
+@CacheTTL(180)
 export class MangaController {
   constructor(private readonly mangaService: MangaService) {}
 

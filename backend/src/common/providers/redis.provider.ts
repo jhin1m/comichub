@@ -4,12 +4,23 @@ import Redis from 'ioredis';
 
 const logger = new Logger('RedisProvider');
 
+/** Token for injecting Redis availability flag */
+export const REDIS_AVAILABLE = 'REDIS_AVAILABLE';
+
+/** Mutable container so services can check Redis status */
+export interface RedisStatus {
+  available: boolean;
+}
+
 /**
  * Creates a Redis client that gracefully degrades to a no-op stub
  * when Redis is unavailable. All get/set operations silently return
  * null so the app works without caching.
  */
-export function createResilientRedis(config: ConfigService): Redis {
+export function createResilientRedis(
+  config: ConfigService,
+  status?: RedisStatus,
+): Redis {
   const url = config.get<string>('redis.url', 'redis://localhost:6379');
   const client = new Redis(url, {
     maxRetriesPerRequest: 1,
@@ -21,8 +32,11 @@ export function createResilientRedis(config: ConfigService): Redis {
   });
 
   // Try connecting; if it fails, swap to no-op stub
-  client.connect().catch(() => {
+  client.connect().then(() => {
+    if (status) status.available = true;
+  }).catch(() => {
     logger.warn('Redis unavailable — running without cache');
+    if (status) status.available = false;
     stubRedisClient(client);
   });
 
