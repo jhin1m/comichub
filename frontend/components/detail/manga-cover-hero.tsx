@@ -1,29 +1,32 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Eye, Users, BookOpen } from '@phosphor-icons/react/ssr';
+import { EyeIcon, UsersIcon, BookOpenIcon, StarIcon, ChatCircleIcon } from '@phosphor-icons/react/ssr';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { FollowButton } from './follow-button';
 import { ReportButton } from './report-button';
 import { MangaDescription } from './manga-description';
+import { MangaGenres } from './manga-genres';
+import { ContinueReadingButton } from './continue-reading-button';
 
 import { statusVariant, formatCount } from '@/lib/utils';
 import type { MangaDetail } from '@/types/manga.types';
 
 interface Props {
   manga: MangaDetail;
+  commentCount?: number;
 }
 
-function StatItem({ icon: Icon, value }: { icon: typeof Eye; value: string }) {
+function StatPill({ icon: Icon, value, label, accent }: { icon: typeof EyeIcon; value: string; label?: string; accent?: boolean }) {
   return (
-    <span className="flex items-center gap-1.5 font-rajdhani font-medium">
-      <Icon size={16} className="text-muted" />
-      {value}
+    <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-elevated font-medium">
+      <Icon size={13} className={accent ? 'text-warning' : 'text-muted'} />
+      <span className={`font-rajdhani font-semibold ${accent ? 'text-warning' : 'text-primary'}`}>{value}</span>
+      {label && <span className="text-secondary">{label}</span>}
     </span>
   );
 }
 
-export function MangaCoverHero({ manga }: Props) {
+export function MangaCoverHero({ manga, commentCount }: Props) {
   const firstChapter = manga.chapters[0];
   const latestChapter = manga.chapters[manga.chapters.length - 1];
 
@@ -64,23 +67,25 @@ export function MangaCoverHero({ manga }: Props) {
           </p>
         )}
 
+        {/* Genre pills */}
+        <MangaGenres genres={manga.genres} />
+
         {/* Stats */}
-        <div className="flex items-center gap-4 text-sm text-secondary">
-          <StatItem icon={Eye} value={formatCount(manga.views)} />
-          <StatItem icon={Users} value={formatCount(manga.followersCount)} />
-          <StatItem icon={BookOpen} value={`${manga.chaptersCount} ch.`} />
+        <div className="flex items-center gap-1.5 flex-wrap justify-center">
+          <StatPill icon={EyeIcon} value={formatCount(manga.views)} label="views" />
+          <StatPill icon={UsersIcon} value={formatCount(manga.followersCount)} label="followers" />
+          <StatPill icon={BookOpenIcon} value={String(manga.chaptersCount)} label="ch." />
+          {Number(manga.averageRating) > 0 && (
+            <StatPill icon={StarIcon} value={Number(manga.averageRating).toFixed(1)} accent />
+          )}
+          {commentCount != null && commentCount > 0 && (
+            <StatPill icon={ChatCircleIcon} value={String(commentCount)} label="comments" />
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap justify-center">
-          {firstChapter && (
-            <Link href={`/manga/${manga.slug}/${firstChapter.id}`}>
-              <Button variant="primary" className="gap-2 font-rajdhani font-bold tracking-wide">
-                <Play size={16} weight="fill" />
-                Start Reading
-              </Button>
-            </Link>
-          )}
+          <ContinueReadingButton mangaId={manga.id} mangaSlug={manga.slug} firstChapterId={firstChapter?.id} />
           <FollowButton mangaId={manga.id} followersCount={manga.followersCount} />
           <ReportButton mangaId={manga.id} firstChapterId={latestChapter?.id} />
         </div>
@@ -129,23 +134,25 @@ export function MangaCoverHero({ manga }: Props) {
             </p>
           )}
 
+          {/* Genre pills */}
+          <MangaGenres genres={manga.genres} />
+
           {/* Stats */}
-          <div className="flex items-center gap-5 text-sm text-secondary pt-1">
-            <StatItem icon={Eye} value={`${formatCount(manga.views)} views`} />
-            <StatItem icon={Users} value={`${formatCount(manga.followersCount)} followers`} />
-            <StatItem icon={BookOpen} value={`${manga.chaptersCount} chapters`} />
+          <div className="flex items-center gap-1.5 flex-wrap pt-1">
+            <StatPill icon={EyeIcon} value={formatCount(manga.views)} label="views" />
+            <StatPill icon={UsersIcon} value={formatCount(manga.followersCount)} label="followers" />
+            <StatPill icon={BookOpenIcon} value={String(manga.chaptersCount)} label="chapters" />
+            {Number(manga.averageRating) > 0 && (
+              <StatPill icon={StarIcon} value={Number(manga.averageRating).toFixed(1)} accent />
+            )}
+            {commentCount != null && commentCount > 0 && (
+              <StatPill icon={ChatCircleIcon} value={String(commentCount)} label="comments" />
+            )}
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-2 flex-wrap pt-1">
-            {firstChapter && (
-              <Link href={`/manga/${manga.slug}/${firstChapter.id}`}>
-                <Button variant="primary" className="gap-2 font-rajdhani font-bold tracking-wide">
-                  <Play size={16} weight="fill" />
-                  Start Reading
-                </Button>
-              </Link>
-            )}
+            <ContinueReadingButton mangaId={manga.id} mangaSlug={manga.slug} firstChapterId={firstChapter?.id} />
             <FollowButton mangaId={manga.id} followersCount={manga.followersCount} />
             <ReportButton mangaId={manga.id} firstChapterId={latestChapter?.id} />
           </div>

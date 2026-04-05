@@ -6,6 +6,7 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   GlobeIcon,
+  UsersThreeIcon,
 } from '@phosphor-icons/react';
 import { ChapterListItemRow } from './chapter-list-item';
 import { Pagination } from '@/components/ui/pagination';
@@ -77,6 +78,7 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
   const [sortField, setSortField] = useState<SortField>('number');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [language, setLanguage] = useState<string>('all');
+  const [group, setGroup] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [lastReadChapterId, setLastReadChapterId] = useState<number | null>(null);
 
@@ -103,6 +105,17 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
     return Array.from(set).sort();
   }, [chapters]);
 
+  // Extract unique groups from chapters
+  const uniqueGroups = useMemo(() => {
+    const map = new Map<number, { id: number; name: string; slug: string }>();
+    for (const ch of chapters) {
+      for (const g of ch.groups ?? []) {
+        if (!map.has(g.id)) map.set(g.id, g);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [chapters]);
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
@@ -118,6 +131,12 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
     // Language filter
     if (language !== 'all') {
       list = list.filter((ch) => ch.language === language);
+    }
+
+    // Group filter
+    if (group !== 'all') {
+      const gid = Number(group);
+      list = list.filter((ch) => ch.groups?.some((g) => g.id === gid));
     }
 
     // Smart search
@@ -138,7 +157,7 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
     });
 
     return list;
-  }, [chapters, query, sortField, sortDir, language]);
+  }, [chapters, query, sortField, sortDir, language, group]);
 
 
   // Reset page when filters change
@@ -210,6 +229,32 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
             </div>
           )}
 
+          {/* Group filter */}
+          {uniqueGroups.length > 1 && (
+            <div className="relative">
+              <UsersThreeIcon
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+              />
+              <select
+                value={group}
+                onChange={(e) => { setGroup(e.target.value); setPage(1); }}
+                className="appearance-none pl-8 pr-7 py-2 text-sm bg-elevated border border-default rounded-lg text-primary focus:outline-none focus:border-accent/40 transition-colors cursor-pointer"
+              >
+                <option value="all">All Groups</option>
+                {uniqueGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              <CaretDownIcon
+                size={12}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+              />
+            </div>
+          )}
+
           {/* Search */}
           <div className="relative flex-1 sm:flex-none sm:w-56">
             <MagnifyingGlassIcon
@@ -252,16 +297,24 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
         {paginated.length === 0 ? (
           <p className="text-base text-muted py-10 text-center">No chapters found.</p>
         ) : (
-          paginated.map((chapter, index) => (
-            <ChapterListItemRow
-              key={chapter.id}
-              chapter={chapter}
-              mangaSlug={mangaSlug}
-              striped={index % 2 === 1}
-              isLastRead={chapter.id === lastReadChapterId}
-              onBookmark={user ? handleBookmark : undefined}
-            />
-          ))
+          (() => {
+            // Compute once outside loop — avoids O(n*m) on every render
+            const lastReadOrder = lastReadChapterId
+              ? chapters.find((c) => c.id === lastReadChapterId)?.order ?? -1
+              : -1;
+
+            return paginated.map((chapter, index) => (
+              <ChapterListItemRow
+                key={chapter.id}
+                chapter={chapter}
+                mangaSlug={mangaSlug}
+                striped={index % 2 === 1}
+                isLastRead={chapter.id === lastReadChapterId}
+                isRead={lastReadOrder >= 0 && chapter.order <= lastReadOrder}
+                onBookmark={user ? handleBookmark : undefined}
+              />
+            ));
+          })()
         )}
       </div>
 

@@ -62,6 +62,7 @@ export interface ChapterImage {
   imageUrl: string;
   pageNumber: number;
   order: number;
+  groupId: number | null;
 }
 
 export interface ChapterNavigation {

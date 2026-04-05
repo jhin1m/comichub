@@ -2,20 +2,25 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, BookmarkSimple } from '@phosphor-icons/react';
+import { Eye, BookmarkSimple, Check } from '@phosphor-icons/react';
 import { LanguageFlag } from '@/components/ui/language-flag';
 import { formatRelativeDate, formatCount } from '@/lib/utils';
 import type { ChapterListItem } from '@/types/manga.types';
+
+function isNewChapter(createdAt: string): boolean {
+  return Date.now() - new Date(createdAt).getTime() < 7 * 24 * 60 * 60 * 1000;
+}
 
 interface Props {
   chapter: ChapterListItem;
   mangaSlug: string;
   striped?: boolean;
   isLastRead?: boolean;
+  isRead?: boolean;
   onBookmark?: (chapterId: number) => void;
 }
 
-export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, onBookmark }: Props) {
+export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, isRead, onBookmark }: Props) {
   const router = useRouter();
 
   const handleRowClick = () => {
@@ -38,15 +43,26 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, on
         striped ? 'bg-surface/50' : ''
       } ${isLastRead ? 'bg-accent/8 border-l-3 border-l-accent' : ''}`}
     >
-      {/* Flag + Chapter number + Volume */}
+      {/* Read indicator + Flag + Chapter number + Volume + NEW badge */}
       <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+        {/* Read status indicator */}
+        {isRead ? (
+          <Check size={14} weight="bold" className="text-success shrink-0" />
+        ) : (
+          <span className="w-1.5 h-1.5 rounded-full bg-border shrink-0" />
+        )}
         <LanguageFlag lang={chapter.language} />
-        <span className="font-rajdhani font-bold text-secondary group-hover:text-accent transition-colors whitespace-nowrap">
+        <span className={`font-rajdhani font-bold group-hover:text-accent transition-colors whitespace-nowrap ${isRead ? 'text-muted' : 'text-secondary'}`}>
           Ch. {chapter.number}
         </span>
         {chapter.volume && (
           <span className="text-xs font-medium text-accent/80 bg-accent/10 px-2 py-0.5 rounded whitespace-nowrap">
             Vol. {chapter.volume}
+          </span>
+        )}
+        {isNewChapter(chapter.createdAt) && (
+          <span className="text-[9px] font-rajdhani font-bold px-1.5 py-0.5 rounded-xs bg-success text-white uppercase tracking-wide">
+            NEW
           </span>
         )}
       </div>
