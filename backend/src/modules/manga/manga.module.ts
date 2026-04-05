@@ -7,12 +7,14 @@ import { ArtistController } from './controllers/artist.controller.js';
 import { AuthorController } from './controllers/author.controller.js';
 import { GroupController } from './controllers/group.controller.js';
 import { RankingController } from './controllers/ranking.controller.js';
+import { StatsController } from './controllers/stats.controller.js';
 import { MangaService } from './services/manga.service.js';
 import { ChapterService } from './services/chapter.service.js';
 import { ChapterImageService } from './services/chapter-image.service.js';
 import { ViewTrackingService } from './services/view-tracking.service.js';
 import { TaxonomyService } from './services/taxonomy.service.js';
 import { RankingService } from './services/ranking.service.js';
+import { StatsService } from './services/stats.service.js';
 
 @Module({
   imports: [AuthModule],
@@ -24,6 +26,7 @@ import { RankingService } from './services/ranking.service.js';
     ArtistController,
     AuthorController,
     GroupController,
+    StatsController,
   ],
   providers: [
     MangaService,
@@ -32,6 +35,7 @@ import { RankingService } from './services/ranking.service.js';
     ViewTrackingService,
     TaxonomyService,
     RankingService,
+    StatsService,
   ],
   exports: [RankingService, TaxonomyService, MangaService, ChapterService],
 })

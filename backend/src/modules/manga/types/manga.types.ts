@@ -46,7 +46,7 @@ export interface ChapterListItem {
 export interface ChapterWithImages extends ChapterListItem {
   mangaId: number;
   mangaTitle: string;
-  images: { id: number; imageUrl: string; pageNumber: number; order: number }[];
+  images: { id: number; imageUrl: string; pageNumber: number; order: number; groupId: number | null }[];
 }
 
 export interface ChapterNavigation {
