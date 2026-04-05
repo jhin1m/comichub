@@ -91,6 +91,15 @@ h1, h2, h3, h4 {
   background: transparent;
 }
 
+/* Hidden scrollbar utility — horizontal scroll strips */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Chapter list — slightly more visible on hover */
 .chapter-list-scroll::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.06);

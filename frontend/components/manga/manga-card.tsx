@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatRelativeDate } from '@/lib/utils';
+import { EyeIcon } from '@phosphor-icons/react/ssr';
+import { formatRelativeDate, formatCount } from '@/lib/utils';
 import { QuickBookmarkButton } from '@/components/manga/quick-bookmark-button';
 import type { MangaListItem } from '@/types/manga.types';
 
@@ -106,6 +107,14 @@ export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
               </span>
             ))}
           </div>
+        )}
+
+        {/* View count badge — bottom-left overlay */}
+        {item.views >= 1000 && (
+          <span className="absolute bottom-1.5 left-1.5 flex items-center gap-1 text-[10px] font-medium text-white bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-sm">
+            <EyeIcon size={10} weight="bold" />
+            {formatCount(item.views)}
+          </span>
         )}
 
         {/* Quick bookmark button — visible on mobile, shown on hover on PC */}
