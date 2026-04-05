@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useTransition } from 'react';
-import Link from 'next/link';
-import { CaretLeftIcon, CaretRightIcon, FireIcon, HeartIcon, DotsThreeOutlineIcon } from '@phosphor-icons/react';
+import { CaretLeftIcon, CaretRightIcon, FireIcon, HeartIcon } from '@phosphor-icons/react';
 import type { Icon as IconType } from '@phosphor-icons/react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MangaCard } from '@/components/manga/manga-card';
 import { mangaApi, type RankingPeriod } from '@/lib/api/manga.api';
 import { usePreferences } from '@/contexts/preferences.context';
@@ -23,12 +21,11 @@ interface Props {
   iconName?: string;
   items: MangaListItem[];
   showRank?: boolean;
-  moreHref?: string;
-  /** Enable period filter dropdown. Set to the initial ranking period. */
+  /** Enable period filter pills. Set to the initial ranking period. */
   defaultPeriod?: RankingPeriod;
 }
 
-export function MangaCarousel({ title, iconName, items = [], showRank = false, moreHref = '/browse', defaultPeriod }: Props) {
+export function MangaCarousel({ title, iconName, items = [], showRank = false, defaultPeriod }: Props) {
   const Icon = iconName ? ICON_MAP[iconName] : undefined;
   const trackRef = useRef<HTMLDivElement>(null);
   const [rawItems, setRawItems] = useState(items);
@@ -121,66 +118,50 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
   return (
     <section className="mb-8">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3.5">
-        <h2 className="font-rajdhani font-semibold text-2xl text-primary flex-1 flex items-center gap-1.5">
+      <div className="flex items-center gap-2 mb-3.5 flex-wrap">
+        <h2 className="font-rajdhani font-semibold text-2xl text-primary flex items-center gap-1.5">
           {Icon && <Icon size={18} className="text-accent" />}
           {title}
         </h2>
 
-        <button
-          onClick={() => scroll(-1)}
-          disabled={!canPrev}
-          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
-          aria-label="Previous"
-        >
-          <CaretLeftIcon size={13} />
-        </button>
-        <button
-          onClick={() => scroll(1)}
-          disabled={!canNext}
-          className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
-          aria-label="Next"
-        >
-          <CaretRightIcon size={13} />
-        </button>
-
-        {defaultPeriod ? (
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
+        {/* Period pill filters — visible inline */}
+        {defaultPeriod && (
+          <div className="flex gap-1 ml-1">
+            {PERIOD_OPTIONS.map((opt) => (
               <button
-                className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
-                aria-label="Filter period"
+                key={opt.value}
+                onClick={() => onPeriodChange(opt.value)}
+                disabled={isPending}
+                className={`h-8 px-3 rounded-full text-[11px] font-medium transition-colors cursor-pointer ${
+                  period === opt.value
+                    ? 'bg-accent text-white'
+                    : 'border border-default text-secondary hover:border-muted hover:text-primary'
+                }`}
               >
-                <DotsThreeOutlineIcon size={13} />
+                {opt.label}
               </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                align="end"
-                sideOffset={4}
-                className="bg-elevated border border-default rounded-md overflow-hidden z-50 shadow-lg min-w-[120px]"
-              >
-                {PERIOD_OPTIONS.map((opt) => (
-                  <DropdownMenu.Item
-                    key={opt.value}
-                    onSelect={() => onPeriodChange(opt.value)}
-                    className={`px-3 py-2 text-xs cursor-pointer outline-none select-none hover:bg-hover ${period === opt.value ? 'text-accent' : 'text-primary'}`}
-                  >
-                    {opt.label}
-                  </DropdownMenu.Item>
-                ))}
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        ) : (
-          <Link
-            href={moreHref}
-            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary hover:bg-hover hover:text-primary transition-colors"
-            aria-label="See all"
-          >
-            <DotsThreeOutlineIcon size={13} />
-          </Link>
+            ))}
+          </div>
         )}
+
+        <div className="flex gap-1 ml-auto">
+          <button
+            onClick={() => scroll(-1)}
+            disabled={!canPrev}
+            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
+            aria-label="Previous"
+          >
+            <CaretLeftIcon size={13} />
+          </button>
+          <button
+            onClick={() => scroll(1)}
+            disabled={!canNext}
+            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
+            aria-label="Next"
+          >
+            <CaretRightIcon size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Scrollable card track — 2 cards per click, drag & touch enabled */}
@@ -195,7 +176,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
           onClickCapture={onClickCapture}
           onDragStart={(e) => e.preventDefault()}
           className={`flex gap-4 overflow-x-auto scrollbar-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
-          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+          style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
         >
           {displayItems.map((item, i) => (
             <div
@@ -208,7 +189,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, m
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <DotsThreeOutlineIcon size={48} className="text-muted mb-4" />
+          {Icon ? <Icon size={48} className="text-muted mb-4" /> : <FireIcon size={48} className="text-muted mb-4" />}
           <p className="text-secondary text-sm">No data available</p>
         </div>
       )}

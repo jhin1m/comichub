@@ -5,8 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SparkleIcon, CheckCircleIcon } from '@phosphor-icons/react';
 import { formatRelativeDate } from '@/lib/utils';
-import type { MangaListItem, MangaType } from '@/types/manga.types';
+import type { MangaListItem, MangaType, TaxonomyItem } from '@/types/manga.types';
 import { LatestComments } from '@/components/home/latest-comments';
+import { TrendingTagsWidget } from '@/components/home/trending-tags-widget';
+import { CommunityCTACard } from '@/components/home/community-cta-card';
 import type { RecentComment } from '@/lib/api/comment.api';
 
 const TYPE_LABEL: Record<MangaType, string> = {
@@ -73,9 +75,10 @@ interface Props {
   recentItems: MangaListItem[];
   completeItems: MangaListItem[];
   recentComments?: RecentComment[];
+  genres?: TaxonomyItem[];
 }
 
-export function RecentSidebar({ recentItems = [], completeItems = [], recentComments = [] }: Props) {
+export function RecentSidebar({ recentItems = [], completeItems = [], recentComments = [], genres = [] }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('recent');
   const items = activeTab === 'recent' ? recentItems : completeItems;
 
@@ -116,7 +119,11 @@ export function RecentSidebar({ recentItems = [], completeItems = [], recentComm
         </div>
       )}
 
+      <TrendingTagsWidget genres={genres} />
+
       <LatestComments comments={recentComments} />
+
+      <CommunityCTACard />
     </aside>
   );
 }
