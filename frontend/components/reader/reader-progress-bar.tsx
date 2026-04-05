@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { ProgressPosition } from './reader-settings-modal';
+import type { ProgressPosition } from '@/hooks/use-reader-settings';
 
 interface Props {
   position?: ProgressPosition;
