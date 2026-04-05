@@ -44,7 +44,10 @@ export class TaxonomyService {
       this.cache.delete(key);
       return null;
     }
-    return entry.data as T;
+    // Return copy to prevent callers from mutating cached data
+    const data = entry.data;
+    if (Array.isArray(data)) return [...data] as T;
+    return { ...(data as Record<string, unknown>) } as T;
   }
 
   private setCache(key: string, data: unknown): void {
@@ -57,8 +60,12 @@ export class TaxonomyService {
   }
 
   private invalidateCacheForType(type: string): void {
-    for (const key of this.cache.keys()) {
-      if (key.includes(`:${type}`)) this.cache.delete(key);
+    // Keys follow pattern: "all:genres", "slug:genres:action", "id:genres:1"
+    const suffix = `:${type}`;
+    for (const key of [...this.cache.keys()]) {
+      if (key.endsWith(suffix) || key.includes(`${suffix}:`)) {
+        this.cache.delete(key);
+      }
     }
   }
 

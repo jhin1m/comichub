@@ -21,29 +21,19 @@ export const metadata = buildMeta({
 });
 
 export default async function HomePage() {
-  let daily: MangaListItem[] = [];
-  let weekly: MangaListItem[] = [];
-  let latestUpdates: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 18 };
-  let recentlyAdded: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 8 };
-  let completeSeries: PaginatedResult<MangaListItem> = { data: [], total: 0, page: 1, limit: 8 };
-  let recentComments: RecentComment[] = [];
-  let genres: TaxonomyItem[] = [];
-  let platformStats: PlatformStats | null = null;
+  const emptyPage = <T,>(limit: number): PaginatedResult<T> => ({ data: [] as T[], total: 0, page: 1, limit });
 
-  try {
-    [daily, weekly, latestUpdates, recentlyAdded, completeSeries, recentComments, genres, platformStats] = await Promise.all([
-      mangaApi.rankings('daily', 1, 10),
-      mangaApi.rankings('weekly', 1, 10),
-      mangaApi.list({ page: 1, limit: 18, sort: 'updated_at', order: 'desc' }),
-      mangaApi.list({ page: 1, limit: 8, sort: 'created_at', order: 'desc' }),
-      mangaApi.list({ page: 1, limit: 8, status: 'completed', sort: 'updated_at', order: 'desc' }),
-      commentApi.recent(5),
-      genreApi.list(),
-      statsApi.overview().catch(() => null),
-    ]);
-  } catch (err) {
-    console.error('Failed to fetch homepage data:', err);
-  }
+  // Each fetch is individually resilient — one failure won't blank the whole page
+  const [daily, weekly, latestUpdates, recentlyAdded, completeSeries, recentComments, genres, platformStats] = await Promise.all([
+    mangaApi.rankings('daily', 1, 10).catch((): MangaListItem[] => []),
+    mangaApi.rankings('weekly', 1, 10).catch((): MangaListItem[] => []),
+    mangaApi.list({ page: 1, limit: 18, sort: 'updated_at', order: 'desc' }).catch(() => emptyPage<MangaListItem>(18)),
+    mangaApi.list({ page: 1, limit: 8, sort: 'created_at', order: 'desc' }).catch(() => emptyPage<MangaListItem>(8)),
+    mangaApi.list({ page: 1, limit: 8, status: 'completed', sort: 'updated_at', order: 'desc' }).catch(() => emptyPage<MangaListItem>(8)),
+    commentApi.recent(5).catch((): RecentComment[] => []),
+    genreApi.list().catch((): TaxonomyItem[] => []),
+    statsApi.overview().catch((): PlatformStats | null => null),
+  ]);
 
   return (
     <main>

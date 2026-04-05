@@ -24,12 +24,11 @@ export default async function MangaDetailPage({ params }: Props) {
   const { slug } = await params;
   try {
     const manga = await getManga(slug);
-    // Fetch comment count (non-blocking — default to 0 on failure)
-    let commentCount = 0;
-    try {
-      const comments = await commentApi.listForManga(manga.id, { limit: 1 });
-      commentCount = comments.total;
-    } catch { /* non-critical */ }
+    // Parallel fetch — comment count is non-critical, default to 0
+    const commentCount = await commentApi
+      .listForManga(manga.id, { limit: 1 })
+      .then((c) => c.total)
+      .catch(() => 0);
     return (
       <>
         <JsonLd data={buildMangaJsonLd(manga)} />
