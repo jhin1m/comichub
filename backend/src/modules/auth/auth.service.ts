@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
   Inject,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -24,10 +25,28 @@ import type { LoginDto } from './dto/login.dto.js';
 import type { TokenResponseDto } from './dto/token-response.dto.js';
 import type { JwtPayload } from './types/jwt-payload.type.js';
 
-// Redis token TTL in seconds (7 days)
-const REFRESH_TTL = 60 * 60 * 24 * 7;
 // Password reset token TTL in seconds (15 min)
 const RESET_TTL = 60 * 15;
+
+/** Parse duration string like '7d', '15m', '24h' to seconds */
+function parseDurationToSeconds(duration: string): number {
+  const match = duration.match(/^(\d+)(s|m|h|d|w)$/);
+  if (!match) return 60 * 60 * 24 * 7; // default 7d
+  const n = Number(match[1]);
+  switch (match[2]) {
+    case 's': return n;
+    case 'm': return n * 60;
+    case 'h': return n * 3600;
+    case 'd': return n * 86400;
+    case 'w': return n * 604800;
+    default: return n;
+  }
+}
+
+/** SHA-256 hash for storing tokens in DB (not reversible) */
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 @Injectable()
 export class AuthService {
@@ -83,8 +102,16 @@ export class AuthService {
     return user;
   }
 
+  /** Get refresh token TTL in seconds from config */
+  private get refreshTtl(): number {
+    return parseDurationToSeconds(
+      this.configService.get<string>('jwt.refreshExpiry', '7d'),
+    );
+  }
+
   async logout(userId: number): Promise<void> {
-    await Promise.all([
+    // allSettled ensures both always run even if one fails
+    await Promise.allSettled([
       this.redis.del(`refresh:${userId}`),
       this.db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)),
     ]);
@@ -93,9 +120,15 @@ export class AuthService {
   async refresh(
     user: User & { refreshToken: string },
   ): Promise<TokenResponseDto> {
-    // Try Redis first, fallback to DB
+    // Try Redis first (stores raw token), fallback to DB (stores hashed token)
     let stored = await this.redis.get(`refresh:${user.id}`);
-    if (!stored) {
+    if (stored) {
+      // Redis has raw token — direct compare
+      if (stored !== user.refreshToken) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+    } else {
+      // DB fallback — compare hashed
       const [row] = await this.db
         .select({ token: refreshTokens.token })
         .from(refreshTokens)
@@ -106,14 +139,15 @@ export class AuthService {
           ),
         )
         .limit(1);
-      if (row) {
-        stored = row.token;
-        // Re-populate Redis cache
-        await this.redis.setex(`refresh:${user.id}`, REFRESH_TTL, stored);
+      if (!row || row.token !== hashToken(user.refreshToken)) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
       }
-    }
-    if (!stored || stored !== user.refreshToken) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      // Re-populate Redis with raw token
+      await this.redis.setex(
+        `refresh:${user.id}`,
+        this.refreshTtl,
+        user.refreshToken,
+      );
     }
     return this.issueTokens(user);
   }
@@ -123,8 +157,12 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    // Password reset requires Redis — abort silently if unavailable
-    if (!this.redisStatus.available) return;
+    // Password reset requires Redis
+    if (!this.redisStatus.available) {
+      throw new ServiceUnavailableException(
+        'Password reset is temporarily unavailable',
+      );
+    }
 
     const user = await this.db.query.users.findFirst({
       where: eq(users.email, email),
@@ -166,7 +204,7 @@ export class AuthService {
       .where(eq(users.id, Number(userId)));
 
     // Delete reset token (single-use) + force re-login (Redis + DB)
-    await Promise.all([
+    await Promise.allSettled([
       this.redis.del(`pwd-reset:${hash}`),
       this.redis.del(`refresh:${userId}`),
       this.db
@@ -218,16 +256,17 @@ export class AuthService {
       ),
     ]);
 
-    // Dual-write: DB first (authoritative), then Redis (best-effort cache)
-    const expiresAt = new Date(Date.now() + REFRESH_TTL * 1000);
+    // Dual-write: DB (hashed token, authoritative) then Redis (raw, cache)
+    const ttl = this.refreshTtl;
+    const expiresAt = new Date(Date.now() + ttl * 1000);
     await this.db
       .insert(refreshTokens)
-      .values({ userId: user.id, token: refreshToken, expiresAt })
+      .values({ userId: user.id, token: hashToken(refreshToken), expiresAt })
       .onConflictDoUpdate({
         target: refreshTokens.userId,
-        set: { token: refreshToken, expiresAt },
+        set: { token: hashToken(refreshToken), expiresAt },
       });
-    await this.redis.setex(`refresh:${user.id}`, REFRESH_TTL, refreshToken);
+    await this.redis.setex(`refresh:${user.id}`, ttl, refreshToken);
 
     return { accessToken, refreshToken, expiresIn: 900 };
   }

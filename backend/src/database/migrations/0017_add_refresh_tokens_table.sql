@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS "refresh_tokens" (
 	CONSTRAINT "refresh_tokens_user_id_unique" UNIQUE("user_id")
 );
 
+CREATE INDEX IF NOT EXISTS "refresh_tokens_expires_at_idx" ON "refresh_tokens" ("expires_at");
+
 DO $$ BEGIN
  ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION

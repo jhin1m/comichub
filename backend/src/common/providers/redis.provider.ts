@@ -31,6 +31,9 @@ export function createResilientRedis(
     lazyConnect: true,
   });
 
+  // Store original methods so we can restore on reconnect
+  const originals = saveOriginalMethods(client);
+
   // Try connecting; if it fails, swap to no-op stub
   client.connect().then(() => {
     if (status) status.available = true;
@@ -44,7 +47,39 @@ export function createResilientRedis(
     // suppress repeated connection errors
   });
 
+  // Recovery: when Redis reconnects, restore original methods
+  client.on('ready', () => {
+    if (status && !status.available) {
+      logger.log('Redis reconnected — restoring live client');
+      restoreOriginalMethods(client, originals);
+      status.available = true;
+    }
+  });
+
   return client;
+}
+
+const STUBBED_METHODS = [
+  'get', 'set', 'setex', 'del', 'keys', 'incr', 'incrby',
+  'expire', 'ttl', 'exists', 'scan', 'pipeline',
+] as const;
+
+type MethodBackup = Map<string, (...args: never[]) => unknown>;
+
+/** Save original Redis methods before stubbing */
+function saveOriginalMethods(client: Redis): MethodBackup {
+  const map: MethodBackup = new Map();
+  for (const m of STUBBED_METHODS) {
+    map.set(m, (client as never)[m]);
+  }
+  return map;
+}
+
+/** Restore original Redis methods on reconnect */
+function restoreOriginalMethods(client: Redis, originals: MethodBackup): void {
+  for (const [method, fn] of originals) {
+    (client as unknown as Record<string, unknown>)[method] = fn;
+  }
 }
 
 /** Override read/write methods so they silently no-op */
