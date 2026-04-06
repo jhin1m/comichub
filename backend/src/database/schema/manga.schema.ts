@@ -34,6 +34,7 @@ export const importSourceEnum = pgEnum('import_source', [
   'comick',
   'weebdex',
   'comix',
+  'atsumaru',
 ]);
 export const contentRatingEnum = pgEnum('content_rating', [
   'safe',

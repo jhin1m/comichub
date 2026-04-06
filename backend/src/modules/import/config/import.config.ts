@@ -9,4 +9,7 @@ export const importConfig = registerAs('import', () => ({
     baseUrl: process.env.WEEBDEX_BASE_URL || 'https://api.weebdex.org',
     apiKey: process.env.WEEBDEX_API_KEY || '',
   },
+  atsumaru: {
+    baseUrl: process.env.ATSUMARU_BASE_URL || 'https://atsu.moe',
+  },
 }));

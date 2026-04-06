@@ -4,6 +4,7 @@ import { ImportService } from './services/import.service.js';
 import { ImportMappingService } from './services/import-mapping.service.js';
 import { MangaBakaAdapter } from './adapters/mangabaka.adapter.js';
 import { WeebDexAdapter } from './adapters/weebdex.adapter.js';
+import { AtsumaruAdapter } from './adapters/atsumaru.adapter.js';
 import { ImportController } from './controllers/import.controller.js';
 
 @Module({
@@ -14,6 +15,7 @@ import { ImportController } from './controllers/import.controller.js';
     ImportMappingService,
     MangaBakaAdapter,
     WeebDexAdapter,
+    AtsumaruAdapter,
   ],
   exports: [ImportService],
 })
