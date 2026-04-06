@@ -25,7 +25,7 @@ import {
   ratings,
   readingHistory,
 } from '../../../database/schema/community.schema.js';
-import { manga } from '../../../database/schema/manga.schema.js';
+import { manga, chapters } from '../../../database/schema/manga.schema.js';
 import { FolderService } from './folder.service.js';
 import type { BookmarkQueryDto } from '../dto/bookmark-query.dto.js';
 import {
@@ -354,6 +354,7 @@ export class BookmarkService {
           readingHistory: {
             chapterId: readingHistory.chapterId,
             lastReadAt: readingHistory.lastReadAt,
+            chapterNumber: chapters.number,
           },
           userRating: ratings.score,
         })
@@ -367,6 +368,7 @@ export class BookmarkService {
             eq(readingHistory.mangaId, manga.id),
           ),
         )
+        .leftJoin(chapters, eq(chapters.id, readingHistory.chapterId))
         .leftJoin(
           ratings,
           and(eq(ratings.userId, userId), eq(ratings.mangaId, manga.id)),
@@ -390,7 +392,7 @@ export class BookmarkService {
       userRating: row.userRating ?? null,
       readingProgress: row.readingHistory?.chapterId
         ? {
-            currentChapter: null,
+            currentChapter: row.readingHistory.chapterNumber ?? null,
             currentChapterId: row.readingHistory.chapterId,
             lastReadAt: row.readingHistory.lastReadAt,
           }
