@@ -7,6 +7,7 @@ import { statsApi, type PlatformStats } from '@/lib/api/stats.api';
 import { commentApi, type RecentComment } from '@/lib/api/comment.api';
 import { GenreQuickNav } from '@/components/home/genre-quick-nav';
 import { ContinueReadingStrip } from '@/components/home/continue-reading-strip';
+import { FollowListStrip } from '@/components/home/follow-list-strip';
 import { CommunityStatsBar } from '@/components/home/community-stats-bar';
 import { MangaCarousel } from '@/components/home/manga-carousel';
 import { LatestUpdatesSection } from '@/components/home/latest-updates-section';
@@ -42,6 +43,9 @@ export default async function HomePage() {
 
       {/* Continue reading — logged-in users only (client component) */}
       <ContinueReadingStrip />
+
+      {/* Follow list — logged-in users only (client component) */}
+      <FollowListStrip />
 
       {/* Community stats bar */}
       <CommunityStatsBar stats={platformStats} />
