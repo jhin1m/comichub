@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MangaService } from './manga.service.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
@@ -49,7 +50,11 @@ describe('MangaService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MangaService, { provide: DRIZZLE, useValue: mockDb }],
+      providers: [
+        MangaService,
+        { provide: DRIZZLE, useValue: mockDb },
+        { provide: EventEmitter2, useValue: { emit: vi.fn() } },
+      ],
     }).compile();
 
     service = module.get<MangaService>(MangaService);
@@ -273,7 +278,7 @@ describe('MangaService', () => {
     });
 
     it('should soft-delete manga when it exists', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ id: 1 }]));
+      mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'test-manga' }]));
 
       const updateChain = buildChain([]);
       mockDb.update.mockReturnValue(updateChain);

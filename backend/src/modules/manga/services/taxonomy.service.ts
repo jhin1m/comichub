@@ -15,6 +15,7 @@ import {
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
 import { escapeLike } from '../../../common/utils/escape-like.util.js';
+import { MemoryCache } from '../../../common/utils/memory-cache.util.js';
 import { CreateTaxonomyDto } from '../dto/taxonomy.dto.js';
 import type { TaxonomyItem } from '../types/manga.types.js';
 
@@ -24,50 +25,11 @@ type TaxonomyTable =
   | typeof authors
   | typeof groups;
 
-const MEM_CACHE_TTL = 600_000; // 10 minutes in ms
-const MEM_CACHE_MAX = 100;
-
-interface CacheEntry<T> {
-  data: T;
-  expiresAt: number;
-}
-
 @Injectable()
 export class TaxonomyService {
-  private cache = new Map<string, CacheEntry<unknown>>();
+  private cache = new MemoryCache<unknown>(600_000, 100); // 10 min TTL, 100 max
 
   constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
-
-  private getCached<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry || Date.now() > entry.expiresAt) {
-      this.cache.delete(key);
-      return null;
-    }
-    // Return copy to prevent callers from mutating cached data
-    const data = entry.data;
-    if (Array.isArray(data)) return [...data] as T;
-    return { ...(data as Record<string, unknown>) } as T;
-  }
-
-  private setCache(key: string, data: unknown): void {
-    if (this.cache.size >= MEM_CACHE_MAX) {
-      // Evict oldest entry (first inserted)
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey) this.cache.delete(firstKey);
-    }
-    this.cache.set(key, { data, expiresAt: Date.now() + MEM_CACHE_TTL });
-  }
-
-  private invalidateCacheForType(type: string): void {
-    // Keys follow pattern: "all:genres", "slug:genres:action", "id:genres:1"
-    const suffix = `:${type}`;
-    for (const key of [...this.cache.keys()]) {
-      if (key.endsWith(suffix) || key.includes(`${suffix}:`)) {
-        this.cache.delete(key);
-      }
-    }
-  }
 
   private getTable(type: string): TaxonomyTable {
     switch (type) {
@@ -86,7 +48,7 @@ export class TaxonomyService {
 
   async findAll(type: string): Promise<TaxonomyItem[]> {
     const cacheKey = `all:${type}`;
-    const cached = this.getCached<TaxonomyItem[]>(cacheKey);
+    const cached = this.cache.get<TaxonomyItem[]>(cacheKey);
     if (cached) return cached;
 
     const table = this.getTable(type);
@@ -94,7 +56,7 @@ export class TaxonomyService {
       .select()
       .from(table)
       .orderBy(table.name)) as TaxonomyItem[];
-    this.setCache(cacheKey, result);
+    this.cache.set(cacheKey, result);
     return result;
   }
 
@@ -110,7 +72,7 @@ export class TaxonomyService {
 
   async findBySlug(type: string, slug: string): Promise<TaxonomyItem> {
     const cacheKey = `slug:${type}:${slug}`;
-    const cached = this.getCached<TaxonomyItem>(cacheKey);
+    const cached = this.cache.get<TaxonomyItem>(cacheKey);
     if (cached) return cached;
 
     const table = this.getTable(type);
@@ -120,13 +82,13 @@ export class TaxonomyService {
       .where(eq(table.slug, slug))
       .limit(1);
     if (!item) throw new NotFoundException(`${type} not found`);
-    this.setCache(cacheKey, item);
+    this.cache.set(cacheKey, item);
     return item as TaxonomyItem;
   }
 
   async findById(type: string, id: number): Promise<TaxonomyItem> {
     const cacheKey = `id:${type}:${id}`;
-    const cached = this.getCached<TaxonomyItem>(cacheKey);
+    const cached = this.cache.get<TaxonomyItem>(cacheKey);
     if (cached) return cached;
 
     const table = this.getTable(type);
@@ -136,7 +98,7 @@ export class TaxonomyService {
       .where(eq(table.id, id))
       .limit(1);
     if (!item) throw new NotFoundException(`${type} not found`);
-    this.setCache(cacheKey, item);
+    this.cache.set(cacheKey, item);
     return item as TaxonomyItem;
   }
 
@@ -156,7 +118,7 @@ export class TaxonomyService {
       .insert(table)
       .values({ name: dto.name, slug })
       .returning();
-    this.invalidateCacheForType(type);
+    this.cache.invalidateBySubstring(`:${type}`);
     return created as TaxonomyItem;
   }
 
@@ -174,7 +136,7 @@ export class TaxonomyService {
       .set({ name: dto.name, slug })
       .where(eq(table.id, id))
       .returning();
-    this.invalidateCacheForType(type);
+    this.cache.invalidateBySubstring(`:${type}`);
     return updated as TaxonomyItem;
   }
 
@@ -182,6 +144,6 @@ export class TaxonomyService {
     const table = this.getTable(type);
     await this.findById(type, id);
     await this.db.delete(table).where(eq(table.id, id));
-    this.invalidateCacheForType(type);
+    this.cache.invalidateBySubstring(`:${type}`);
   }
 }

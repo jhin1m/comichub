@@ -20,6 +20,8 @@ import {
   sql,
   SQL,
 } from 'drizzle-orm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { OnEvent } from '@nestjs/event-emitter';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -37,6 +39,7 @@ import {
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
 import { NSFW_RATINGS } from '../../../common/utils/content-rating.util.js';
+import { MemoryCache } from '../../../common/utils/memory-cache.util.js';
 import { CreateMangaDto, MangaType } from '../dto/create-manga.dto.js';
 import { UpdateMangaDto } from '../dto/update-manga.dto.js';
 import {
@@ -50,11 +53,24 @@ import type {
   PaginatedResult,
 } from '../types/manga.types.js';
 
+const CACHE_TTL = 120_000; // 120s — shorter than Redis 180s
+const CACHE_MAX = 200;
+
 @Injectable()
 export class MangaService {
-  constructor(@Inject(DRIZZLE) private db: DrizzleDB) {}
+  private slugCache = new MemoryCache<MangaDetail>(CACHE_TTL, CACHE_MAX);
+  private listCache = new MemoryCache<PaginatedResult<MangaListItem>>(CACHE_TTL, CACHE_MAX);
+
+  constructor(
+    @Inject(DRIZZLE) private db: DrizzleDB,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async findAll(query: MangaQueryDto): Promise<PaginatedResult<MangaListItem>> {
+    const cacheKey = `list:${JSON.stringify(query)}`;
+    const cached = this.listCache.get(cacheKey);
+    if (cached) return cached;
+
     const {
       page,
       limit,
@@ -251,7 +267,9 @@ export class MangaService {
       this.db.$count(manga, where),
     ]);
 
-    return { data: rows as MangaListItem[], total: countResult, page, limit };
+    const result = { data: rows as MangaListItem[], total: countResult, page, limit };
+    this.listCache.set(cacheKey, result);
+    return result;
   }
 
   async findMangaByGroup(
@@ -338,6 +356,10 @@ export class MangaService {
     slug: string,
     isAuthenticated = false,
   ): Promise<MangaDetail> {
+    const cacheKey = `slug:${slug}:${isAuthenticated}`;
+    const cachedDetail = this.slugCache.get(cacheKey);
+    if (cachedDetail) return cachedDetail;
+
     const whereConditions = [eq(manga.slug, slug), isNull(manga.deletedAt)];
     if (!isAuthenticated) {
       whereConditions.push(notInArray(manga.contentRating, NSFW_RATINGS));
@@ -418,7 +440,7 @@ export class MangaService {
       groups: groupsByChapter.get(ch.id) ?? [],
     }));
 
-    return {
+    const detail = {
       ...m,
       genres: genreList,
       artists: artistList,
@@ -426,6 +448,8 @@ export class MangaService {
       groups: groupList,
       chapters: chaptersWithGroups as unknown as MangaDetail['chapters'],
     } as unknown as MangaDetail;
+    this.slugCache.set(cacheKey, detail);
+    return detail;
   }
 
   async create(dto: CreateMangaDto): Promise<MangaDetail> {
@@ -463,6 +487,7 @@ export class MangaService {
       .returning();
 
     await this.syncPivots(created.id, dto);
+    this.listCache.clear();
     return this.findBySlug(created.slug);
   }
 
@@ -495,12 +520,17 @@ export class MangaService {
       .returning();
 
     await this.syncPivots(id, dto);
+    // Invalidate old slug cache if slug was renamed
+    if (existing.slug !== updated.slug) {
+      this.invalidateCaches(existing.slug);
+    }
+    this.eventEmitter.emit('manga.updated', { slug: updated.slug });
     return this.findBySlug(updated.slug);
   }
 
   async remove(id: number): Promise<void> {
     const [existing] = await this.db
-      .select({ id: manga.id })
+      .select({ id: manga.id, slug: manga.slug })
       .from(manga)
       .where(and(eq(manga.id, id), isNull(manga.deletedAt)))
       .limit(1);
@@ -510,6 +540,8 @@ export class MangaService {
       .update(manga)
       .set({ deletedAt: new Date() })
       .where(eq(manga.id, id));
+
+    this.eventEmitter.emit('manga.updated', { slug: existing.slug });
   }
 
   private async syncPivots(
@@ -550,5 +582,24 @@ export class MangaService {
         }
       }
     });
+  }
+
+  // -- Cache invalidation event handlers --
+
+  @OnEvent('chapter.created')
+  handleChapterCreated(): void {
+    this.slugCache.clear();
+    this.listCache.clear();
+  }
+
+  @OnEvent('manga.updated')
+  handleMangaUpdated(event: { slug: string }): void {
+    this.slugCache.invalidate(`slug:${event.slug}`);
+    this.listCache.clear();
+  }
+
+  private invalidateCaches(slug: string): void {
+    this.slugCache.invalidate(`slug:${slug}`);
+    this.listCache.clear();
   }
 }
