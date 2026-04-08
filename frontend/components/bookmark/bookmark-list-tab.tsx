@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, ArrowUp, ArrowDown } from '@phosphor-icons/react';
+import { MagnifyingGlass, ArrowUp, ArrowDown, SquaresFour, List } from '@phosphor-icons/react';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
 import { BookmarkTable } from './bookmark-table';
 import { Pagination } from '@/components/ui/pagination';
@@ -35,6 +35,15 @@ export function BookmarkListTab({ folders, onFolderChanged }: BookmarkListTabPro
   const [result, setResult] = useState<PaginatedBookmarks | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    if (typeof window === 'undefined') return 'grid';
+    return (localStorage.getItem('bookmark-view') as 'grid' | 'list') || 'grid';
+  });
+
+  function changeView(mode: 'grid' | 'list') {
+    setViewMode(mode);
+    localStorage.setItem('bookmark-view', mode);
+  }
 
   useEffect(() => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
@@ -143,6 +152,26 @@ export function BookmarkListTab({ folders, onFolderChanged }: BookmarkListTabPro
           {sortOrder === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
           {sortOrder === 'asc' ? 'Asc' : 'Desc'}
         </button>
+
+        {/* View toggle */}
+        <div className="flex rounded-md border border-default overflow-hidden">
+          <button
+            type="button"
+            onClick={() => changeView('grid')}
+            className={`h-10 px-2.5 flex items-center transition-colors ${viewMode === 'grid' ? 'bg-accent text-white' : 'bg-elevated text-secondary hover:bg-hover'}`}
+            aria-label="Grid view"
+          >
+            <SquaresFour size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => changeView('list')}
+            className={`h-10 px-2.5 flex items-center transition-colors ${viewMode === 'list' ? 'bg-accent text-white' : 'bg-elevated text-secondary hover:bg-hover'}`}
+            aria-label="List view"
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Count */}
@@ -161,6 +190,7 @@ export function BookmarkListTab({ folders, onFolderChanged }: BookmarkListTabPro
         <BookmarkTable
           items={result?.data ?? []}
           folders={folders}
+          viewMode={viewMode}
           onFolderChanged={() => { onFolderChanged(); fetchBookmarks(); }}
         />
       )}

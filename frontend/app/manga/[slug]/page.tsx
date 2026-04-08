@@ -1,4 +1,4 @@
-export const revalidate = 300;
+export const revalidate = 180;
 
 import { cache } from 'react';
 import Image from 'next/image';

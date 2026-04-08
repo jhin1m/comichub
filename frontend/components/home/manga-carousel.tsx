@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 import { CaretLeftIcon, CaretRightIcon, FireIcon, HeartIcon } from '@phosphor-icons/react';
 import type { Icon as IconType } from '@phosphor-icons/react';
 import { MangaCard } from '@/components/manga/manga-card';
 import { mangaApi, type RankingPeriod } from '@/lib/api/manga.api';
 import { usePreferences } from '@/contexts/preferences.context';
+import { useEmblaNav } from '@/hooks/use-embla-nav';
 import type { MangaListItem } from '@/types/manga.types';
 
 const ICON_MAP: Record<string, IconType> = { flame: FireIcon, heart: HeartIcon };
@@ -27,31 +29,25 @@ interface Props {
 
 export function MangaCarousel({ title, iconName, items = [], showRank = false, defaultPeriod }: Props) {
   const Icon = iconName ? ICON_MAP[iconName] : undefined;
-  const trackRef = useRef<HTMLDivElement>(null);
   const [rawItems, setRawItems] = useState(items);
   const [period, setPeriod] = useState<RankingPeriod | undefined>(defaultPeriod);
   const [isPending, startTransition] = useTransition();
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(items.length > 5);
   const { preferences } = usePreferences();
 
-  // Filter by type preference (rankings don't include demographic/genre in list items)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps', dragFree: true });
+  const { canPrev, canNext, scrollPrev, scrollNext } = useEmblaNav(emblaApi);
+
+  // Filter by type preference
   const displayItems = rawItems.filter((item) => {
     if (preferences.excludedTypes.length > 0 && preferences.excludedTypes.includes(item.type)) return false;
     return true;
   });
 
-  const updateButtons = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    setCanPrev(el.scrollLeft > 1);
-    setCanNext(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  }, []);
-
-  useEffect(() => { updateButtons(); }, [updateButtons]);
-
   // Sync rawItems when server-side items change
   useEffect(() => { setRawItems(items); }, [items]);
+
+  // Re-init embla when items change (period switch)
+  useEffect(() => { emblaApi?.reInit(); }, [emblaApi, displayItems.length]);
 
   function onPeriodChange(value: string) {
     const next = value as RankingPeriod;
@@ -66,55 +62,6 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, d
     });
   }
 
-  // Drag-to-scroll state
-  const isPointerDown = useRef(false);
-  const hasDragged = useRef(false);
-  const startX = useRef(0);
-  const scrollStart = useRef(0);
-  const DRAG_THRESHOLD = 5; // px — movement below this counts as a click
-
-  function scroll(dir: number) {
-    const el = trackRef.current;
-    if (!el) return;
-    const card = el.children[0] as HTMLElement | undefined;
-    if (!card) return;
-    const gap = 16; // gap-4 = 1rem = 16px
-    el.scrollBy({ left: dir * 2 * (card.offsetWidth + gap), behavior: 'smooth' });
-  }
-
-  function onPointerDown(e: React.PointerEvent) {
-    if (e.pointerType === 'touch') return; // let native touch scroll handle it
-    const el = trackRef.current;
-    if (!el) return;
-    isPointerDown.current = true;
-    hasDragged.current = false;
-    startX.current = e.clientX;
-    scrollStart.current = el.scrollLeft;
-  }
-
-  function onPointerMove(e: React.PointerEvent) {
-    if (!isPointerDown.current) return;
-    const delta = e.clientX - startX.current;
-    if (!hasDragged.current && Math.abs(delta) < DRAG_THRESHOLD) return;
-    hasDragged.current = true;
-    const el = trackRef.current;
-    if (!el) return;
-    el.scrollLeft = scrollStart.current - delta;
-  }
-
-  function onPointerUp() {
-    isPointerDown.current = false;
-  }
-
-  // Block click on links/cards when user was dragging
-  function onClickCapture(e: React.MouseEvent) {
-    if (hasDragged.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      hasDragged.current = false;
-    }
-  }
-
   return (
     <section className="mb-8">
       {/* Header */}
@@ -124,7 +71,7 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, d
           {title}
         </h2>
 
-        {/* Period pill filters — visible inline */}
+        {/* Period pill filters */}
         {defaultPeriod && (
           <div className="flex gap-1 ml-1">
             {PERIOD_OPTIONS.map((opt) => (
@@ -146,17 +93,17 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, d
 
         <div className="flex gap-1 ml-auto">
           <button
-            onClick={() => scroll(-1)}
+            onClick={scrollPrev}
             disabled={!canPrev}
-            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
+            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-muted disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors cursor-pointer"
             aria-label="Previous"
           >
             <CaretLeftIcon size={13} />
           </button>
           <button
-            onClick={() => scroll(1)}
+            onClick={scrollNext}
             disabled={!canNext}
-            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors"
+            className="w-7.5 h-7.5 flex items-center justify-center rounded-sm bg-elevated border border-default text-secondary disabled:cursor-not-allowed disabled:opacity-40 hover:enabled:bg-hover hover:enabled:text-primary transition-colors cursor-pointer"
             aria-label="Next"
           >
             <CaretRightIcon size={13} />
@@ -164,28 +111,22 @@ export function MangaCarousel({ title, iconName, items = [], showRank = false, d
         </div>
       </div>
 
-      {/* Scrollable card track — 2 cards per click, drag & touch enabled */}
+      {/* Embla carousel */}
       {displayItems.length > 0 ? (
         <div
-          ref={trackRef}
-          onScroll={updateButtons}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onClickCapture={onClickCapture}
-          onDragStart={(e) => e.preventDefault()}
-          className={`flex gap-4 overflow-x-auto scrollbar-none cursor-grab active:cursor-grabbing transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
-          style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+          className={`overflow-hidden transition-opacity duration-200 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}
+          ref={emblaRef}
         >
-          {displayItems.map((item, i) => (
-            <div
-              key={item.id}
-              className="shrink-0 w-[calc((100%-1rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-4rem)/5)]"
-            >
-              <MangaCard item={item} rank={showRank ? i + 1 : undefined} />
-            </div>
-          ))}
+          <div className="flex gap-4">
+            {displayItems.map((item, i) => (
+              <div
+                key={item.id}
+                className="shrink-0 w-[calc((100%-1rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-4rem)/5)]"
+              >
+                <MangaCard item={item} rank={showRank ? i + 1 : undefined} />
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
