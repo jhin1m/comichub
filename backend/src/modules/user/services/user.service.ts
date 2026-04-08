@@ -30,20 +30,25 @@ import type {
 export class UserService {
   private s3: S3Client;
   private bucket: string;
+  private publicUrl: string;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly config: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {
+    const region = config.get<string>('s3.region', 'ap-southeast-1');
+    this.bucket = config.get<string>('s3.bucket', '');
+    this.publicUrl = config.get<string>('s3.publicUrl', '')
+      || `https://${this.bucket}.s3.${region}.amazonaws.com`;
     this.s3 = new S3Client({
-      region: config.get<string>('s3.region', 'ap-southeast-1'),
+      region,
+      endpoint: config.get<string>('s3.endpoint') || undefined,
       credentials: {
         accessKeyId: config.get<string>('s3.accessKeyId', ''),
         secretAccessKey: config.get<string>('s3.secretAccessKey', ''),
       },
     });
-    this.bucket = config.get<string>('s3.bucket', '');
   }
 
   async getMe(userId: number): Promise<MyProfile> {
@@ -147,8 +152,7 @@ export class UserService {
       }),
     );
 
-    const region = this.config.get<string>('s3.region', 'ap-southeast-1');
-    const avatarUrl = `https://${this.bucket}.s3.${region}.amazonaws.com/${key}`;
+    const avatarUrl = `${this.publicUrl}/${key}`;
 
     await this.db
       .update(users)

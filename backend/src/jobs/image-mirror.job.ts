@@ -21,17 +21,20 @@ export class ImageMirrorJob {
   private readonly logger = new Logger(ImageMirrorJob.name);
   private s3: S3Client;
   private bucket: string;
-  private region: string;
+  private publicUrl: string;
   private running = false;
 
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
     private config: ConfigService,
   ) {
-    this.region = this.config.getOrThrow<string>('s3.region');
+    const region = this.config.getOrThrow<string>('s3.region');
     this.bucket = this.config.getOrThrow<string>('s3.bucket');
+    this.publicUrl = this.config.get<string>('s3.publicUrl', '')
+      || `https://${this.bucket}.s3.${region}.amazonaws.com`;
     this.s3 = new S3Client({
-      region: this.region,
+      region,
+      endpoint: this.config.get<string>('s3.endpoint') || undefined,
       credentials: {
         accessKeyId: this.config.getOrThrow<string>('s3.accessKeyId'),
         secretAccessKey: this.config.getOrThrow<string>('s3.secretAccessKey'),
@@ -95,7 +98,7 @@ export class ImageMirrorJob {
             const key = `manga/${img.mangaId}/chapters/${chapterId}/${img.pageNumber}.webp`;
             await this.uploadToS3(key, optimized);
 
-            const s3Url = `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+            const s3Url = `${this.publicUrl}/${key}`;
             await this.db
               .update(chapterImages)
               .set({ imageUrl: s3Url })

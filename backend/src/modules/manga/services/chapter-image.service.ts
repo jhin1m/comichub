@@ -24,16 +24,19 @@ const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 export class ChapterImageService {
   private s3: S3Client;
   private bucket: string;
-  private region: string;
+  private publicUrl: string;
 
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
     private config: ConfigService,
   ) {
-    this.region = this.config.getOrThrow<string>('s3.region');
+    const region = this.config.getOrThrow<string>('s3.region');
     this.bucket = this.config.getOrThrow<string>('s3.bucket');
+    this.publicUrl = this.config.get<string>('s3.publicUrl', '')
+      || `https://${this.bucket}.s3.${region}.amazonaws.com`;
     this.s3 = new S3Client({
-      region: this.region,
+      region,
+      endpoint: this.config.get<string>('s3.endpoint') || undefined,
       credentials: {
         accessKeyId: this.config.getOrThrow<string>('s3.accessKeyId'),
         secretAccessKey: this.config.getOrThrow<string>('s3.secretAccessKey'),
@@ -75,7 +78,7 @@ export class ChapterImageService {
         }),
       );
 
-      const imageUrl = `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+      const imageUrl = `${this.publicUrl}/${key}`;
       uploaded.push({ imageUrl, pageNumber });
     }
 
