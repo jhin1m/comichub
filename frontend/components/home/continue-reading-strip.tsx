@@ -144,7 +144,7 @@ export function ContinueReadingStrip() {
                   type="button"
                   onClick={(e) => removeItem(e, entry.mangaId)}
                   disabled={removing === entry.mangaId}
-                  className="absolute top-1.5 right-1.5 z-10 flex items-center justify-center size-6 rounded-full bg-black/60 text-white/80 hover:bg-red-500/90 hover:text-white backdrop-blur-sm transition-all cursor-pointer opacity-0 group-hover:opacity-100"
+                  className="absolute top-1.5 right-1.5 z-10 flex items-center justify-center size-6 rounded-full bg-black/60 text-white/80 hover:bg-red-500/90 hover:text-white backdrop-blur-sm transition-all cursor-pointer md:opacity-0 md:group-hover:opacity-100"
                   aria-label="Remove from history"
                 >
                   {removing === entry.mangaId
