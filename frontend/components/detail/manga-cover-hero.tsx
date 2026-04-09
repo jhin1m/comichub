@@ -50,6 +50,12 @@ export function MangaCoverHero({ manga, commentCount }: Props) {
 
         {/* Badges */}
         <div className="flex gap-1.5 flex-wrap justify-center">
+          {(manga.contentRating === 'pornographic' || manga.contentRating === 'erotica') && (
+            <Badge variant="accent">18+</Badge>
+          )}
+          {manga.contentRating === 'suggestive' && (
+            <Badge variant="warning">Suggestive</Badge>
+          )}
           <Badge variant={statusVariant(manga.status)}>{manga.status}</Badge>
           <Badge variant="default">{manga.type}</Badge>
           {manga.year && <Badge variant="default">{manga.year}</Badge>}
@@ -116,6 +122,12 @@ export function MangaCoverHero({ manga, commentCount }: Props) {
         <div className="flex-1 min-w-0 space-y-3">
           {/* Badges */}
           <div className="flex gap-1.5 flex-wrap items-center">
+            {(manga.contentRating === 'pornographic' || manga.contentRating === 'erotica') && (
+              <Badge variant="accent">18+</Badge>
+            )}
+            {manga.contentRating === 'suggestive' && (
+              <Badge variant="warning">Suggestive</Badge>
+            )}
             <Badge variant={statusVariant(manga.status)}>{manga.status}</Badge>
             <Badge variant="default">{manga.type}</Badge>
             {manga.year && <Badge variant="default">{manga.year}</Badge>}
