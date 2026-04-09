@@ -34,6 +34,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const { settings, update, imageFilterStyle } = useReaderSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nsfwDismissed, setNsfwDismissed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -216,6 +217,18 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black">
       <ReaderProgressBar position={settings.progressPosition} scrollRef={scrollRef} />
+
+      {!nsfwDismissed && (chapter.contentRating === 'erotica' || chapter.contentRating === 'pornographic') && (
+        <div className="fixed top-12 left-0 right-0 z-40 flex items-center justify-center px-4 py-2 bg-accent/90 backdrop-blur-sm text-white text-sm font-medium">
+          <span>This chapter contains mature (18+) content</span>
+          <button
+            onClick={() => setNsfwDismissed(true)}
+            className="ml-3 px-2 py-0.5 rounded text-xs bg-white/20 hover:bg-white/30 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="absolute inset-0 flex flex-col">
         <ReaderTopBar

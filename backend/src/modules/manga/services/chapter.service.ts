@@ -85,6 +85,7 @@ export class ChapterService {
       .select({
         chapter: chapters,
         mangaTitle: manga.title,
+        contentRating: manga.contentRating,
       })
       .from(chapters)
       .innerJoin(manga, eq(chapters.mangaId, manga.id))
@@ -106,7 +107,7 @@ export class ChapterService {
         .where(eq(chapterGroups.chapterId, id)),
     ]);
 
-    return { ...row.chapter, mangaTitle: row.mangaTitle, images, groups: chapterGroupRows };
+    return { ...row.chapter, mangaTitle: row.mangaTitle, contentRating: row.contentRating, images, groups: chapterGroupRows };
   }
 
   async getNavigation(id: number): Promise<ChapterNavigation> {

@@ -54,6 +54,7 @@ export interface GroupDetailResponse {
 export interface ChapterWithImages extends ChapterListItem {
   mangaId: number;
   mangaTitle: string;
+  contentRating: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
   images: ChapterImage[];
 }
 
