@@ -23,35 +23,11 @@ type TabValue = (typeof TABS)[number];
 function ProfileSkeleton() {
   return (
     <PageWrapper className="py-8">
-      <div className="animate-pulse space-y-6">
-        {/* Tab bar skeleton */}
-        <div className="flex gap-4 border-b border-default pb-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-4 w-16 bg-hover rounded" />
-          ))}
-        </div>
-        {/* Profile header skeleton */}
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-hover" />
-          <div className="space-y-2 flex-1">
-            <div className="h-5 w-36 bg-hover rounded" />
-            <div className="h-4 w-48 bg-hover rounded" />
-            <div className="h-3 w-24 bg-hover rounded" />
-          </div>
-        </div>
-        {/* Table rows skeleton */}
-        <div className="space-y-0">
-          <div className="h-8 bg-hover/50 rounded-t" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 py-3 border-b border-default">
-              <div className="w-10 h-14 bg-hover rounded shrink-0" />
-              <div className="flex-1 space-y-1.5">
-                <div className="h-4 w-3/4 bg-hover rounded" />
-                <div className="h-3 w-1/3 bg-hover rounded" />
-              </div>
-              <div className="h-3 w-12 bg-hover rounded" />
-            </div>
-          ))}
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-pulse">
+          <span className="font-rajdhani font-bold text-3xl text-muted select-none">
+            Comic<span className="text-accent/50">Hub</span>
+          </span>
         </div>
       </div>
     </PageWrapper>
