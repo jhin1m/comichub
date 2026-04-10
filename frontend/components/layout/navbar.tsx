@@ -3,9 +3,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { BellIcon, SquaresFourIcon, FadersHorizontalIcon, TrendUpIcon, BookOpenIcon, LockIcon, BookmarkSimpleIcon } from '@phosphor-icons/react';
+import {
+  BellIcon, SquaresFourIcon, TrendUpIcon, BookOpenIcon, LockIcon, SlidersHorizontalIcon,
+  UserIcon, BookmarkSimpleIcon, ClockCounterClockwiseIcon, SignOutIcon,
+} from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/auth.context';
 import { notificationApi } from '@/lib/api/notification.api';
 import { NotificationDropdown } from '@/components/notification/notification-dropdown';
@@ -14,7 +21,6 @@ import { useNotificationStream } from '@/hooks/use-notification-stream';
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [browseDropdownOpen, setBrowseDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -28,7 +34,6 @@ export default function Navbar() {
     setUnreadCount((c) => c + 1);
   }, []);
   useNotificationStream(handleSseEvent);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const browseDropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch once when user logs in
@@ -36,12 +41,9 @@ export default function Navbar() {
     if (user) fetchUnreadCount();
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close dropdown on outside click
+  // Close browse dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
       if (browseDropdownRef.current && !browseDropdownRef.current.contains(e.target as Node)) {
         setBrowseDropdownOpen(false);
       }
@@ -62,8 +64,9 @@ export default function Navbar() {
         {/* Search (icon on mobile, full bar on desktop) */}
         <SearchAutocomplete />
 
-        {/* Right action buttons — always visible */}
+        {/* Right action buttons — minimal, high-frequency only */}
         <div className="flex items-center gap-1 shrink-0">
+          {/* Browse menu */}
           <div className="relative" ref={browseDropdownRef}>
             <button
               onClick={() => setBrowseDropdownOpen((v) => !v)}
@@ -75,10 +78,10 @@ export default function Navbar() {
               <SquaresFourIcon size={18} />
             </button>
             {browseDropdownOpen && (
-              <div role="menu" className="absolute right-0 mt-2 w-48 bg-surface border border-default rounded shadow-lg py-1 z-50">
+              <div role="menu" className="absolute right-0 mt-2 w-48 bg-elevated border border-default rounded-md shadow-lg py-1 z-50">
                 <Link
                   href="/browse?sort=trending&type=manhwa"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-hover transition-colors"
                   onClick={() => setBrowseDropdownOpen(false)}
                 >
                   <TrendUpIcon size={14} />
@@ -86,17 +89,17 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/browse?sort=trending&type=manga"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-hover transition-colors"
                   onClick={() => setBrowseDropdownOpen(false)}
                 >
                   <BookOpenIcon size={14} />
                   Trending Manga
                 </Link>
-                <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted cursor-not-allowed">
+                <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted cursor-not-allowed">
                   <LockIcon size={14} />
                   Popular Genres
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted cursor-not-allowed">
+                <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted cursor-not-allowed">
                   <LockIcon size={14} />
                   Popular Groups
                 </div>
@@ -104,24 +107,16 @@ export default function Navbar() {
             )}
           </div>
 
-          {user && (
-            <Link
-              href="/profile?tab=bookmarks"
-              className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
-              aria-label="Bookmarks"
-            >
-              <BookmarkSimpleIcon size={18} />
-            </Link>
-          )}
-
+          {/* Preferences — accessible to all users */}
           <Link
             href="/settings/preferences"
             className="w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"
             aria-label="Preferences"
           >
-            <FadersHorizontalIcon size={18} />
+            <SlidersHorizontalIcon size={18} />
           </Link>
 
+          {/* Notifications */}
           {user && (
             <NotificationDropdown
               open={notifOpen}
@@ -142,53 +137,51 @@ export default function Navbar() {
             </NotificationDropdown>
           )}
 
+          {/* User menu (Radix dropdown) or Login button */}
           {loading ? (
             <div className="w-8 h-8 rounded-full bg-hover animate-pulse" />
           ) : user ? (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setDropdownOpen((v) => !v)}
-                className="flex items-center focus:outline-none"
-                aria-label="User menu"
-                aria-haspopup="menu"
-                aria-expanded={dropdownOpen}
-              >
-                <Avatar
-                  src={user.avatar ?? undefined}
-                  fallback={user.name}
-                  size="sm"
-                  className="border border-default"
-                />
-              </button>
-              {dropdownOpen && (
-                <div role="menu" className="absolute right-0 mt-2 w-44 bg-surface border border-default rounded shadow-lg py-1 z-50">
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 text-sm text-primary hover:bg-hover transition-colors"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    href="/profile?tab=bookmarks"
-                    className="block px-4 py-2 text-sm text-primary hover:bg-hover transition-colors"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Bookmarks
-                  </Link>
-                  <button
-                    onClick={() => { setDropdownOpen(false); logout(); }}
-                    className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-hover hover:text-primary transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center focus:outline-none cursor-pointer" aria-label="User menu">
+                  <Avatar
+                    src={user.avatar ?? undefined}
+                    fallback={user.name}
+                    size="sm"
+                    className="border border-default hover:border-accent transition-colors"
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {/* User info header */}
+                <DropdownMenuLabel className="px-3 py-2">
+                  <p className="text-sm font-semibold text-primary truncate">{user.name}</p>
+                  <p className="text-xs text-muted truncate mt-0.5">{user.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => router.push('/profile')}>
+                  <UserIcon size={14} />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => router.push('/profile?tab=bookmarks')}>
+                  <BookmarkSimpleIcon size={14} />
+                  Bookmarks
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => router.push('/profile?tab=history')}>
+                  <ClockCounterClockwiseIcon size={14} />
+                  Reading History
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => logout()} className="text-secondary hover:text-primary">
+                  <SignOutIcon size={14} />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <button
               onClick={() => router.push('/login')}
-              className="h-9 px-4 border border-accent rounded text-accent text-[11px] font-bold tracking-widest uppercase hover:bg-accent hover:text-black transition-colors"
+              className="h-9 px-4 border border-accent rounded text-accent text-[11px] font-bold tracking-widest uppercase hover:bg-accent hover:text-black transition-colors cursor-pointer"
             >
               LOGIN
             </button>
