@@ -79,11 +79,13 @@ function ProfileContent() {
     router.push(`${pathname}?${sp.toString()}`);
   }
 
-  function handleHistoryRemoved(mangaId: number) {
+  function handleHistoryRemoved(mangaIds: number[]) {
     setHistory((prev) => {
       if (!prev) return prev;
-      const filtered = prev.data.filter((item) => item.mangaId !== mangaId);
-      return { ...prev, data: filtered, total: Math.max(0, prev.total - (prev.data.length - filtered.length)) };
+      const ids = new Set(mangaIds);
+      const filtered = prev.data.filter((item) => !ids.has(item.mangaId));
+      const removedCount = prev.data.length - filtered.length;
+      return { ...prev, data: filtered, total: Math.max(0, prev.total - removedCount) };
     });
   }
 

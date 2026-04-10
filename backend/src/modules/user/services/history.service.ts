@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, count, sql } from 'drizzle-orm';
+import { eq, and, count, sql, inArray } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -121,6 +121,23 @@ export class HistoryService {
         ),
       );
     return { message: 'History entry removed' };
+  }
+
+  async removeMany(
+    userId: number,
+    mangaIds: number[],
+  ): Promise<{ removed: number }> {
+    if (mangaIds.length === 0) return { removed: 0 };
+    const deleted = await this.db
+      .delete(readingHistory)
+      .where(
+        and(
+          eq(readingHistory.userId, userId),
+          inArray(readingHistory.mangaId, mangaIds),
+        ),
+      )
+      .returning({ id: readingHistory.id });
+    return { removed: deleted.length };
   }
 
   async clearAll(userId: number): Promise<{ message: string }> {

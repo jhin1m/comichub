@@ -20,4 +20,9 @@ export const userApi = {
 
   removeHistory: (mangaId: number) =>
     apiClient.patch(`/users/me/history/${mangaId}`).then((r) => r.data),
+
+  removeHistoryMany: (mangaIds: number[]) =>
+    apiClient
+      .delete<{ removed: number }>('/users/me/history/bulk', { data: { mangaIds } })
+      .then((r) => r.data),
 };

@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Post,
+  Delete,
   Param,
   Body,
   Query,
@@ -27,6 +28,7 @@ import { UserService } from '../services/user.service.js';
 import { FollowService } from '../services/follow.service.js';
 import { HistoryService } from '../services/history.service.js';
 import { UpdateProfileDto } from '../dto/update-profile.dto.js';
+import { BulkRemoveHistoryDto } from '../dto/bulk-remove-history.dto.js';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
 @ApiTags('users')
@@ -105,6 +107,17 @@ export class UserController {
     @Query() pagination: PaginationDto,
   ) {
     return this.historyService.getHistory(user.sub, pagination);
+  }
+
+  @Delete('me/history/bulk')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove multiple manga from reading history' })
+  @HttpCode(HttpStatus.OK)
+  removeHistoryBulk(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkRemoveHistoryDto,
+  ) {
+    return this.historyService.removeMany(user.sub, dto.mangaIds);
   }
 
   @Get('me/history/:mangaId')
