@@ -2,14 +2,14 @@ import { notFound } from 'next/navigation';
 import { mangaApi } from '@/lib/api/manga.api';
 import { getPreferencesFromCookies, buildPreferenceParams } from '@/lib/preferences-cookie';
 import { BrowseContent } from '@/components/browse/browse-content';
-import { buildMeta } from '@/lib/seo';
+import { buildMeta, SITE_NAME } from '@/lib/seo';
 import type { MangaQueryParams } from '@/types/manga.types';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = buildMeta({
   title: 'Browse',
-  description: 'Browse and discover manga, manhwa, and manhua on ComicHub',
+  description: `Browse and discover manga, manhwa, and manhua on ${SITE_NAME}`,
   path: '/browse',
 });
 

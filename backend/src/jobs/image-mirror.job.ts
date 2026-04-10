@@ -129,7 +129,7 @@ export class ImageMirrorJob {
 
     const res = await fetch(url, {
       signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
-      headers: { 'User-Agent': 'ComicHub/1.0' },
+      headers: { 'User-Agent': `${this.config.get<string>('app.name', 'ComicHub')}/1.0` },
       redirect: 'follow',
     });
     if (!res.ok) throw new Error(`Download failed: ${res.status}`);

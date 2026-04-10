@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
+import { BrandLogo } from '@/components/ui/brand-logo';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
@@ -57,8 +58,8 @@ export default function Navbar() {
       <div className="max-w-350 mx-auto px-4 h-full flex items-center gap-3">
 
         {/* Logo */}
-        <Link href="/" className="font-rajdhani font-bold text-xl text-primary shrink-0 mr-1">
-          Comic<span className="text-accent">Hub</span>
+        <Link href="/" className="shrink-0 mr-1">
+          <BrandLogo />
         </Link>
 
         {/* Search (icon on mobile, full bar on desktop) */}

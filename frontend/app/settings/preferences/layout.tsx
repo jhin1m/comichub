@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { buildMeta } from '@/lib/seo';
+import { buildMeta, SITE_NAME } from '@/lib/seo';
 
 export const metadata: Metadata = buildMeta({
   title: 'Content Preferences',
-  description: 'Customize your content preferences on ComicHub.',
+  description: `Customize your content preferences on ${SITE_NAME}.`,
   path: '/settings/preferences',
   noIndex: true,
 });

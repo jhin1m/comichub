@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { chapterApi } from '@/lib/api/chapter.api';
 import { ChapterReader } from '@/components/reader/chapter-reader';
-import { buildMeta, JsonLd, buildBreadcrumbJsonLd, SITE_URL } from '@/lib/seo';
+import { buildMeta, JsonLd, buildBreadcrumbJsonLd, SITE_URL, SITE_NAME } from '@/lib/seo';
 
 interface Props {
   params: Promise<{ slug: string; chapterId: string }>;
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const [chapter] = await getChapter(id);
     return buildMeta({
       title: `Ch. ${chapter.number} - ${chapter.mangaTitle}`,
-      description: `Read Chapter ${chapter.number} of ${chapter.mangaTitle} online on ComicHub`,
+      description: `Read Chapter ${chapter.number} of ${chapter.mangaTitle} online on ${SITE_NAME}`,
       path: `/manga/${slug}/${chapterId}`,
     });
   } catch {

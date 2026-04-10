@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { UserPlus } from '@phosphor-icons/react';
 import { useAuth } from '@/contexts/auth.context';
+import { SITE_NAME } from '@/lib/seo';
 
 export function CommunityCTACard() {
   const { user } = useAuth();
@@ -13,7 +14,7 @@ export function CommunityCTACard() {
   return (
     <div className="mt-6 p-5 rounded-lg bg-gradient-to-br from-surface to-accent/[0.04] border border-default text-center">
       <h3 className="font-rajdhani font-bold text-lg text-primary mb-1.5">
-        Join ComicHub
+        Join {SITE_NAME}
       </h3>
       <p className="text-xs text-secondary leading-relaxed mb-4">
         Track your reading, bookmark favorites, and connect with comic fans.

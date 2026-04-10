@@ -6,7 +6,7 @@ import Providers from './providers';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { BackToTop } from '@/components/ui/back-to-top';
-import { JsonLd, buildWebSiteJsonLd, buildOrganizationJsonLd, SITE_URL } from '@/lib/seo';
+import { JsonLd, buildWebSiteJsonLd, buildOrganizationJsonLd, SITE_URL, SITE_NAME, SITE_LOGO } from '@/lib/seo';
 
 const rajdhani = Rajdhani({
   variable: '--font-rajdhani',
@@ -23,18 +23,19 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    template: '%s - ComicHub',
-    default: 'ComicHub — Read Manga Online',
+    template: `%s - ${SITE_NAME}`,
+    default: `${SITE_NAME} — Read Manga Online`,
   },
-  description: 'Read manga, manhwa, and manhua online for free on ComicHub.',
+  description: `Read manga, manhwa, and manhua online for free on ${SITE_NAME}.`,
   openGraph: {
     type: 'website',
-    siteName: 'ComicHub',
+    siteName: SITE_NAME,
     images: [{ url: '/og-default.png', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
   },
+  ...(SITE_LOGO && { icons: { icon: [SITE_LOGO, '/favicon.ico'] } }),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

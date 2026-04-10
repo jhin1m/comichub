@@ -45,7 +45,7 @@ async function bootstrap() {
   // Swagger — dev/staging only
   if (nodeEnv !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('ComicHub API')
+      .setTitle(`${configService.get<string>('app.name', 'ComicHub')} API`)
       .setDescription('Manga/Comic platform REST API')
       .setVersion('1.0')
       .addBearerAuth()
@@ -56,7 +56,8 @@ async function bootstrap() {
 
   const port = configService.get<number>('app.port', 3000);
   await app.listen(port);
-  console.log(`ComicHub API running on http://localhost:${port}`);
+  const appName = configService.get<string>('app.name', 'ComicHub');
+  console.log(`${appName} API running on http://localhost:${port}`);
   if (nodeEnv !== 'production') {
     console.log(`Swagger docs at http://localhost:${port}/api/docs`);
   }

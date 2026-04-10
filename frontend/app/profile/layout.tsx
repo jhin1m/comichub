@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { buildMeta } from '@/lib/seo';
+import { buildMeta, SITE_NAME } from '@/lib/seo';
 
 export const metadata: Metadata = buildMeta({
   title: 'Profile',
-  description: 'Your ComicHub profile and reading history.',
+  description: `Your ${SITE_NAME} profile and reading history.`,
   path: '/profile',
   noIndex: true,
 });

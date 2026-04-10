@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://comichub.app';
-const SITE_NAME = 'ComicHub';
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'ComicHub';
+const SITE_LOGO = process.env.NEXT_PUBLIC_SITE_LOGO || '';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
 
 interface BuildMetaOptions {
@@ -82,7 +83,7 @@ export function buildOrganizationJsonLd() {
     '@type': 'Organization',
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
+    logo: SITE_LOGO ? `${SITE_URL}${SITE_LOGO}` : `${SITE_URL}/logo.png`,
   };
 }
 
@@ -132,4 +133,4 @@ export function buildBreadcrumbJsonLd(items: { name: string; url: string }[]) {
   };
 }
 
-export { SITE_URL, SITE_NAME };
+export { SITE_URL, SITE_NAME, SITE_LOGO };

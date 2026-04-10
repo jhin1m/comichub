@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { buildMeta } from '@/lib/seo';
+import { buildMeta, SITE_NAME } from '@/lib/seo';
 
 export const metadata: Metadata = buildMeta({
   title: 'Bookmarks',
-  description: 'Your bookmarked manga on ComicHub.',
+  description: `Your bookmarked manga on ${SITE_NAME}.`,
   path: '/bookmarks',
   noIndex: true,
 });

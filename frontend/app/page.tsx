@@ -1,6 +1,6 @@
 export const revalidate = 180;
 
-import { buildMeta } from '@/lib/seo';
+import { buildMeta, SITE_NAME } from '@/lib/seo';
 import { mangaApi } from '@/lib/api/manga.api';
 import { genreApi } from '@/lib/api/genre.api';
 import { statsApi, type PlatformStats } from '@/lib/api/stats.api';
@@ -15,8 +15,8 @@ import { RecentSidebar } from '@/components/home/recent-sidebar';
 import type { MangaListItem, PaginatedResult, TaxonomyItem } from '@/types/manga.types';
 
 export const metadata = buildMeta({
-  title: 'ComicHub — Read Manga Online',
-  description: 'Read manga, manhwa, and manhua online for free on ComicHub. Daily updates, thousands of titles.',
+  title: `${SITE_NAME} — Read Manga Online`,
+  description: `Read manga, manhwa, and manhua online for free on ${SITE_NAME}. Daily updates, thousands of titles.`,
   path: '/',
   absoluteTitle: true,
 });

@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { buildMeta } from '@/lib/seo';
+import { buildMeta, SITE_NAME } from '@/lib/seo';
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form';
 
 export const metadata = buildMeta({
   title: 'Forgot Password',
-  description: 'Reset your ComicHub account password.',
+  description: `Reset your ${SITE_NAME} account password.`,
   path: '/forgot-password',
   noIndex: true,
 });
