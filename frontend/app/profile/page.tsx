@@ -2,6 +2,10 @@
 
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import {
+  UserIcon, BookmarkSimpleIcon, ClockCounterClockwiseIcon,
+  UploadSimpleIcon, DownloadSimpleIcon, FolderIcon,
+} from '@phosphor-icons/react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth.context';
 import { userApi } from '@/lib/api/user.api';
@@ -94,13 +98,31 @@ function ProfileContent() {
   return (
     <PageWrapper className="py-8">
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="import">Import</TabsTrigger>
-          <TabsTrigger value="export">Export</TabsTrigger>
-          <TabsTrigger value="folders">Folders</TabsTrigger>
+        <TabsList className="grid grid-cols-3 sm:flex">
+          <TabsTrigger value="profile" className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4">
+            <UserIcon size={16} weight="bold" aria-hidden />
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value="bookmarks" className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4">
+            <BookmarkSimpleIcon size={16} weight="bold" aria-hidden />
+            Bookmarks
+          </TabsTrigger>
+          <TabsTrigger value="history" className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4">
+            <ClockCounterClockwiseIcon size={16} weight="bold" aria-hidden />
+            History
+          </TabsTrigger>
+          <TabsTrigger value="import" className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4">
+            <UploadSimpleIcon size={16} weight="bold" aria-hidden />
+            Import
+          </TabsTrigger>
+          <TabsTrigger value="export" className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4">
+            <DownloadSimpleIcon size={16} weight="bold" aria-hidden />
+            Export
+          </TabsTrigger>
+          <TabsTrigger value="folders" className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4">
+            <FolderIcon size={16} weight="bold" aria-hidden />
+            Folders
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
