@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { XIcon, SpinnerIcon, CheckIcon } from '@phosphor-icons/react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
@@ -51,9 +53,24 @@ interface BookmarkTableProps {
   folders: BookmarkFolder[];
   viewMode: 'grid' | 'list';
   onFolderChanged: () => void;
+  onRemoved: (mangaIds: number[]) => void;
+  selectMode: boolean;
+  selected: Set<number>;
+  onToggleSelect: (mangaId: number) => void;
 }
 
-export function BookmarkTable({ items, folders, viewMode, onFolderChanged }: BookmarkTableProps) {
+export function BookmarkTable({
+  items,
+  folders,
+  viewMode,
+  onFolderChanged,
+  onRemoved,
+  selectMode,
+  selected,
+  onToggleSelect,
+}: BookmarkTableProps) {
+  const [removing, setRemoving] = useState<number | null>(null);
+
   if (items.length === 0) {
     return <div className="py-16 text-center text-muted text-sm">No bookmarks found.</div>;
   }
@@ -68,21 +85,54 @@ export function BookmarkTable({ items, folders, viewMode, onFolderChanged }: Boo
     }
   }
 
+  async function handleRemove(e: React.MouseEvent, mangaId: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (removing) return;
+    setRemoving(mangaId);
+    try {
+      await bookmarkApi.removeBookmark(mangaId);
+      toast.success('Removed from bookmarks');
+      onRemoved([mangaId]);
+    } catch {
+      toast.error('Failed to remove');
+    } finally {
+      setRemoving(null);
+    }
+  }
+
   if (viewMode === 'grid') {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {items.map((item) => {
           const progress = getProgress(item);
-          return (
-            <Link
-              key={item.id}
-              href={
-                item.readingProgress?.currentChapterId
-                  ? `/manga/${item.manga.slug}/${item.readingProgress.currentChapterId}`
-                  : `/manga/${item.manga.slug}`
+          const isSelected = selected.has(item.mangaId);
+          const CardEl: React.ElementType = selectMode ? 'div' : Link;
+          const cardProps = selectMode
+            ? {
+                role: 'button',
+                tabIndex: 0,
+                'aria-pressed': isSelected,
+                onClick: () => onToggleSelect(item.mangaId),
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onToggleSelect(item.mangaId);
+                  }
+                },
+                className: `group relative block rounded-lg bg-surface border overflow-hidden cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  isSelected ? 'border-accent ring-2 ring-accent' : 'border-default hover:border-accent'
+                }`,
               }
-              className="group relative block rounded-lg bg-surface border border-default overflow-hidden hover:border-accent transition-colors"
-            >
+            : {
+                href: item.readingProgress?.currentChapterId
+                  ? `/manga/${item.manga.slug}/${item.readingProgress.currentChapterId}`
+                  : `/manga/${item.manga.slug}`,
+                className:
+                  'group relative block rounded-lg bg-surface border border-default overflow-hidden hover:border-accent transition-colors',
+              };
+          return (
+            <CardEl key={item.id} {...cardProps}>
               {/* Cover */}
               <div className="relative aspect-2/3 bg-elevated">
                 {item.manga.cover ? (
@@ -111,6 +161,34 @@ export function BookmarkTable({ items, folders, viewMode, onFolderChanged }: Boo
                     <div className="h-full bg-accent" style={{ width: `${progress.percent}%` }} />
                   </div>
                 )}
+
+                {/* Selection indicator */}
+                {selectMode && (
+                  <div className="absolute top-1.5 right-1.5 z-10">
+                    <span
+                      className={`flex items-center justify-center size-6 rounded-full border-2 backdrop-blur-sm transition-all ${
+                        isSelected ? 'bg-accent border-accent' : 'bg-black/50 border-white/70'
+                      }`}
+                    >
+                      {isSelected && <CheckIcon size={12} weight="bold" className="text-white" />}
+                    </span>
+                  </div>
+                )}
+
+                {/* Remove button */}
+                {!selectMode && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemove(e, item.mangaId)}
+                    disabled={removing === item.mangaId}
+                    className="absolute top-1.5 right-1.5 z-10 flex items-center justify-center size-7 rounded-full bg-black/60 text-white/80 hover:bg-red-500/90 hover:text-white backdrop-blur-sm transition-all cursor-pointer opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                    aria-label="Remove from bookmarks"
+                  >
+                    {removing === item.mangaId
+                      ? <SpinnerIcon size={12} className="animate-spin" />
+                      : <XIcon size={12} weight="bold" />}
+                  </button>
+                )}
               </div>
 
               {/* Info */}
@@ -124,7 +202,7 @@ export function BookmarkTable({ items, folders, viewMode, onFolderChanged }: Boo
                   <span className="shrink-0" suppressHydrationWarning>{timeAgo(item.manga.chapterUpdatedAt)}</span>
                 </div>
               </div>
-            </Link>
+            </CardEl>
           );
         })}
       </div>
@@ -136,22 +214,71 @@ export function BookmarkTable({ items, folders, viewMode, onFolderChanged }: Boo
     <div className="space-y-0">
       {items.map((item) => {
         const progress = getProgress(item);
+        const isSelected = selected.has(item.mangaId);
         return (
-          <div key={item.id} className="flex items-center gap-3 py-3 border-b border-default hover:bg-hover/40 transition-colors">
+          <div
+            key={item.id}
+            role={selectMode ? 'button' : undefined}
+            tabIndex={selectMode ? 0 : undefined}
+            aria-pressed={selectMode ? isSelected : undefined}
+            onClick={selectMode ? () => onToggleSelect(item.mangaId) : undefined}
+            onKeyDown={
+              selectMode
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onToggleSelect(item.mangaId);
+                    }
+                  }
+                : undefined
+            }
+            className={`flex items-center gap-3 py-3 px-2 border-b border-default transition-colors focus:outline-none ${
+              selectMode
+                ? `cursor-pointer focus-visible:ring-2 focus-visible:ring-accent ${isSelected ? 'bg-accent/10' : 'hover:bg-hover/40'}`
+                : 'hover:bg-hover/40'
+            }`}
+          >
+            {/* Selection checkbox */}
+            {selectMode && (
+              <span
+                className={`flex items-center justify-center size-5 rounded border-2 shrink-0 transition-colors ${
+                  isSelected ? 'bg-accent border-accent' : 'bg-elevated border-default'
+                }`}
+              >
+                {isSelected && <CheckIcon size={12} weight="bold" className="text-white" />}
+              </span>
+            )}
+
             {/* Cover thumbnail */}
-            <Link href={`/manga/${item.manga.slug}`} className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated">
-              {item.manga.cover ? (
-                <Image src={item.manga.cover} alt={item.manga.title} fill className="object-cover" sizes="40px" />
-              ) : (
-                <div className="w-full h-full bg-hover" />
-              )}
-            </Link>
+            {selectMode ? (
+              <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated">
+                {item.manga.cover ? (
+                  <Image src={item.manga.cover} alt={item.manga.title} fill className="object-cover" sizes="40px" />
+                ) : (
+                  <div className="w-full h-full bg-hover" />
+                )}
+              </div>
+            ) : (
+              <Link href={`/manga/${item.manga.slug}`} className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated">
+                {item.manga.cover ? (
+                  <Image src={item.manga.cover} alt={item.manga.title} fill className="object-cover" sizes="40px" />
+                ) : (
+                  <div className="w-full h-full bg-hover" />
+                )}
+              </Link>
+            )}
 
             {/* Title + meta */}
             <div className="flex-1 min-w-0">
-              <Link href={`/manga/${item.manga.slug}`} className="text-sm font-medium text-primary hover:text-accent transition-colors line-clamp-1">
-                {item.manga.title}
-              </Link>
+              {selectMode ? (
+                <span className="text-sm font-medium text-primary line-clamp-1">
+                  {item.manga.title}
+                </span>
+              ) : (
+                <Link href={`/manga/${item.manga.slug}`} className="text-sm font-medium text-primary hover:text-accent transition-colors line-clamp-1">
+                  {item.manga.title}
+                </Link>
+              )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-secondary mt-0.5">
                 <span>Ch.{progress.text}</span>
                 {item.userRating != null && <span>★{item.userRating}</span>}
@@ -164,20 +291,39 @@ export function BookmarkTable({ items, folders, viewMode, onFolderChanged }: Boo
               {item.manga.status}
             </Badge>
 
-            {/* Folder select */}
-            <Select
-              value={String(item.folder.id)}
-              onValueChange={(val) => handleFolderChange(item.mangaId, val)}
-            >
-              <SelectTrigger className="h-8 text-xs min-w-[100px] max-w-[130px] hidden md:flex shrink-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {folders.map((f) => (
-                  <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Folder select (hidden in select mode to avoid click conflicts) */}
+            {!selectMode && (
+              <>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={String(item.folder.id)}
+                    onValueChange={(val) => handleFolderChange(item.mangaId, val)}
+                  >
+                    <SelectTrigger className="h-8 text-xs min-w-[100px] max-w-[130px] hidden md:flex shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {folders.map((f) => (
+                        <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Remove button */}
+                <button
+                  type="button"
+                  onClick={(e) => handleRemove(e, item.mangaId)}
+                  disabled={removing === item.mangaId}
+                  className="flex items-center justify-center size-8 rounded-full text-muted hover:bg-red-500/20 hover:text-red-500 transition-colors shrink-0"
+                  aria-label="Remove from bookmarks"
+                >
+                  {removing === item.mangaId
+                    ? <SpinnerIcon size={14} className="animate-spin" />
+                    : <XIcon size={14} weight="bold" />}
+                </button>
+              </>
+            )}
           </div>
         );
       })}

@@ -180,6 +180,54 @@ export class BookmarkService {
     return { folderId };
   }
 
+  async removeMany(
+    userId: number,
+    mangaIds: number[],
+  ): Promise<{ removed: number }> {
+    if (mangaIds.length === 0) return { removed: 0 };
+
+    return this.db.transaction(async (tx) => {
+      const deleted = await tx
+        .delete(follows)
+        .where(
+          and(eq(follows.userId, userId), inArray(follows.mangaId, mangaIds)),
+        )
+        .returning({ mangaId: follows.mangaId });
+
+      if (deleted.length === 0) return { removed: 0 };
+
+      const removedIds = deleted.map((d) => d.mangaId);
+      await tx
+        .update(manga)
+        .set({
+          followersCount: sql`greatest(${manga.followersCount} - 1, 0)`,
+        })
+        .where(inArray(manga.id, removedIds));
+
+      return { removed: deleted.length };
+    });
+  }
+
+  async changeFolderMany(
+    userId: number,
+    mangaIds: number[],
+    folderId: number,
+  ): Promise<{ updated: number; folderId: number }> {
+    if (mangaIds.length === 0) return { updated: 0, folderId };
+
+    await this.folderService.assertFolderBelongsToUser(userId, folderId);
+
+    const updated = await this.db
+      .update(follows)
+      .set({ folderId })
+      .where(
+        and(eq(follows.userId, userId), inArray(follows.mangaId, mangaIds)),
+      )
+      .returning({ id: follows.id });
+
+    return { updated: updated.length, folderId };
+  }
+
   async getStatus(
     userId: number,
     mangaId: number,

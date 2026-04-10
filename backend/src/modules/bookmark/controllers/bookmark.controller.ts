@@ -17,6 +17,8 @@ import { BookmarkService } from '../services/bookmark.service.js';
 import { AddBookmarkDto } from '../dto/add-bookmark.dto.js';
 import { ChangeFolderDto } from '../dto/change-folder.dto.js';
 import { BookmarkQueryDto } from '../dto/bookmark-query.dto.js';
+import { BulkRemoveBookmarkDto } from '../dto/bulk-remove-bookmark.dto.js';
+import { BulkChangeFolderDto } from '../dto/bulk-change-folder.dto.js';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
 @ApiTags('bookmarks')
@@ -41,6 +43,29 @@ export class BookmarkController {
     @Param('mangaId', ParseIntPipe) mangaId: number,
   ) {
     return this.bookmarkService.getStatus(user.sub, mangaId);
+  }
+
+  @Delete('bulk')
+  @ApiOperation({ summary: 'Remove multiple bookmarks' })
+  @HttpCode(HttpStatus.OK)
+  removeBulk(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkRemoveBookmarkDto,
+  ) {
+    return this.bookmarkService.removeMany(user.sub, dto.mangaIds);
+  }
+
+  @Patch('bulk/folder')
+  @ApiOperation({ summary: 'Change folder for multiple bookmarks' })
+  changeFolderBulk(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: BulkChangeFolderDto,
+  ) {
+    return this.bookmarkService.changeFolderMany(
+      user.sub,
+      dto.mangaIds,
+      dto.folderId,
+    );
   }
 
   @Post(':mangaId')

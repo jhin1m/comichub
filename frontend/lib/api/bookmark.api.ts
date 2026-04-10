@@ -14,6 +14,19 @@ export const bookmarkApi = {
   removeBookmark: (mangaId: number) =>
     apiClient.delete(`/bookmarks/${mangaId}`).then((r) => r.data),
 
+  removeBookmarkMany: (mangaIds: number[]) =>
+    apiClient
+      .delete<{ removed: number }>('/bookmarks/bulk', { data: { mangaIds } })
+      .then((r) => r.data),
+
+  changeFolderMany: (mangaIds: number[], folderId: number) =>
+    apiClient
+      .patch<{ updated: number; folderId: number }>('/bookmarks/bulk/folder', {
+        mangaIds,
+        folderId,
+      })
+      .then((r) => r.data),
+
   getStatus: (mangaId: number) =>
     apiClient.get<BookmarkStatus>(`/bookmarks/status/${mangaId}`).then((r) => r.data),
 
