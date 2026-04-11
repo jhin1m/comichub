@@ -43,7 +43,9 @@ else
 fi
 
 info "Running: $CMD"
-docker run --rm -it \
+DOCKER_TTY=""
+[ -t 0 ] && DOCKER_TTY="-it"
+docker run --rm $DOCKER_TTY \
   --network "${COMPOSE_PROJECT_NAME}_default" \
   -e DATABASE_URL="postgresql://comichub:${DB_PASSWORD}@postgres:5432/comichub" \
   -e REDIS_URL="redis://redis:6379" \
