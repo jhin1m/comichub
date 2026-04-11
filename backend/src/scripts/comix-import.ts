@@ -15,6 +15,7 @@ import {
   resolveByName, eq, and, desc, count,
 } from './import-utils.js';
 import { nsfwToContentRating } from '../common/utils/content-rating.util.js';
+import { signUrl, signedFetch } from './comix-sign.js';
 
 // ─── CLI args ────────────────────────────────────────────────────
 const PAGE_FROM = parseInt(flag('from', '1'), 10);
@@ -189,7 +190,8 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
   let hasMore = true;
 
   while (hasMore) {
-    const data = await api<any>(`/manga/${hashId}/chapters?limit=100&page=${page}`);
+    // Chapters endpoint requires signed URL (Comix.to anti-bot protection)
+    const data = await signedFetch<any>(`/manga/${hashId}/chapters`, { limit: 100, page });
     const items = data.result?.items ?? [];
 
     const filtered = LANG === 'all'
@@ -304,6 +306,11 @@ async function main() {
     DRY_RUN && 'DRY RUN',
   ].filter(Boolean).join(', ');
   console.log(`\nComix.to Import — ${filters}\n`);
+
+  // Pre-load the signing module (fail fast if Comix.to changed their JS)
+  console.log('  Loading Comix.to signing module...');
+  await signUrl('/manga/test/chapters');
+  console.log('  Signing module ready.\n');
 
   // Build query params — order by recently updated by default
   const params = new URLSearchParams();
