@@ -58,6 +58,9 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.example.com/api/v1}
+        NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-ComicHub}
+        NEXT_PUBLIC_SITE_LOGO: ${NEXT_PUBLIC_SITE_LOGO:-}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://example.com}
     restart: unless-stopped
     environment:
       HOSTNAME: "0.0.0.0"
@@ -74,6 +77,43 @@ services:
       retries: 3
       start_period: 30s
 
+  # Reverse proxy — terminates TLS using Cloudflare Origin Certificate.
+  # Exposes :443 only; CF edge enforces HTTP→HTTPS so :80 is not needed.
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/certs:/etc/caddy/certs:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+      API_SUBDOMAIN: ${API_SUBDOMAIN}
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+  # One-shot migration runner — reuses backend's build stage (has drizzle-kit devDep).
+  # Invoked via: docker compose --profile migrate run --rm migrate
+  migrate:
+    build:
+      context: ./backend
+      target: build
+    environment:
+      DATABASE_URL: postgresql://comichub:${DB_PASSWORD}@postgres:5432/comichub
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pnpm run db:migrate
+    profiles: ["migrate"]
+
 volumes:
   pgdata:
   redisdata:
+  caddydata:
+  caddyconfig:

@@ -1,0 +1,52 @@
+# Caddy reverse proxy config for ComicHub.
+#
+# TLS: Cloudflare Origin Certificate (15-year validity).
+#   - Generate in CF dashboard: SSL/TLS → Origin Server → Create Certificate
+#   - Hostnames: {$DOMAIN}, *.{$DOMAIN}
+#   - Save cert as: deploy/certs/origin.pem
+#   - Save key as:  deploy/certs/origin.key
+#
+# Requires CF SSL/TLS mode: Full (strict)
+# Requires CF DNS records: orange cloud (proxied)
+#
+# If you later switch to grey cloud (DNS only) or want auto TLS,
+# remove `auto_https off` and the `tls` directives — Caddy will use Let's Encrypt.
+
+{
+	# Disable automatic HTTPS (ACME) — we use CF Origin Cert instead.
+	auto_https off
+	# Admin API bound to loopback only.
+	admin localhost:2019
+}
+
+# Frontend (Next.js)
+{$DOMAIN}:443 {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+	encode zstd gzip
+	reverse_proxy frontend:3000 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto https
+	}
+	header {
+		# Strip server fingerprint.
+		-Server
+		# HSTS — CF already sends this but belt-and-suspenders.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}
+
+# Backend API (NestJS)
+{$API_SUBDOMAIN}.{$DOMAIN}:443 {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+	encode zstd gzip
+	reverse_proxy backend:3001 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto https
+	}
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}
