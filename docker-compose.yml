@@ -96,18 +96,19 @@ services:
       frontend:
         condition: service_healthy
 
-  # One-shot migration runner — reuses backend's build stage (has drizzle-kit devDep).
+  # One-shot migration runner — applies SQL files via psql, tracks by hash.
   # Invoked via: docker compose --profile migrate run --rm migrate
   migrate:
-    build:
-      context: ./backend
-      target: build
+    image: postgres:15-alpine
     environment:
-      DATABASE_URL: postgresql://comichub:${DB_PASSWORD}@postgres:5432/comichub
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backend/src/database/migrations:/migrations:ro
+      - ./deploy/migrate.sh:/migrate.sh:ro
     depends_on:
       postgres:
         condition: service_healthy
-    command: npx drizzle-kit migrate
+    entrypoint: ["/bin/sh", "/migrate.sh"]
     profiles: ["migrate"]
 
 volumes:
