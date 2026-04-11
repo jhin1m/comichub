@@ -1,165 +1,154 @@
 # Deployment Guide
 
-ComicHub deploys to Ubuntu VPS via Docker Compose + Cloudflare Tunnel (no Nginx/reverse proxy needed).
+VPS deploy via Docker Compose + Caddy reverse proxy + Cloudflare SSL.
 
 ## Architecture
 
 ```
-Internet → Cloudflare CDN/WAF → CF Tunnel → cloudflared (systemd)
-  ├── domain.com       → localhost:3000 (Next.js)
-  └── api.domain.com   → localhost:3001 (NestJS)
+Client → Cloudflare edge (DDoS, cache, orange-cloud proxy)
+       → VPS :443 (Caddy, CF Origin Cert)
+       ├── zetsu.moe       → frontend:3000 (Next.js standalone)
+       └── api.zetsu.moe   → backend:3001  (NestJS)
 
-Docker Compose:
-  ├── frontend  :3000  (Next.js standalone)
-  ├── backend   :3001  (NestJS)
-  ├── postgres  :5432  (volume: pgdata)
-  └── redis     :6379  (volume: redisdata)
+Docker Compose services:
+  ├── caddy      :443   (reverse proxy, TLS termination)
+  ├── frontend   :3000  (Next.js, internal only)
+  ├── backend    :3001  (NestJS, internal only)
+  ├── postgres   :5432  (internal only, volume: pgdata)
+  ├── redis      :6379  (internal only, volume: redisdata)
+  └── migrate    (one-shot, profile-gated)
 ```
 
-All app ports bind to `127.0.0.1` — external traffic goes through Cloudflare Tunnel only.
+Backend/frontend ports bind `127.0.0.1` only. Caddy is the sole public-facing service on `:443`.
+Port 80 not needed — CF edge handles HTTP→HTTPS redirect.
 
 ## Prerequisites
 
-- Ubuntu 22.04/24.04 VPS (minimum 2GB RAM, 20GB disk)
-- Cloudflare account with domain added
-- Cloudflare API token with permissions: `Zone:DNS:Edit`, `Account:Cloudflare Tunnel:Edit`
-- SSH access to VPS as root
-- Git repo accessible from VPS (SSH key or deploy key)
+- Ubuntu 22.04+ VPS, 4GB+ RAM, 20GB+ disk
+- Domain added to Cloudflare
+- CF API token: `Zone:Zone:Read` + `Zone:DNS:Edit`
+- CF Origin Certificate (15-year, see below)
+- SSH + git access from VPS
+- GitHub deploy key (if private repo)
 
-## Files
+## File Overview
 
 | File | Purpose |
-|------|---------|
-| `docker-compose.yml` | Orchestrates 4 services + volumes |
-| `backend/Dockerfile` | 3-stage NestJS build (deps → build → prod) |
+|---|---|
+| `docker-compose.yml` | 5 services + migrate runner |
+| `backend/Dockerfile` | 3-stage NestJS build |
 | `frontend/Dockerfile` | 3-stage Next.js standalone build |
-| `deploy/setup.sh` | One-time VPS provisioning |
+| `deploy/setup.sh` | One-time VPS bootstrap |
 | `deploy/deploy.sh` | Subsequent deploys with auto-rollback |
+| `deploy/migrate.sh` | SQL migrations via psql (hash-tracked) |
+| `deploy/Caddyfile` | Reverse proxy + CF Origin Cert config |
 | `deploy/.env.deploy.example` | Config template |
+| `deploy/certs/` | CF Origin Cert files (gitignored) |
 
 ## First-Time Setup
 
-### 1. Prepare config
+### 1. Create CF Origin Certificate
+
+1. CF dashboard → domain → **SSL/TLS** → **Origin Server** → **Create Certificate**
+2. Hostnames: `yourdomain.com`, `*.yourdomain.com`
+3. Validity: **15 years**
+4. Save **Origin Certificate** → `origin.pem`
+5. Save **Private Key** → `origin.key` (shown only once!)
+6. **SSL/TLS** → **Overview** → set mode: **Full (strict)**
+7. **Edge Certificates** → enable **Always Use HTTPS**
+
+### 2. Create CF API Token
+
+1. CF dashboard → **My Profile** → **API Tokens** → **Create Token**
+2. Permissions: `Zone:Zone:Read` + `Zone:DNS:Edit`
+3. Zone: your domain only
+
+### 3. Clone + configure on VPS
 
 ```bash
-# On VPS
-mkdir -p /var/www && cd /var/www
-git clone <repo-url> manga && cd manga
+# Clone repo
+git clone -b main <repo-url> /var/www/comichub
+cd /var/www/comichub
 
-# Copy and fill deploy config
+# Create deploy config
 cp deploy/.env.deploy.example deploy/.env.deploy
 nano deploy/.env.deploy
 ```
 
-Required variables in `.env.deploy`:
+`.env.deploy` variables:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `CF_API_TOKEN` | Cloudflare API token | `abc123...` |
-| `CF_ACCOUNT_ID` | Cloudflare account ID | `def456...` |
-| `CF_TUNNEL_NAME` | Tunnel name | `comichub` |
-| `DOMAIN` | Root domain | `comichub.com` |
-| `API_SUBDOMAIN` | API subdomain prefix | `api` |
-| `GIT_REPO` | Git clone URL | `git@github.com:user/comichub.git` |
-| `GIT_BRANCH` | Branch to deploy | `main` |
-| `APP_DIR` | App install path | `/var/www/manga` |
-| `DB_PASSWORD` | PostgreSQL password | (strong random string) |
-| `NEXT_PUBLIC_API_URL` | Frontend API base URL | `https://api.comichub.com/api/v1` |
-| `FRONTEND_URL` | For backend CORS | `https://comichub.com` |
+| Variable | Example |
+|---|---|
+| `CF_API_TOKEN` | (from step 2) |
+| `DOMAIN` | `zetsu.moe` |
+| `API_SUBDOMAIN` | `api` |
+| `COMPOSE_PROJECT_NAME` | `zetsu` |
+| `APP_DIR` | `/var/www/comichub` |
+| `DB_PASSWORD` | (strong random) |
+| `NEXT_PUBLIC_API_URL` | `https://api.zetsu.moe/api/v1` |
+| `NEXT_PUBLIC_SITE_NAME` | `Zetsu` |
+| `NEXT_PUBLIC_SITE_URL` | `https://zetsu.moe` |
+| `FRONTEND_URL` | `https://zetsu.moe` |
+| `GIT_REPO` | `git@github.com:user/repo.git` |
+| `GIT_BRANCH` | `main` |
 
-### 2. Run setup
+### 4. Upload certificates
 
 ```bash
-sudo bash deploy/setup.sh
+mkdir -p deploy/certs
+# Paste cert content (or SCP from local):
+nano deploy/certs/origin.pem
+nano deploy/certs/origin.key
+chmod 600 deploy/certs/origin.key
 ```
 
-This script performs 11 steps:
-1. Validates `.env.deploy` variables
-2. Installs Docker + Docker Compose plugin
-3. Installs cloudflared
-4. Creates Cloudflare Tunnel via API
-5. Creates DNS CNAME records (root + api subdomain)
-6. Writes tunnel ingress config
-7. Installs cloudflared as systemd service
-8. Clones repo to `APP_DIR`
-9. Creates `backend/.env` from template (auto-generates JWT secrets)
-10. Builds and starts Docker Compose services
-11. Health checks backend + frontend
-
-### 3. Post-setup
+### 5. Run setup
 
 ```bash
-# Review and fill remaining backend env vars (Google OAuth, AWS S3, etc.)
-nano /var/www/manga/backend/.env
+sudo ./deploy/setup.sh
+```
 
-# Restart backend to pick up changes
-cd /var/www/manga && docker compose restart backend
+Setup performs 12 steps: validate config → install Docker → validate cert → auto-detect IP → lookup CF zone → create DNS A records (proxied) → pull code → configure `backend/.env` → start postgres+redis → run migrations → build+start app → health check.
+
+### 6. Post-setup
+
+```bash
+# Fill remaining backend env (Google OAuth, AWS S3, SMTP, Turnstile)
+nano backend/.env
+docker compose restart backend
 ```
 
 ## Subsequent Deploys
 
 ```bash
-sudo bash /var/www/manga/deploy/deploy.sh
+# Push code to GitHub, then on VPS:
+sudo ./deploy/deploy.sh
 ```
 
-Deploy flow:
-1. Tags current images as `:rollback`
-2. Pulls latest code (`git pull --ff-only`)
-3. Builds new images (containers keep running)
-4. Swaps containers (`docker compose up -d`) — ~3-5s downtime
-5. Health checks backend + frontend
-6. **Auto-rollback** if health check fails (restores `:rollback` tags)
-7. Prunes old images
-
-## Docker Services
-
-### Environment Variables
-
-The `docker-compose.yml` reads from shell env + `backend/.env`:
-
-| Variable | Source | Used By |
-|----------|--------|---------|
-| `DB_PASSWORD` | Shell env (from `.env.deploy`) | postgres, backend |
-| `NEXT_PUBLIC_API_URL` | Shell env (from `.env.deploy`) | frontend build arg |
-| `FRONTEND_URL` | Shell env (from `.env.deploy`) | backend CORS |
-| `DATABASE_URL` | Compose `environment:` override | backend |
-| `REDIS_URL` | Compose `environment:` override | backend |
-| Other backend vars | `backend/.env` via `env_file:` | backend |
-
-### Health Checks
-
-| Service | Endpoint | Interval | Start Period |
-|---------|----------|----------|--------------|
-| postgres | `pg_isready -U comichub` | 10s | — |
-| redis | `redis-cli ping` | 10s | — |
-| backend | `GET /api/v1/health` | 30s | 40s |
-| frontend | `GET /` | 30s | 30s |
-
-### Volumes
-
-| Volume | Mount | Purpose |
-|--------|-------|---------|
-| `pgdata` | `/var/lib/postgresql/data` | PostgreSQL data persistence |
-| `redisdata` | `/data` | Redis data persistence |
+Flow: tag rollback → git pull → build (no-cache) → migrate → swap containers → health check → auto-rollback if unhealthy → prune images.
 
 ## Common Operations
 
 ```bash
-cd /var/www/manga
+cd /var/www/comichub
+source deploy/.env.deploy
+export DB_PASSWORD NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_NAME NEXT_PUBLIC_SITE_LOGO NEXT_PUBLIC_SITE_URL FRONTEND_URL DOMAIN API_SUBDOMAIN COMPOSE_PROJECT_NAME
 
-# View logs
+# Status
+docker compose ps
+
+# Logs
 docker compose logs -f backend
-docker compose logs -f frontend
-docker compose logs --tail=50
+docker compose logs --tail=50 frontend
 
-# Restart single service
+# Restart service
 docker compose restart backend
 
 # Rebuild single service
-docker compose build backend && docker compose up -d backend
+docker compose build --no-cache backend && docker compose up -d backend
 
-# Run database migrations
-docker compose exec backend node dist/database/migrate.js
+# Run migrations manually
+docker compose --profile migrate run --rm migrate
 
 # Access PostgreSQL
 docker compose exec postgres psql -U comichub -d comichub
@@ -167,50 +156,44 @@ docker compose exec postgres psql -U comichub -d comichub
 # Access Redis
 docker compose exec redis redis-cli
 
-# Check service status
-docker compose ps
-
-# Stop all services
+# Stop all
 docker compose down
 
-# Stop and remove volumes (DESTRUCTIVE — deletes DB data)
+# Stop + delete data (DESTRUCTIVE)
 docker compose down -v
 ```
 
-## Cloudflare Tunnel Management
+## Rollback
+
+deploy.sh auto-rollbacks on health check failure. Manual rollback:
 
 ```bash
-# Check tunnel status
-systemctl status cloudflared
-
-# Restart tunnel
-systemctl restart cloudflared
-
-# View tunnel config
-cat /etc/cloudflared/config.yml
-
-# View tunnel logs
-journalctl -u cloudflared -f
+docker tag ${COMPOSE_PROJECT_NAME}-backend:rollback ${COMPOSE_PROJECT_NAME}-backend:latest
+docker tag ${COMPOSE_PROJECT_NAME}-frontend:rollback ${COMPOSE_PROJECT_NAME}-frontend:latest
+docker compose up -d backend frontend
 ```
+
+Note: DB migrations are NOT auto-rolled-back.
 
 ## Troubleshooting
 
-| Issue | Check |
-|-------|-------|
-| 502 Bad Gateway | `docker compose ps` — services running? |
-| CORS errors | `FRONTEND_URL` in `backend/.env` matches actual domain? |
-| API unreachable | `curl localhost:3001/api/v1/health` from VPS |
-| Frontend blank | `curl localhost:3000` from VPS |
-| DB connection error | `docker compose logs backend` — check `DATABASE_URL` |
-| Tunnel not routing | `systemctl status cloudflared` + check `/etc/cloudflared/config.yml` |
-| Build fails | `docker compose build --no-cache` + check Dockerfile |
-| Disk full | `docker system prune -a` (removes all unused images) |
+| Issue | Fix |
+|---|---|
+| 502 from CF | `docker compose ps` — all healthy? Caddy running? |
+| CORS errors | Check `FRONTEND_URL` in `backend/.env` matches domain |
+| API unreachable | `wget -qO- http://localhost:3001/api/v1/health` from VPS |
+| Frontend blank | `docker compose logs frontend` — check for crashes |
+| Migration fail | `docker compose --profile migrate run --rm migrate` — check SQL errors |
+| Backend crash | `docker compose logs backend` — check `dist/main.js` exists |
+| Caddy TLS error | Verify `deploy/certs/origin.pem` + `origin.key` present, CF mode = Full (strict) |
+| Build OOM | VPS needs 4GB+ RAM for concurrent BE+FE builds |
+| Disk full | `docker system prune -a` (removes unused images) |
 
-## Security Notes
+## Security
 
-- All app ports (`3000`, `3001`) bound to `127.0.0.1` — not accessible from internet directly
-- PostgreSQL and Redis also bound to `127.0.0.1`
-- Cloudflare handles TLS termination, DDoS protection, WAF
-- `deploy/.env.deploy` contains secrets — `chmod 600` and never commit
-- JWT secrets auto-generated during setup via `openssl rand`
-- Tunnel credentials stored at `/etc/cloudflared/` with `chmod 600`
+- Backend/frontend ports `127.0.0.1` only — no direct internet access
+- Postgres/redis: no host port binding, internal docker network only
+- Caddy: sole public listener on `:443` with CF Origin Cert
+- CF orange cloud (proxied): VPS IP hidden from public DNS
+- `deploy/.env.deploy` + `deploy/certs/` gitignored, never committed
+- JWT secrets auto-generated via `openssl rand` during setup

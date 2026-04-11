@@ -48,7 +48,7 @@ docker compose build --no-cache backend frontend
 # Runs against live postgres before swapping app containers.
 # New schema must be backward-compatible with old app code to keep swap safe.
 info "Running database migrations..."
-docker compose --profile migrate run --rm --build migrate || {
+docker compose --profile migrate run --rm migrate || {
   error "Migration failed — aborting deploy. Old containers still running."
   exit 1
 }
