@@ -6,7 +6,6 @@
     "tests",
     "dist",
     "**/*spec.ts",
-    "drizzle.config.ts",
-    "vitest.config.ts"
+    "*.config.ts"
   ]
 }
