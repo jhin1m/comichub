@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { BrandLogo } from '@/components/ui/brand-logo';
 import { useRouter } from 'next/navigation';
 import { CaretLeftIcon, CaretRightIcon, XIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -42,8 +43,8 @@ export function ReaderSidebar({
     <aside className="w-[70vw] md:w-[380px] min-w-0 md:min-w-[380px] h-full flex flex-col bg-surface border-l border-default">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-default">
-        <Link href="/" className="font-rajdhani font-bold text-lg text-primary">
-          Comic<span className="text-accent">Hub</span>
+        <Link href="/" className="shrink-0">
+          <BrandLogo size="sm" />
         </Link>
         <button onClick={onClose} aria-label="Close sidebar" className="text-secondary hover:text-primary transition-colors p-1">
           <XIcon size={18} />
