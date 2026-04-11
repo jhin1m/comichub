@@ -1,4 +1,4 @@
-import { BookOpen, FileText, Lightning, PlusCircle } from '@phosphor-icons/react/ssr';
+import { BookOpenIcon, FileTextIcon, LightningIcon, PlusCircleIcon } from '@phosphor-icons/react/ssr';
 import { formatCount } from '@/lib/utils';
 import type { PlatformStats } from '@/lib/api/stats.api';
 
@@ -10,28 +10,28 @@ export function CommunityStatsBar({ stats }: Props) {
   if (!stats || stats.totalManga === 0) return null;
 
   return (
-    <div className="max-w-350 mx-auto px-4 md:px-6 lg:px-8 py-4">
+    <div className="max-w-350 mx-auto px-4 md:px-6 lg:px-8 pt-4">
       <div className="bg-surface border border-default rounded-lg px-6 py-4 flex justify-center gap-6 md:gap-10 flex-wrap">
         <StatItem
-          icon={<BookOpen size={16} />}
+          icon={<BookOpenIcon size={16} />}
           iconClass="bg-accent-muted text-accent"
           value={formatCount(stats.totalManga) + '+'}
           label="manga titles"
         />
         <StatItem
-          icon={<FileText size={16} />}
+          icon={<FileTextIcon size={16} />}
           iconClass="bg-info/12 text-info"
           value={formatCount(stats.totalChapters)}
           label="chapters"
         />
         <StatItem
-          icon={<Lightning size={16} />}
+          icon={<LightningIcon size={16} />}
           iconClass="bg-warning/12 text-warning"
           value={String(stats.dailyUpdates)}
           label="updated today"
         />
         <StatItem
-          icon={<PlusCircle size={16} />}
+          icon={<PlusCircleIcon size={16} />}
           iconClass="bg-success/12 text-success"
           value={String(stats.newThisWeek)}
           label="new this week"

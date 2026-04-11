@@ -51,7 +51,7 @@ export default async function HomePage() {
       <CommunityStatsBar stats={platformStats} />
 
       {/* 2-column layout: ~70% content + ~30% sidebar */}
-      <div className="max-w-350 mx-auto px-4 md:px-6 lg:px-8 pb-12">
+      <div className="max-w-350 mx-auto px-4 md:px-6 lg:px-8 pb-12 pt-4">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px] gap-6">
 
           {/* Left: manga carousels + latest updates */}

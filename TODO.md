@@ -12,3 +12,6 @@
 [x] Add NSFW content warning in chapter page.
 [x] Add NSFW content warning in manga page.
 [x] Always show "X" button follow/history in home page in mobile.
+[ ] Bug fix OAuth login google.
+[ ] Add latest chapter in result search.
+[ ] Add histories search in search form.
