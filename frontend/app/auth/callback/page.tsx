@@ -1,27 +1,21 @@
 'use client';
-import { Suspense } from 'react';
 import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth.context';
 
-function AuthCallbackContent() {
-  const { restoreSession } = useAuth();
-  const searchParams = useSearchParams();
+export default function AuthCallbackPage() {
+  const { setTokensFromOAuth } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    const oauth = searchParams.get('oauth');
-    const state = searchParams.get('state');
-    const storedState = sessionStorage.getItem('oauth_state');
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = params.get('accessToken');
+    const refreshToken = params.get('refreshToken');
 
-    if (oauth === 'success') {
-      if (!state || !storedState || state !== storedState) {
-        router.replace('/login');
-        return;
-      }
-      sessionStorage.removeItem('oauth_state');
-      // Tokens are in HTTP-only cookies; just restore the session
-      restoreSession()
+    if (accessToken && refreshToken) {
+      // Clear tokens from URL immediately
+      window.history.replaceState(null, '', window.location.pathname);
+      setTokensFromOAuth(accessToken, refreshToken)
         .then(() => router.replace('/'))
         .catch(() => router.replace('/login'));
     } else {
@@ -34,17 +28,5 @@ function AuthCallbackContent() {
     <div className="min-h-screen flex items-center justify-center">
       <p className="text-secondary">Completing sign in...</p>
     </div>
-  );
-}
-
-export default function AuthCallbackPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-secondary">Completing sign in...</p>
-      </div>
-    }>
-      <AuthCallbackContent />
-    </Suspense>
   );
 }

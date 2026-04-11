@@ -103,26 +103,11 @@ export class AuthController {
       'app.frontendUrl',
       'http://localhost:3000',
     );
-    const isProduction =
-      this.configService.get<string>('app.nodeEnv') === 'production';
-
-    // Set tokens as HTTP-only cookies instead of URL query params
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 min
-      path: '/',
+    const params = new URLSearchParams({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     });
-    res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/api/v1/auth',
-    });
-
-    return res.redirect(`${frontendUrl}/auth/callback?oauth=success`);
+    return res.redirect(`${frontendUrl}/auth/callback#${params.toString()}`);
   }
 
   @Public()
