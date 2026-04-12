@@ -1,9 +1,10 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, desc, gte, and, isNull } from 'drizzle-orm';
+import { eq, desc, gte, and, isNull, notInArray } from 'drizzle-orm';
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { manga, chapters } from '../../../database/schema/index.js';
+import { NSFW_RATINGS } from '../../../common/utils/content-rating.util.js';
 import type { MangaListItem, PaginatedResult } from '../types/manga.types.js';
 
 const RANKING_TTL = 900; // 15 minutes
@@ -37,7 +38,7 @@ export class RankingService {
     const cached = await this.redis.get(cacheKey);
     if (cached) return JSON.parse(cached) as PaginatedResult<MangaListItem>;
 
-    const where = and(eq(manga.isHot, true), isNull(manga.deletedAt));
+    const where = and(eq(manga.isHot, true), isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS));
     const [rows, total] = await Promise.all([
       this.db
         .select({
@@ -143,28 +144,30 @@ export class RankingService {
         .from(manga)
         .leftJoin(chapters, eq(manga.lastChapterId, chapters.id));
 
+    const safe = and(isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS));
+
     switch (type) {
       case 'daily':
         return join()
-          .where(isNull(manga.deletedAt))
+          .where(safe)
           .orderBy(desc(manga.viewsDay))
           .limit(20) as Promise<MangaListItem[]>;
 
       case 'weekly':
         return join()
-          .where(isNull(manga.deletedAt))
+          .where(safe)
           .orderBy(desc(manga.viewsWeek))
           .limit(20) as Promise<MangaListItem[]>;
 
       case 'alltime':
         return join()
-          .where(isNull(manga.deletedAt))
+          .where(safe)
           .orderBy(desc(manga.views))
           .limit(20) as Promise<MangaListItem[]>;
 
       case 'toprated':
         return join()
-          .where(and(isNull(manga.deletedAt), gte(manga.totalRatings, 10)))
+          .where(and(safe, gte(manga.totalRatings, 10)))
           .orderBy(desc(manga.averageRating))
           .limit(20) as Promise<MangaListItem[]>;
     }

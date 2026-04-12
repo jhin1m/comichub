@@ -63,6 +63,7 @@ services:
     environment:
       HOSTNAME: "0.0.0.0"
       PORT: 3000
+      INTERNAL_API_URL: http://backend:3001/api/v1
     depends_on:
       backend:
         condition: service_healthy

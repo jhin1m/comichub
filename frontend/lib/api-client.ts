@@ -1,6 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
+// Server-side: use internal Docker network URL to bypass Cloudflare/reverse-proxy.
+// Client-side: use the public URL (NEXT_PUBLIC_ vars are baked at build time).
+const BASE_URL =
+  (typeof window === 'undefined' ? process.env.INTERNAL_API_URL : undefined) ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:8080/api/v1';
 
 let _accessToken: string | null = null;
 
