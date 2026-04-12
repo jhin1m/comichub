@@ -8,6 +8,7 @@ import { ArrowRightIcon, BookOpenIcon, CaretLeftIcon, CaretRightIcon, XIcon, Spi
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth.context';
 import { userApi } from '@/lib/api/user.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import { useEmblaNav } from '@/hooks/use-embla-nav';
 import type { HistoryItem } from '@/types/user.types';
 
@@ -105,7 +106,7 @@ export function ContinueReadingStrip() {
           {items.map((entry) => (
             <Link
               key={entry.id}
-              href={entry.chapter ? `/manga/${entry.manga.slug}/${entry.chapter.id}` : `/manga/${entry.manga.slug}`}
+              href={entry.chapter ? `${getMangaUrl(entry.manga)}/${entry.chapter.id}` : getMangaUrl(entry.manga)}
               className="group relative shrink-0 w-[140px] sm:w-[160px] block rounded-lg overflow-hidden bg-elevated"
             >
               {/* Cover with overlay */}

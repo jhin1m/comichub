@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SparkleIcon, CheckCircleIcon } from '@phosphor-icons/react';
 import { formatRelativeDate } from '@/lib/utils';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import type { MangaListItem, MangaType, TaxonomyItem } from '@/types/manga.types';
 import { LatestComments } from '@/components/home/latest-comments';
 import { TrendingTagsWidget } from '@/components/home/trending-tags-widget';
@@ -28,7 +29,7 @@ const TYPE_BADGE: Record<MangaType, string> = {
 function SidebarItem({ item }: { item: MangaListItem }) {
   return (
     <Link
-      href={`/manga/${item.slug}`}
+      href={getMangaUrl(item)}
       className="flex gap-3 py-3 border-b border-default last:border-0 group hover:bg-surface/50 -mx-2 px-2 rounded-md transition-colors duration-150"
     >
       {/* Thumbnail — larger */}

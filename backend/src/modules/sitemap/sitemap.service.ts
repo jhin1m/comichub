@@ -7,6 +7,7 @@ import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { manga } from '../../database/schema/index.js';
 import { isNull } from 'drizzle-orm';
+import { encodeId } from '../../common/utils/short-id.util.js';
 
 @Injectable()
 export class SitemapService {
@@ -52,7 +53,7 @@ export class SitemapService {
 
   private async buildSitemapXml(): Promise<string> {
     const rows = await this.db
-      .select({ slug: manga.slug, updatedAt: manga.updatedAt })
+      .select({ id: manga.id, slug: manga.slug, updatedAt: manga.updatedAt })
       .from(manga)
       .where(isNull(manga.deletedAt))
       .limit(50000);
@@ -62,7 +63,7 @@ export class SitemapService {
         const lastmod = row.updatedAt.toISOString().split('T')[0];
         return [
           '  <url>',
-          `    <loc>${this.appUrl}/manga/${row.slug}</loc>`,
+          `    <loc>${this.appUrl}/manga/${encodeId(row.id)}-${row.slug}</loc>`,
           `    <lastmod>${lastmod}</lastmod>`,
           '    <changefreq>weekly</changefreq>',
           '    <priority>0.8</priority>',

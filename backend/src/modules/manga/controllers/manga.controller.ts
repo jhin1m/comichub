@@ -59,11 +59,11 @@ export class MangaController {
   @Public()
   @Get(':slug')
   @ApiOperation({ summary: 'Get manga detail by slug' })
-  @ApiParam({ name: 'slug', example: 'one-piece' })
+  @ApiParam({ name: 'slug', example: 'ZLYs-one-piece', description: 'ShortId-slug identifier or legacy slug' })
   @ApiResponse({ status: 200, description: 'Manga detail with chapters' })
   @ApiResponse({ status: 404, description: 'Manga not found' })
   findOne(@Param('slug') slug: string, @CurrentUser() user?: JwtPayload) {
-    return this.mangaService.findBySlug(slug, !!user);
+    return this.mangaService.findByIdentifier(slug, !!user);
   }
 
   @ApiBearerAuth()

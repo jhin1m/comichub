@@ -4,6 +4,7 @@ import type Redis from 'ioredis';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { manga, chapters } from '../../../database/schema/index.js';
+import { encodeId } from '../../../common/utils/short-id.util.js';
 import { NSFW_RATINGS } from '../../../common/utils/content-rating.util.js';
 import type { MangaListItem, PaginatedResult } from '../types/manga.types.js';
 
@@ -24,7 +25,7 @@ export class RankingService {
     const cached = await this.redis.get(cacheKey);
     if (cached) return JSON.parse(cached) as MangaListItem[];
 
-    const rows = await this.queryRanking(type);
+    const rows = this.enrichWithShortId(await this.queryRanking(type));
     await this.redis.setex(cacheKey, RANKING_TTL, JSON.stringify(rows));
     return rows;
   }
@@ -66,7 +67,7 @@ export class RankingService {
     ]);
 
     const result: PaginatedResult<MangaListItem> = {
-      data: rows as MangaListItem[],
+      data: this.enrichWithShortId(rows),
       total,
       page,
       limit,
@@ -122,7 +123,11 @@ export class RankingService {
     return keys;
   }
 
-  private async queryRanking(type: RankingType): Promise<MangaListItem[]> {
+  private enrichWithShortId(rows: Omit<MangaListItem, 'shortId'>[]): MangaListItem[] {
+    return rows.map((r) => ({ ...r, shortId: encodeId(r.id) })) as MangaListItem[];
+  }
+
+  private async queryRanking(type: RankingType): Promise<Omit<MangaListItem, 'shortId'>[]> {
     const base = {
       id: manga.id,
       title: manga.title,
@@ -151,25 +156,25 @@ export class RankingService {
         return join()
           .where(safe)
           .orderBy(desc(manga.viewsDay))
-          .limit(20) as Promise<MangaListItem[]>;
+          .limit(20) as Promise<Omit<MangaListItem, 'shortId'>[]>;
 
       case 'weekly':
         return join()
           .where(safe)
           .orderBy(desc(manga.viewsWeek))
-          .limit(20) as Promise<MangaListItem[]>;
+          .limit(20) as Promise<Omit<MangaListItem, 'shortId'>[]>;
 
       case 'alltime':
         return join()
           .where(safe)
           .orderBy(desc(manga.views))
-          .limit(20) as Promise<MangaListItem[]>;
+          .limit(20) as Promise<Omit<MangaListItem, 'shortId'>[]>;
 
       case 'toprated':
         return join()
           .where(and(safe, gte(manga.totalRatings, 10)))
           .orderBy(desc(manga.averageRating))
-          .limit(20) as Promise<MangaListItem[]>;
+          .limit(20) as Promise<Omit<MangaListItem, 'shortId'>[]>;
     }
   }
 }

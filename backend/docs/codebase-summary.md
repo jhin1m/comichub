@@ -43,7 +43,7 @@ src/
     ├── filters/            # HttpExceptionFilter
     ├── interceptors/       # TransformInterceptor (wraps responses)
     ├── dto/                # PaginationDto, ApiResponseDto
-    └── utils/              # slugify()
+    └── utils/              # slugify(), short-id (encodeId, decodeId, parseIdentifier)
 
 Config Files:
 ├── .env.example            # Template for env vars
@@ -92,6 +92,9 @@ Config Files:
 - **DTO:** PaginationDto (page, limit with defaults/validation)
 - **DTO:** ApiResponseDto (Swagger response shape)
 - **Util:** slugify() converts text → kebab-case slug
+- **Util:** encodeId() converts numeric ID to Base62 shortId
+- **Util:** decodeId() converts Base62 shortId back to numeric ID
+- **Util:** parseIdentifier() resolves URL params to id-first or slug-fallback lookup
 
 ## Response Format
 
@@ -161,6 +164,8 @@ HttpExceptionFilter catches all exceptions:
 
 **User Domain:** 2 tables (users, user_profiles)
 **Manga Domain:** 11 tables (manga + 4 lookup + 4 pivots + chapters + chapter_images)
+  - API responses include `shortId: string` field (Base62-encoded ID for URL building)
+  - `MangaService.findByIdentifier()` resolves hybrid `{shortId}-{slug}` URLs
 **Community Domain:** 7 tables (comments, ratings, follows, reading_history, reports, stickers)
 **Gamification Domain:** 4 tables (achievements, pets, reading_streaks + user relations)
 **Notification Domain:** 2 tables (notifications, preferences)

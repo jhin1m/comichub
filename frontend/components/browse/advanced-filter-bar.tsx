@@ -5,6 +5,7 @@ import { genreApi } from '@/lib/api/genre.api';
 import { artistApi } from '@/lib/api/artist.api';
 import { authorApi } from '@/lib/api/author.api';
 import { mangaApi } from '@/lib/api/manga.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import { FilterDropdown } from '@/components/browse/filter-dropdown';
 import { GenreFilter } from '@/components/browse/genre-filter';
 import { SearchableSelect } from '@/components/browse/searchable-select';
@@ -159,8 +160,8 @@ export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: Adv
   const handleFeelLucky = useCallback(async () => {
     setIsRandomLoading(true);
     try {
-      const { slug } = await mangaApi.random();
-      router.push(`/manga/${slug}`);
+      const data = await mangaApi.random();
+      router.push(getMangaUrl(data));
     } catch {
       // fallback: do nothing if API fails
     } finally {

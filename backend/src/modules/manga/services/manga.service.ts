@@ -38,6 +38,7 @@ import {
   chapterGroups,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
+import { encodeId, parseIdentifier } from '../../../common/utils/short-id.util.js';
 import { NSFW_RATINGS } from '../../../common/utils/content-rating.util.js';
 import { MemoryCache } from '../../../common/utils/memory-cache.util.js';
 import { CreateMangaDto, MangaType } from '../dto/create-manga.dto.js';
@@ -267,9 +268,14 @@ export class MangaService {
       this.db.$count(manga, where),
     ]);
 
-    const result = { data: rows as MangaListItem[], total: countResult, page, limit };
+    const result = { data: this.enrichWithShortId(rows), total: countResult, page, limit };
     this.listCache.set(cacheKey, result);
     return result;
+  }
+
+  /** Add computed shortId to raw manga rows */
+  private enrichWithShortId(rows: Omit<MangaListItem, 'shortId'>[]): MangaListItem[] {
+    return rows.map((r) => ({ ...r, shortId: encodeId(r.id) })) as MangaListItem[];
   }
 
   async findMangaByGroup(
@@ -335,13 +341,13 @@ export class MangaService {
 
     return {
       group: { ...groupRow, titleCount, releaseCount },
-      manga: { data: rows as MangaListItem[], total: titleCount, page, limit },
+      manga: { data: this.enrichWithShortId(rows), total: titleCount, page, limit },
     };
   }
 
-  async findRandom(): Promise<{ slug: string }> {
+  async findRandom(): Promise<{ id: number; slug: string }> {
     const [row] = await this.db
-      .select({ slug: manga.slug })
+      .select({ id: manga.id, slug: manga.slug })
       .from(manga)
       .where(
         and(isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS)),
@@ -349,28 +355,71 @@ export class MangaService {
       .orderBy(sql`RANDOM()`)
       .limit(1);
     if (!row) throw new NotFoundException('No manga found');
-    return { slug: row.slug };
+    return { id: row.id, slug: row.slug };
   }
 
-  async findBySlug(
-    slug: string,
+  async findByIdentifier(
+    param: string,
     isAuthenticated = false,
   ): Promise<MangaDetail> {
-    const cacheKey = `slug:${slug}:${isAuthenticated}`;
-    const cachedDetail = this.slugCache.get(cacheKey);
-    if (cachedDetail) return cachedDetail;
+    const parsed = parseIdentifier(param);
 
-    const whereConditions = [eq(manga.slug, slug), isNull(manga.deletedAt)];
+    // Try ID-based lookup first (shortId path)
+    if (parsed.type === 'id') {
+      const cacheKey = `id:${parsed.value}:${isAuthenticated}`;
+      const cached = this.slugCache.get(cacheKey);
+      if (cached) return cached;
+
+      const m = await this.findMangaRow({ type: 'id', value: parsed.value }, isAuthenticated);
+      if (m) {
+        const detail = await this.loadMangaRelations(m);
+        this.slugCache.set(cacheKey, detail);
+        return detail;
+      }
+      // Fall through to slug lookup if ID not found
+      // (param might be a real slug starting with valid base62)
+    }
+
+    // Slug-based lookup (legacy or fallback)
+    const slugValue = parsed.type === 'slug' ? parsed.value : param;
+    const cacheKey = `slug:${slugValue}:${isAuthenticated}`;
+    const cached = this.slugCache.get(cacheKey);
+    if (cached) return cached;
+
+    const m = await this.findMangaRow({ type: 'slug', value: slugValue }, isAuthenticated);
+    if (!m) throw new NotFoundException('Manga not found');
+
+    const detail = await this.loadMangaRelations(m);
+    this.slugCache.set(cacheKey, detail);
+    // Also cache by id to prevent duplicate entries
+    this.slugCache.set(`id:${m.id}:${isAuthenticated}`, detail);
+    return detail;
+  }
+
+  /** Find a manga row by id or slug */
+  private async findMangaRow(
+    lookup: { type: 'id'; value: number } | { type: 'slug'; value: string },
+    isAuthenticated: boolean,
+  ) {
+    const conditions = [
+      lookup.type === 'id' ? eq(manga.id, lookup.value) : eq(manga.slug, lookup.value),
+      isNull(manga.deletedAt),
+    ];
     if (!isAuthenticated) {
-      whereConditions.push(notInArray(manga.contentRating, NSFW_RATINGS));
+      conditions.push(notInArray(manga.contentRating, NSFW_RATINGS));
     }
     const [m] = await this.db
       .select()
       .from(manga)
-      .where(and(...whereConditions))
+      .where(and(...conditions))
       .limit(1);
-    if (!m) throw new NotFoundException('Manga not found');
+    return m ?? null;
+  }
 
+  /** Load all relations for a manga row and return MangaDetail with shortId */
+  private async loadMangaRelations(
+    m: typeof manga.$inferSelect,
+  ): Promise<MangaDetail> {
     const [genreList, artistList, authorList, groupList, chapterList] =
       await Promise.all([
         this.db
@@ -440,16 +489,15 @@ export class MangaService {
       groups: groupsByChapter.get(ch.id) ?? [],
     }));
 
-    const detail = {
+    return {
       ...m,
+      shortId: encodeId(m.id),
       genres: genreList,
       artists: artistList,
       authors: authorList,
       groups: groupList,
       chapters: chaptersWithGroups as unknown as MangaDetail['chapters'],
     } as unknown as MangaDetail;
-    this.slugCache.set(cacheKey, detail);
-    return detail;
   }
 
   async create(dto: CreateMangaDto): Promise<MangaDetail> {
@@ -488,7 +536,7 @@ export class MangaService {
 
     await this.syncPivots(created.id, dto);
     this.listCache.clear();
-    return this.findBySlug(created.slug);
+    return this.findByIdentifier(created.slug);
   }
 
   async update(id: number, dto: UpdateMangaDto): Promise<MangaDetail> {
@@ -524,8 +572,8 @@ export class MangaService {
     if (existing.slug !== updated.slug) {
       this.invalidateCaches(existing.slug);
     }
-    this.eventEmitter.emit('manga.updated', { slug: updated.slug });
-    return this.findBySlug(updated.slug);
+    this.eventEmitter.emit('manga.updated', { id: updated.id, slug: updated.slug });
+    return this.findByIdentifier(updated.slug);
   }
 
   async remove(id: number): Promise<void> {
@@ -541,7 +589,7 @@ export class MangaService {
       .set({ deletedAt: new Date() })
       .where(eq(manga.id, id));
 
-    this.eventEmitter.emit('manga.updated', { slug: existing.slug });
+    this.eventEmitter.emit('manga.updated', { id: existing.id, slug: existing.slug });
   }
 
   private async syncPivots(
@@ -593,13 +641,14 @@ export class MangaService {
   }
 
   @OnEvent('manga.updated')
-  handleMangaUpdated(event: { slug: string }): void {
-    this.slugCache.invalidate(`slug:${event.slug}`);
+  handleMangaUpdated(event: { id: number; slug: string }): void {
+    this.slugCache.invalidate(`slug:${event.slug}:`);
+    this.slugCache.invalidate(`id:${event.id}:`);
     this.listCache.clear();
   }
 
   private invalidateCaches(slug: string): void {
-    this.slugCache.invalidate(`slug:${slug}`);
+    this.slugCache.invalidate(`slug:${slug}:`);
     this.listCache.clear();
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, Inject, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import type Redis from 'ioredis';
 import type { NewChapterEvent } from '../modules/notification/events/new-chapter.event.js';
+import { encodeId } from '../common/utils/short-id.util.js';
 
 @Injectable()
 export class CacheInvalidationJob {
@@ -19,8 +20,11 @@ export class CacheInvalidationJob {
   }
 
   @OnEvent('manga.updated')
-  async onMangaUpdated(event: { slug: string }): Promise<void> {
-    await this.redis.del(`cache:/api/v1/manga/${event.slug}`);
+  async onMangaUpdated(event: { id: number; slug: string }): Promise<void> {
+    await Promise.allSettled([
+      this.redis.del(`cache:/api/v1/manga/${encodeId(event.id)}-${event.slug}`),
+      this.redis.del(`cache:/api/v1/manga/${event.slug}`),
+    ]);
     await this.deleteByPattern('cache:/api/v1/manga?*');
     this.logger.debug(`Invalidated cache for manga ${event.slug}`);
   }

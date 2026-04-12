@@ -8,6 +8,7 @@ import { ArrowRightIcon, HeartIcon, CaretLeftIcon, CaretRightIcon, XIcon, Spinne
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth.context';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import { useEmblaNav } from '@/hooks/use-embla-nav';
 import type { BookmarkItem } from '@/types/bookmark.types';
 
@@ -107,8 +108,8 @@ export function FollowListStrip() {
               key={entry.id}
               href={
                 entry.readingProgress?.currentChapterId
-                  ? `/manga/${entry.manga.slug}/${entry.readingProgress.currentChapterId}`
-                  : `/manga/${entry.manga.slug}`
+                  ? `${getMangaUrl(entry.manga)}/${entry.readingProgress.currentChapterId}`
+                  : getMangaUrl(entry.manga)
               }
               className="group relative shrink-0 w-[140px] sm:w-[160px] block rounded-lg overflow-hidden bg-elevated"
             >

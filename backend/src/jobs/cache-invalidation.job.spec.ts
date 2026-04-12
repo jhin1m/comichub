@@ -60,13 +60,18 @@ describe('CacheInvalidationJob', () => {
   });
 
   describe('onMangaUpdated()', () => {
-    it('should delete specific slug key and scan list pattern', async () => {
+    it('should delete both new-format and legacy cache keys', async () => {
       mockRedis.scan.mockResolvedValue(['0', []]);
 
       await expect(
-        job.onMangaUpdated({ slug: 'one-piece' }),
+        job.onMangaUpdated({ id: 1, slug: 'one-piece' }),
       ).resolves.not.toThrow();
 
+      // new shortId-slug format: encodeId(1) = '1'
+      expect(mockRedis.del).toHaveBeenCalledWith(
+        'cache:/api/v1/manga/1-one-piece',
+      );
+      // legacy slug-only format
       expect(mockRedis.del).toHaveBeenCalledWith(
         'cache:/api/v1/manga/one-piece',
       );
@@ -78,10 +83,10 @@ describe('CacheInvalidationJob', () => {
         ['cache:/api/v1/manga?page=1'],
       ]);
 
-      await job.onMangaUpdated({ slug: 'naruto' });
+      await job.onMangaUpdated({ id: 2, slug: 'naruto' });
 
-      // del called once for slug key + once inside deleteByPattern for list key
-      expect(mockRedis.del.mock.calls.length).toBeGreaterThanOrEqual(1);
+      // del called for both keys + once inside deleteByPattern for list key
+      expect(mockRedis.del.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import type { BookmarkItem, BookmarkFolder } from '@/types/bookmark.types';
 
 function timeAgo(date: string | null): string {
@@ -126,8 +127,8 @@ export function BookmarkTable({
               }
             : {
                 href: item.readingProgress?.currentChapterId
-                  ? `/manga/${item.manga.slug}/${item.readingProgress.currentChapterId}`
-                  : `/manga/${item.manga.slug}`,
+                  ? `${getMangaUrl(item.manga)}/${item.readingProgress.currentChapterId}`
+                  : getMangaUrl(item.manga),
                 className:
                   'group relative block rounded-lg bg-surface border border-default overflow-hidden hover:border-accent transition-colors',
               };
@@ -259,7 +260,7 @@ export function BookmarkTable({
                 )}
               </div>
             ) : (
-              <Link href={`/manga/${item.manga.slug}`} className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated">
+              <Link href={getMangaUrl(item.manga)} className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-elevated">
                 {item.manga.cover ? (
                   <Image src={item.manga.cover} alt={item.manga.title} fill className="object-cover" sizes="40px" />
                 ) : (
@@ -275,7 +276,7 @@ export function BookmarkTable({
                   {item.manga.title}
                 </span>
               ) : (
-                <Link href={`/manga/${item.manga.slug}`} className="text-sm font-medium text-primary hover:text-accent transition-colors line-clamp-1">
+                <Link href={getMangaUrl(item.manga)} className="text-sm font-medium text-primary hover:text-accent transition-colors line-clamp-1">
                   {item.manga.title}
                 </Link>
               )}

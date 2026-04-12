@@ -190,19 +190,19 @@ describe('MangaService', () => {
     });
   });
 
-  // ─── findBySlug ────────────────────────────────────────────────────
+  // ─── findByIdentifier ──────────────────────────────────────────────
 
-  describe('findBySlug()', () => {
+  describe('findByIdentifier()', () => {
     it('should throw NotFoundException when manga not found', async () => {
       // First select returns empty array (manga not found)
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.findBySlug('nonexistent-slug')).rejects.toThrow(
+      await expect(service.findByIdentifier('nonexistent-slug')).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should return manga with relations when found', async () => {
+    it('should return manga with relations when found by slug', async () => {
       const mangaRow = {
         id: 1,
         title: 'One Piece',
@@ -217,9 +217,9 @@ describe('MangaService', () => {
         return buildChain([]); // genres, artists, authors, groups, chapters
       });
 
-      const result = await service.findBySlug('one-piece');
+      const result = await service.findByIdentifier('one-piece');
 
-      expect(result).toMatchObject({ id: 1, title: 'One Piece' });
+      expect(result).toMatchObject({ id: 1, title: 'One Piece', shortId: '1' });
       expect(result.genres).toEqual([]);
     });
   });
@@ -248,7 +248,7 @@ describe('MangaService', () => {
         selectCall++;
         // 1st: slug check (empty = not taken)
         if (selectCall === 1) return buildChain([]);
-        // 2nd: findBySlug → manga row
+        // 2nd: findByIdentifier → manga row
         if (selectCall === 2)
           return buildChain([{ ...created, deletedAt: null }]);
         return buildChain([]); // relations
@@ -308,7 +308,7 @@ describe('MangaService', () => {
         selectCall++;
         if (selectCall === 1) return buildChain([existing]); // existence check
         if (selectCall === 2)
-          return buildChain([{ ...updated, deletedAt: null }]); // findBySlug
+          return buildChain([{ ...updated, deletedAt: null }]); // findByIdentifier
         return buildChain([]); // relations
       });
 

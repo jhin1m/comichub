@@ -27,7 +27,7 @@ export default async function ChapterReaderPage({ params }: Props) {
         <JsonLd data={buildBreadcrumbJsonLd([
           { name: 'Home', url: SITE_URL },
           { name: chapter.mangaTitle, url: `${SITE_URL}/manga/${slug}` },
-          { name: `Ch. ${chapter.number}`, url: `${SITE_URL}/manga/${slug}/${chapterId}` },
+          { name: `Ch. ${chapter.number}`, url: `${SITE_URL}/manga/${slug}/${chapter.id}` },
         ])} />
         <ChapterReader
           chapter={chapter}

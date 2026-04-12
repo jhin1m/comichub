@@ -362,6 +362,18 @@ ConfigService.get('app.port', default)
 - `vitest.config.ts` — Test runner
 - `.env.example` — Environment template
 
+## Manga URL Routing
+
+URLs use hybrid shortId-slug format for both readability and SEO:
+- **Format:** `/manga/{shortId}-{slug}` (e.g., `/manga/ZLYs-one-piece`)
+- **Encoding:** `encodeId(manga.id)` converts numeric ID to Base62 shortId (max 5 chars covers ~916M IDs)
+- **Resolution:** `MangaService.findByIdentifier(param)` tries:
+  1. Extract shortId from `{shortId}-{slug}` (if prefix ≤ 5 chars and valid Base62)
+  2. Fallback to bare shortId (if param ≤ 5 chars and valid Base62)
+  3. Fallback to slug (legacy format, still supported)
+- **Backward Compatibility:** Old slug-only URLs (`/manga/one-piece`) still work
+- **Utilities:** `short-id.util.ts` exports `encodeId()`, `decodeId()`, `parseIdentifier()`
+
 ## Phase 3+ Preview
 
 CRUD modules will implement services using fully-typed DrizzleDB:
@@ -370,7 +382,7 @@ src/
 ├── modules/
 │   ├── auth/           ← JWT + Passport (Phase 3)
 │   ├── users/          ← User CRUD + profiles
-│   ├── mangas/         ← Manga CRUD + genres/artists
+│   ├── manga/          ← Manga CRUD + genres/artists (with shortId URL routing)
 │   ├── chapters/       ← Chapter management + images
 │   ├── comments/       ← Polymorphic comments + nested replies
 │   ├── ratings/        ← Manga ratings & reviews

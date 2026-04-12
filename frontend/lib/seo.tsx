@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://comichub.app';
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || 'ComicHub';
@@ -89,6 +90,7 @@ export function buildOrganizationJsonLd() {
 
 /** CreativeWork schema for manga detail page */
 export function buildMangaJsonLd(manga: {
+  id: number;
   title: string;
   slug: string;
   description: string | null;
@@ -102,7 +104,7 @@ export function buildMangaJsonLd(manga: {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
     name: manga.title,
-    url: `${SITE_URL}/manga/${manga.slug}`,
+    url: `${SITE_URL}${getMangaUrl(manga)}`,
     description: manga.description ?? undefined,
     image: manga.cover ?? undefined,
     author: manga.authors.map((a) => ({ '@type': 'Person', name: a.name })),

@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 import { CaretLeft, CaretRight, Users } from '@phosphor-icons/react/ssr';
 import { groupApi } from '@/lib/api/manga.api';
 import { buildMeta, SITE_NAME } from '@/lib/seo';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import { Badge } from '@/components/ui/badge';
 import PageWrapper from '@/components/layout/page-wrapper';
 import { formatRelativeDate, formatCount, statusVariant } from '@/lib/utils';
@@ -115,7 +116,7 @@ interface MangaRowProps {
 function MangaRow({ manga }: MangaRowProps) {
   return (
     <Link
-      href={`/manga/${manga.slug}`}
+      href={getMangaUrl(manga)}
       className="flex items-center gap-3 px-4 py-3 border-b border-default/40 hover:bg-hover transition-colors group"
     >
       {/* Cover thumbnail */}

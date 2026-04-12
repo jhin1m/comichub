@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { StarIcon, BooksIcon, SparkleIcon } from '@phosphor-icons/react';
 import { mangaApi } from '@/lib/api/manga.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import type { MangaListItem, TaxonomyItem } from '@/types/manga.types';
 
 interface Props {
@@ -81,7 +82,7 @@ export function SimilarManga({ genres, currentMangaId }: Props) {
           {items.map((item) => (
             <li key={item.id}>
               <Link
-                href={`/manga/${item.slug}`}
+                href={getMangaUrl(item)}
                 className="flex gap-3 p-2 rounded-sm hover:bg-elevated transition-colors duration-150 group cursor-pointer"
               >
                 {/* Cover thumbnail */}

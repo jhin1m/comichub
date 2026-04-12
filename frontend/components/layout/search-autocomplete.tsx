@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react';
 import { searchApi, type SuggestItem } from '@/lib/api/search.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 
 export function SearchAutocomplete() {
   const router = useRouter();
@@ -105,7 +106,7 @@ export function SearchAutocomplete() {
     setOpen(false);
     setMobileOpen(false);
     setQuery('');
-    router.push(`/manga/${item.slug}`);
+    router.push(getMangaUrl(item));
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

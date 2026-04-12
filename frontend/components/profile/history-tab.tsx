@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { formatRelativeDate } from '@/lib/utils';
 import { userApi } from '@/lib/api/user.api';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import type { HistoryItem } from '@/types/user.types';
 
 interface HistoryTabProps {
@@ -200,8 +201,8 @@ export function HistoryTab({ items, onRemoved }: HistoryTabProps) {
                 }
               : {
                   href: entry.chapter
-                    ? `/manga/${entry.manga.slug}/${entry.chapter.id}`
-                    : `/manga/${entry.manga.slug}`,
+                    ? `${getMangaUrl(entry.manga)}/${entry.chapter.id}`
+                    : getMangaUrl(entry.manga),
                   className:
                     'group relative block rounded-lg bg-surface border border-default overflow-hidden hover:border-accent transition-colors',
                 };

@@ -3,6 +3,7 @@ export type MangaType = 'manga' | 'manhwa' | 'manhua' | 'doujinshi';
 
 export interface MangaListItem {
   id: number;
+  shortId: string;
   title: string;
   slug: string;
   cover: string | null;

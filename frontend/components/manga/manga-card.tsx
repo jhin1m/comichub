@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { EyeIcon } from '@phosphor-icons/react/ssr';
 import { formatRelativeDate, formatCount } from '@/lib/utils';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import { QuickBookmarkButton } from '@/components/manga/quick-bookmark-button';
 import type { MangaListItem } from '@/types/manga.types';
 
@@ -69,7 +70,7 @@ export const MangaCard = memo(function MangaCard({ item, rank }: Props) {
   const rankStyle = rank ? (RANK_STYLES[rank] ?? RANK_DEFAULT) : null;
 
   return (
-    <Link href={`/manga/${item.slug}`} className="group block cursor-pointer">
+    <Link href={getMangaUrl(item)} className="group block cursor-pointer">
       {/* Cover */}
       <div className="relative aspect-2/3 rounded overflow-hidden bg-surface border border-default mb-2">
         {item.cover ? (

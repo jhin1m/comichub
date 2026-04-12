@@ -51,13 +51,14 @@ No lint or test scripts configured in frontend yet.
 - **Path alias**: `@/*` maps to `./src/*` (tsconfig paths)
 - **Module resolution**: `nodenext` — all local imports use `.js` extension
 - **Test framework**: Vitest with SWC plugin. Test files: `*.spec.ts` co-located with source. Setup: `tests/setup.ts`. Integration tests in `tests/integration/`
+- **Manga URLs**: Hybrid shortId-slug format `/manga/{shortId}-{slug}` (e.g., `/manga/ZLYs-one-piece`). Backend: `MangaService.findByIdentifier()` resolves both formats (id-first, slug-fallback). Frontend: `getMangaUrl({ id, slug })` builds URLs. Backward compatible with legacy slug-only URLs.
 
 **Backend modules:**
 | Module | Purpose |
 |---|---|
 | `auth` | JWT auth, Google OAuth, login/register/refresh |
 | `user` | User CRUD, profiles, admin user management, reading history |
-| `manga` | Manga, chapters, chapter images, artists/authors/genres/groups, view tracking, rankings |
+| `manga` | Manga, chapters, chapter images, artists/authors/genres/groups, view tracking, rankings. `MangaListItem` responses include `shortId: string` field. |
 | `community` | Comments, ratings, follows, reports, stickers |
 | `search` | Full-text search with query DTOs |
 | `notification` | In-app notification events |

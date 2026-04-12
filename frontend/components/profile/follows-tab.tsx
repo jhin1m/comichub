@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Heart } from '@phosphor-icons/react/ssr';
 import { Badge } from '@/components/ui/badge';
 import { statusVariant } from '@/lib/utils';
+import { getMangaUrl } from '@/lib/utils/manga-url';
 import type { FollowItem } from '@/types/user.types';
 
 interface FollowsTabProps {
@@ -25,7 +26,7 @@ export function FollowsTab({ items }: FollowsTabProps) {
       {items.map((item) => (
         <Link
           key={item.id}
-          href={`/manga/${item.manga.slug}`}
+          href={getMangaUrl(item.manga)}
           className="group block"
         >
           <div className="relative aspect-[2/3] rounded-[4px] overflow-hidden bg-surface border border-default transition-transform duration-150 ease-out group-hover:-translate-y-1 group-hover:border-accent">
