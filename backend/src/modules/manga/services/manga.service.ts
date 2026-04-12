@@ -262,7 +262,7 @@ export class MangaService {
         .from(manga)
         .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
         .where(where)
-        .orderBy(orderBy)
+        .orderBy(orderBy, desc(manga.id))
         .limit(limit)
         .offset(offset),
       this.db.$count(manga, where),

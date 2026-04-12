@@ -11,4 +11,5 @@ node_modules/
 *.pem
 *.key
 deploy/certs/
+deploy/servers.json
 .DS_Store
