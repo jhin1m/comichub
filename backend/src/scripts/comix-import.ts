@@ -8,6 +8,7 @@
  *   pnpm run import:comix -- --from 1 --to 10              # pages 1-10
  *   pnpm run import:comix -- --lang vi                     # Vietnamese chapters only
  *   pnpm run import:comix -- --type manhwa --from 1 --to 5 # manhwa only
+ *   pnpm run import:comix -- --resume                       # skip manga with no new chapters
  *   pnpm run import:comix -- --dry                         # preview without importing
  */
 import {
@@ -24,6 +25,7 @@ const LIMIT = parseInt(flag('limit', '100'), 10);
 const LANG = flag('lang', 'all');
 const SEARCH = flag('search', '');
 const TYPE = flag('type', '');
+const RESUME = hasFlag('resume');
 const DRY_RUN = hasFlag('dry');
 
 const BASE = 'https://comix.to/api/v2';
@@ -303,6 +305,7 @@ async function main() {
     `lang=${langLabel}`,
     SEARCH && `search="${SEARCH}"`,
     TYPE && `type=${TYPE}`,
+    RESUME && 'RESUME',
     DRY_RUN && 'DRY RUN',
   ].filter(Boolean).join(', ');
   console.log(`\nComix.to Import — ${filters}\n`);
@@ -365,6 +368,18 @@ async function main() {
         if (isNew) imported++; else skipped++;
         console.log(`${tag} ${raw.title} → id:${mangaId} (no chapters)`);
         continue;
+      }
+
+      // --resume: skip manga whose source hasn't updated since last import
+      if (RESUME && !isNew) {
+        const [local] = await db.select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
+          .from(schema.manga).where(eq(schema.manga.id, mangaId)).limit(1);
+        const sourceUpdated = unixToDate(raw.chapter_updated_at);
+        if (local?.chapterUpdatedAt && sourceUpdated && local.chapterUpdatedAt >= sourceUpdated) {
+          skipped++;
+          console.log(`${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`);
+          continue;
+        }
       }
 
       const r = await importChapters(mangaId, raw.hash_id);
