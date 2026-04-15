@@ -11,9 +11,10 @@
  *   pnpm run import:comix -- --resume                       # skip manga with no new chapters
  *   pnpm run import:comix -- --dry                         # preview without importing
  */
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import {
   db, schema, sqlClient, flag, hasFlag, apiFetch, upsertManga,
-  resolveByName, eq, and, desc, count,
+  resolveByName, sleep, eq, and, desc, count,
 } from './import-utils.js';
 import { nsfwToContentRating } from '../common/utils/content-rating.util.js';
 import { signUrl, signedFetch } from './comix-sign.js';
@@ -27,6 +28,16 @@ const SEARCH = flag('search', '');
 const TYPE = flag('type', '');
 const RESUME = hasFlag('resume');
 const DRY_RUN = hasFlag('dry');
+
+// Random jitter (default 400-1200ms) — override via --jitter-min / --jitter-max
+const JITTER_MIN = parseInt(flag('jitter-min', '400'), 10);
+const JITTER_MAX = parseInt(flag('jitter-max', '1200'), 10);
+const JITTER: [number, number] = [JITTER_MIN, JITTER_MAX];
+
+// Checkpoint — persist page progress across restarts
+const CHECKPOINT_FILE = flag('checkpoint-file', './comix-checkpoint.json');
+const RESET_CHECKPOINT = hasFlag('reset-checkpoint');
+const HEALTH_INTERVAL = parseInt(flag('health-interval', '0'), 10); // pages between re-checks (0 = only at start)
 
 const BASE = 'https://comix.to/api/v2';
 const SOURCE = 'comix';
@@ -96,7 +107,7 @@ function resolveTermIds(termIds: number[]): {
 }
 
 function api<T>(path: string) {
-  return apiFetch<T>(BASE, path);
+  return apiFetch<T>(BASE, path, { jitter: JITTER });
 }
 
 function normalizeStatus(status?: string): string {
@@ -193,7 +204,7 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
 
   while (hasMore) {
     // Chapters endpoint requires signed URL (Comix.to anti-bot protection)
-    const data = await signedFetch<any>(`/manga/${hashId}/chapters`, { limit: 100, page });
+    const data = await signedFetch<any>(`/manga/${hashId}/chapters`, { limit: 100, page }, { jitter: JITTER });
     const items = data.result?.items ?? [];
 
     const filtered = LANG === 'all'
@@ -297,23 +308,87 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
   return { chapters: totalChapters, images: totalImages };
 }
 
+// ─── Checkpoint ──────────────────────────────────────────────────
+interface Checkpoint {
+  startedAt: string;
+  lastCompletedPage: number;
+  stats: { imported: number; skipped: number; failed: number; chapters: number; images: number };
+}
+
+function emptyCheckpoint(): Checkpoint {
+  return {
+    startedAt: new Date().toISOString(),
+    lastCompletedPage: PAGE_FROM - 1,
+    stats: { imported: 0, skipped: 0, failed: 0, chapters: 0, images: 0 },
+  };
+}
+
+function loadCheckpoint(): Checkpoint {
+  if (RESET_CHECKPOINT) {
+    try { unlinkSync(CHECKPOINT_FILE); } catch { /* no-op */ }
+    return emptyCheckpoint();
+  }
+  try {
+    const parsed = JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')) as Checkpoint;
+    if (typeof parsed?.lastCompletedPage === 'number' && parsed.stats) return parsed;
+  } catch { /* corrupt or missing — start fresh */ }
+  return emptyCheckpoint();
+}
+
+function saveCheckpoint(cp: Checkpoint): void {
+  const tmp = `${CHECKPOINT_FILE}.tmp`;
+  writeFileSync(tmp, JSON.stringify(cp, null, 2));
+  renameSync(tmp, CHECKPOINT_FILE); // atomic
+}
+
+// ─── Pre-flight health check ─────────────────────────────────────
+async function healthCheck(): Promise<boolean> {
+  const MAX_RETRIES = 3;
+  const BACKOFF = [2000, 4000, 8000];
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      await signUrl('/manga/test/chapters'); // signing module OK
+      const res = await fetch(`${BASE}/manga?limit=1&page=1`);
+      if (res.ok) return true;
+      console.warn(`  Health check attempt ${attempt + 1}: API ${res.status}`);
+    } catch (err: any) {
+      console.warn(`  Health check attempt ${attempt + 1}: ${err.message}`);
+    }
+    if (attempt < MAX_RETRIES - 1) await sleep(BACKOFF[attempt]);
+  }
+  return false;
+}
+
 // ─── Main ────────────────────────────────────────────────────────
 async function main() {
   const langLabel = LANG === 'all' ? 'all languages' : LANG;
   const filters = [
     `pages ${PAGE_FROM}-${PAGE_TO}`,
     `lang=${langLabel}`,
+    `jitter=${JITTER_MIN}-${JITTER_MAX}ms`,
     SEARCH && `search="${SEARCH}"`,
     TYPE && `type=${TYPE}`,
     RESUME && 'RESUME',
     DRY_RUN && 'DRY RUN',
+    process.env.USE_SCRAPFLY === '1' && 'SCRAPFLY',
   ].filter(Boolean).join(', ');
   console.log(`\nComix.to Import — ${filters}\n`);
 
-  // Pre-load the signing module (fail fast if Comix.to changed their JS)
-  console.log('  Loading Comix.to signing module...');
-  await signUrl('/manga/test/chapters');
-  console.log('  Signing module ready.\n');
+  // Pre-flight health check — validate signing + API before doing any work
+  console.log('  Running pre-flight health check...');
+  if (!(await healthCheck())) {
+    console.error('  Health check FAILED after retries. Exiting with code 2.');
+    await sqlClient.end();
+    process.exit(2);
+  }
+  console.log('  Health OK.\n');
+
+  // Load checkpoint (may be empty)
+  const cp = loadCheckpoint();
+  if (cp.lastCompletedPage >= PAGE_FROM) {
+    console.log(`  Resuming from checkpoint: last completed page ${cp.lastCompletedPage}`);
+    console.log(`    stats so far: ${JSON.stringify(cp.stats)}\n`);
+  }
 
   // Build query params — order by recently updated by default
   const params = new URLSearchParams();
@@ -322,81 +397,96 @@ async function main() {
   if (SEARCH) params.set('search', SEARCH);
   if (TYPE) params.set('type', TYPE);
 
-  // Collect manga from pages
-  const mangaList: any[] = [];
-  const seenIds = new Set<string>();
+  // Per-page processing with checkpoint after each page
+  const startPage = Math.max(PAGE_FROM, cp.lastCompletedPage + 1);
 
-  for (let page = PAGE_FROM; page <= PAGE_TO; page++) {
-    params.set('page', String(page));
-    const data = await api<any>(`/manga?${params.toString()}`);
-    const items = data.result?.items ?? [];
-    if (!items.length) { console.log(`  Page ${page}: empty, stopping.`); break; }
-
-    for (const m of items) {
-      if (!seenIds.has(m.hash_id)) {
-        seenIds.add(m.hash_id);
-        mangaList.push(m);
+  for (let page = startPage; page <= PAGE_TO; page++) {
+    // Periodic re-health-check between pages
+    if (HEALTH_INTERVAL > 0 && page > startPage && (page - startPage) % HEALTH_INTERVAL === 0) {
+      if (!(await healthCheck())) {
+        console.error(`  Health check FAILED mid-run at page ${page}. Exiting with code 2.`);
+        await sqlClient.end();
+        process.exit(2);
       }
     }
 
+    params.set('page', String(page));
+    let data: any;
+    try {
+      data = await api<any>(`/manga?${params.toString()}`);
+    } catch (err: any) {
+      console.error(`  Page ${page} fetch FAILED: ${err.message}. Aborting.`);
+      await sqlClient.end();
+      process.exit(1);
+    }
+    const items = data.result?.items ?? [];
+    if (!items.length) {
+      console.log(`  Page ${page}: empty, stopping.`);
+      break;
+    }
     const pagination = data.result?.pagination;
     const totalPages = pagination?.last_page ?? '?';
-    console.log(`  Page ${page}/${totalPages}: +${items.length}, ${mangaList.length} unique total`);
+    console.log(`\n  Page ${page}/${totalPages}: ${items.length} items`);
 
-    if (pagination && page >= pagination.last_page) break;
-  }
+    if (DRY_RUN) {
+      items.forEach((m: any, i: number) =>
+        console.log(`    ${i + 1}. [${m.hash_id}] ${m.title} (${m.type}, ${m.status})`),
+      );
+    } else {
+      for (let i = 0; i < items.length; i++) {
+        const raw = items[i];
+        const tag = `    [p${page} ${i + 1}/${items.length}]`;
 
-  console.log(`\nFound ${mangaList.length} manga to import\n`);
+        try {
+          const { mangaId, isNew } = await importOneManga(raw);
 
-  if (DRY_RUN) {
-    mangaList.forEach((m, i) => console.log(`  ${i + 1}. [${m.hash_id}] ${m.title} (${m.type}, ${m.status})`));
-    console.log('\n(dry run)');
-    await sqlClient.end();
-    return;
-  }
+          if (!raw.has_chapters) {
+            if (isNew) cp.stats.imported++; else cp.stats.skipped++;
+            console.log(`${tag} ${raw.title} → id:${mangaId} (no chapters)`);
+            continue;
+          }
 
-  let imported = 0, skipped = 0, failed = 0, totalCh = 0, totalImg = 0;
+          // --resume: skip manga whose source hasn't updated since last import
+          if (RESUME && !isNew) {
+            const [local] = await db.select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
+              .from(schema.manga).where(eq(schema.manga.id, mangaId)).limit(1);
+            const sourceUpdated = unixToDate(raw.chapter_updated_at);
+            if (local?.chapterUpdatedAt && sourceUpdated && local.chapterUpdatedAt >= sourceUpdated) {
+              cp.stats.skipped++;
+              console.log(`${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`);
+              continue;
+            }
+          }
 
-  for (let i = 0; i < mangaList.length; i++) {
-    const raw = mangaList[i];
-    const tag = `[${i + 1}/${mangaList.length}]`;
-
-    try {
-      const { mangaId, isNew } = await importOneManga(raw);
-
-      if (!raw.has_chapters) {
-        if (isNew) imported++; else skipped++;
-        console.log(`${tag} ${raw.title} → id:${mangaId} (no chapters)`);
-        continue;
-      }
-
-      // --resume: skip manga whose source hasn't updated since last import
-      if (RESUME && !isNew) {
-        const [local] = await db.select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
-          .from(schema.manga).where(eq(schema.manga.id, mangaId)).limit(1);
-        const sourceUpdated = unixToDate(raw.chapter_updated_at);
-        if (local?.chapterUpdatedAt && sourceUpdated && local.chapterUpdatedAt >= sourceUpdated) {
-          skipped++;
-          console.log(`${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`);
-          continue;
+          const r = await importChapters(mangaId, raw.hash_id);
+          if (isNew) cp.stats.imported++; else cp.stats.skipped++;
+          cp.stats.chapters += r.chapters;
+          cp.stats.images += r.images;
+          const label = isNew ? '→' : '↻';
+          console.log(`${tag} ${raw.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`);
+        } catch (err: any) {
+          cp.stats.failed++;
+          console.error(`${tag} FAIL ${raw.title}: ${err.message}`);
         }
       }
+    }
 
-      const r = await importChapters(mangaId, raw.hash_id);
-      if (isNew) imported++; else skipped++;
-      totalCh += r.chapters;
-      totalImg += r.images;
-      const label = isNew ? '→' : '↻';
-      console.log(`${tag} ${raw.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`);
-    } catch (err: any) {
-      failed++;
-      console.error(`${tag} FAIL ${raw.title}: ${err.message}`);
+    // Checkpoint after each page (atomic)
+    cp.lastCompletedPage = page;
+    if (!DRY_RUN) saveCheckpoint(cp);
+
+    if (pagination && page >= pagination.last_page) {
+      console.log(`  Reached last page (${pagination.last_page}).`);
+      break;
     }
   }
 
   console.log(`\n${'═'.repeat(50)}`);
-  console.log(`Imported: ${imported} | Skipped: ${skipped} | Failed: ${failed}`);
-  console.log(`Chapters: ${totalCh} | Images: ${totalImg}`);
+  console.log(
+    `Imported: ${cp.stats.imported} | Skipped: ${cp.stats.skipped} | Failed: ${cp.stats.failed}`,
+  );
+  console.log(`Chapters: ${cp.stats.chapters} | Images: ${cp.stats.images}`);
+  console.log(`Last completed page: ${cp.lastCompletedPage}`);
   console.log(`${'═'.repeat(50)}\n`);
   await sqlClient.end();
 }

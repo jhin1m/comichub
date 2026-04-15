@@ -35,18 +35,31 @@ IMAGE="${COMPOSE_PROJECT_NAME}-import"
 info "Building import image (build stage)..."
 docker build --target build -t "$IMAGE" ./backend -q
 
-# Determine command
+# Determine argv — pass as exec-form to preserve arg boundaries.
 if [ "$SOURCE" = "seed" ]; then
-  CMD="npx tsx --env-file=.env src/database/seed/seed.ts $*"
+  set -- npx tsx --env-file=.env src/database/seed/seed.ts "$@"
 else
-  CMD="npx tsx --tsconfig tsconfig.json src/scripts/${SOURCE}-import.ts $*"
+  set -- npx tsx --tsconfig tsconfig.json "src/scripts/${SOURCE}-import.ts" "$@"
 fi
 
-info "Running: $CMD"
+info "Running: $*"
 DOCKER_TTY=""
 [ -t 0 ] && DOCKER_TTY="-it"
+
+# Checkpoint volume — persist comix-import progress across container runs.
+# Host /data/comix → container /data (comix-import.ts default --checkpoint-file ./comix-checkpoint.json
+# is overridden via --checkpoint-file /data/comix-checkpoint.json from the orchestrator).
+CHECKPOINT_MOUNT=()
+if [ "$SOURCE" = "comix" ]; then
+  mkdir -p /data/comix 2>/dev/null || true
+  [ -d /data/comix ] && CHECKPOINT_MOUNT=(-v /data/comix:/data)
+fi
+
 docker run --rm $DOCKER_TTY \
   --network "${COMPOSE_PROJECT_NAME}_default" \
   -e DATABASE_URL="postgresql://comichub:${DB_PASSWORD}@postgres:5432/comichub" \
   -e REDIS_URL="redis://redis:6379" \
-  "$IMAGE" sh -c "$CMD"
+  -e USE_SCRAPFLY="${USE_SCRAPFLY:-0}" \
+  -e SCRAPFLY_KEY="${SCRAPFLY_KEY:-}" \
+  "${CHECKPOINT_MOUNT[@]}" \
+  "$IMAGE" "$@"

@@ -25,22 +25,33 @@ export const hasFlag = (name: string) => argv.includes(`--${name}`);
 
 // ─── Throttled fetch ─────────────────────────────────────────────
 let lastReq = 0;
-export async function throttledFetch(
-  url: string,
-  opts?: { throttleMs?: number; headers?: Record<string, string> },
-): Promise<Response> {
-  const ms = opts?.throttleMs ?? 250;
+export type ThrottleOpts = {
+  throttleMs?: number;
+  jitter?: [number, number];
+  headers?: Record<string, string>;
+};
+
+function resolveThrottleMs(opts?: ThrottleOpts): number {
+  if (opts?.jitter) {
+    const [min, max] = opts.jitter;
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+  return opts?.throttleMs ?? 250;
+}
+
+export async function throttledFetch(url: string, opts?: ThrottleOpts): Promise<Response> {
+  const ms = resolveThrottleMs(opts);
   const elapsed = Date.now() - lastReq;
   if (elapsed < ms) await sleep(ms - elapsed);
   lastReq = Date.now();
-  return fetch(url, { headers: opts?.headers });
+  const fetchFn: typeof fetch =
+    process.env.USE_SCRAPFLY === '1'
+      ? (await import('./scrapfly-fetch.js')).scrapflyFetch
+      : fetch;
+  return fetchFn(url, { headers: opts?.headers });
 }
 
-export async function apiFetch<T>(
-  base: string,
-  path: string,
-  opts?: { throttleMs?: number; headers?: Record<string, string> },
-): Promise<T> {
+export async function apiFetch<T>(base: string, path: string, opts?: ThrottleOpts): Promise<T> {
   const res = await throttledFetch(`${base}${path}`, opts);
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;

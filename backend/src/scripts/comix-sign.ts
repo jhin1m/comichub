@@ -123,7 +123,11 @@ async function loadApiClient(): Promise<any> {
 
 // ─── Public API ─────────────────────────────────────────────────
 
-/** Sign a Comix.to API URL (adds `time` and `_` query params). */
+/**
+ * Sign a Comix.to API URL (adds `time` and `_` query params).
+ * WARNING: not concurrency-safe — monkey-patches `globalThis.fetch` to capture the signed URL.
+ * Callers must serialize invocations (current import loops are strictly sequential).
+ */
 export async function signUrl(
   path: string,
   query: Record<string, string | number> = {},
@@ -162,10 +166,16 @@ export async function signUrl(
 export async function signedFetch<T>(
   path: string,
   query: Record<string, string | number> = {},
-  opts?: { throttleMs?: number },
+  opts?: { throttleMs?: number; jitter?: [number, number] },
 ): Promise<T> {
   const url = await signUrl(path, query);
-  const ms = opts?.throttleMs ?? 250;
+  let ms: number;
+  if (opts?.jitter) {
+    const [min, max] = opts.jitter;
+    ms = Math.floor(Math.random() * (max - min) + min);
+  } else {
+    ms = opts?.throttleMs ?? 250;
+  }
 
   // Throttle
   const now = Date.now();
@@ -174,9 +184,12 @@ export async function signedFetch<T>(
   }
   signedFetchLastReq = Date.now();
 
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' },
-  });
+  const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' };
+  const fetchFn: typeof fetch =
+    process.env.USE_SCRAPFLY === '1'
+      ? (await import('./scrapfly-fetch.js')).scrapflyFetch
+      : fetch;
+  const res = await fetchFn(url, { headers });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
