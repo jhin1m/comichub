@@ -91,6 +91,10 @@ nano deploy/.env.deploy
 | `FRONTEND_URL` | `https://zetsu.moe` |
 | `GIT_REPO` | `git@github.com:user/repo.git` |
 | `GIT_BRANCH` | `main` |
+| `TELEGRAM_BOT_TOKEN` | (optional, for campaign notifications) |
+| `TELEGRAM_CHAT_ID` | (optional, for campaign notifications) |
+| `USE_SCRAPFLY` | `0` or `1` (enable anti-scraping proxy, default 0) |
+| `SCRAPFLY_KEY` | (required if USE_SCRAPFLY=1) |
 
 ### 4. Upload certificates
 
@@ -126,6 +130,54 @@ sudo ./deploy/deploy.sh
 ```
 
 Flow: tag rollback → git pull → build (no-cache) → migrate → swap containers → health check → auto-rollback if unhealthy → prune images.
+
+## Bulk Import Operations (Comix.to Campaign)
+
+For multi-week import campaigns (70k+ manga), orchestration scripts in `deploy/`:
+
+| Script | Purpose |
+|--------|---------|
+| `import-campaign.sh` | Main orchestrator: loops batch ranges with cooldown, Telegram notifications, health monitoring |
+| `import-daily-cron.sh` | Incremental daily import (pages 1-30), runs via cron after campaign |
+| `import-progress.sh` | DB progress query (manga/chapter/image counts), cache stats |
+| `import-health-check.sh` | Monitors log errors, stuck detection, disk usage, DB connectivity |
+| `telegram-notify.sh` | Sends Telegram alerts (requires TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) |
+| `comix-campaign.conf` | Phase config: batch ranges, step sizes, cooldowns |
+
+### Quick Start
+
+```bash
+# 1. Fill campaign config (batch ranges, cooldowns)
+nano deploy/comix-campaign.conf
+
+# 2. Add Telegram creds to .env.deploy (optional, silent-fails if missing)
+echo TELEGRAM_BOT_TOKEN="..." >> deploy/.env.deploy
+echo TELEGRAM_CHAT_ID="..." >> deploy/.env.deploy
+
+# 3. Optional: enable Scrapfly for IP block recovery
+echo USE_SCRAPFLY=1 >> deploy/.env.deploy
+echo SCRAPFLY_KEY="..." >> deploy/.env.deploy
+
+# 4. Start phase 1 batch import (e.g., pages 1-100)
+sudo ./deploy/import-campaign.sh phase1
+
+# 5. Check progress anytime
+./deploy/import-progress.sh
+
+# 6. Setup daily cron after campaign completes
+echo "0 3 * * * cd /var/www/comichub && ./deploy/import-daily-cron.sh >> /var/log/comichub/import-daily.log 2>&1" | sudo crontab -
+```
+
+### CLI Flags for comix-import.ts
+
+When running via `run-import.sh comix [flags]`:
+- `--from N --to M`: page range (required)
+- `--resume`: skip already-imported pages (checkpoint-aware)
+- `--checkpoint-file /path`: persistent progress file (atomic write)
+- `--reset-checkpoint`: discard existing checkpoint
+- `--jitter-min MS --jitter-max MS`: random throttle (default 400-1200ms, backward compat with other import sources)
+- `--health-interval N`: re-check API health every N pages (default: off)
+- `--dry`: test mode (no DB writes)
 
 ## Common Operations
 

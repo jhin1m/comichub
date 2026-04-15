@@ -4,6 +4,22 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Added - Comix.to Import Campaign Infrastructure (2026-04-15)
+- **Backend Scripts**: Created `scrapfly-fetch.ts` anti-scraping proxy wrapper (opt-in via USE_SCRAPFLY=1)
+- **Import Robustness**: Added configurable random jitter (400-1200ms) to `throttledFetch` and `signedFetch`, replacing fixed 250ms throttle. Backward compatible — other import sources default to 250ms
+- **Checkpoint System**: Added atomic persistent checkpoint tracking (`--checkpoint-file`, `--reset-checkpoint` flags) enabling safe resume across container restarts
+- **Health Checks**: Pre-flight API/signing-module validation with 3 retries + exponential backoff, per-batch re-checks (configurable)
+- **Deployment Tooling**: 
+  - `import-campaign.sh` — orchestrates 15-20 day batch import with configurable phase ranges, cooldowns, Telegram notifications, health gating, disk monitoring
+  - `comix-campaign.conf` — phase configuration (batch ranges, step sizes, cooldowns)
+  - `import-daily-cron.sh` — incremental daily import wrapper (runs after campaign completes)
+  - `import-progress.sh` — DB progress monitoring (manga/chapter/image counts from comix source)
+  - `import-health-check.sh` — cron health monitor (error tracking, stuck detection, disk/DB connectivity)
+  - `telegram-notify.sh` — Telegram alert helper (graceful silent-fail if token missing)
+- **Database**: Verified all critical indexes present (`chapter_images`, `chapter_sources`, `manga_sources`) — no migrations needed
+- **Environment**: Added to `.env.deploy.example`: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, USE_SCRAPFLY, SCRAPFLY_KEY
+- **Dependencies**: Added `scrapfly-sdk@^0.9.0` to backend devDependencies
+
 ### Added - Forgot Password + Cloudflare Turnstile (2026-04-02)
 - **Backend Auth**: Implemented password reset flow with 15min expiring tokens stored hashed in Redis, email delivery via Resend SMTP with nodemailer
 - **Backend Security**: Added Cloudflare Turnstile bot protection guard to login/register/forgot-password/reset-password endpoints with graceful dev-mode bypass
