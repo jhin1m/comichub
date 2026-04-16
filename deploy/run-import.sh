@@ -59,6 +59,8 @@ docker run --rm $DOCKER_TTY \
   --network "${COMPOSE_PROJECT_NAME}_default" \
   -e DATABASE_URL="postgresql://comichub:${DB_PASSWORD}@postgres:5432/comichub" \
   -e REDIS_URL="redis://redis:6379" \
+  -e USE_PROXY="${USE_PROXY:-0}" \
+  -e PROXY_URL="${PROXY_URL:-}" \
   -e USE_SCRAPFLY="${USE_SCRAPFLY:-0}" \
   -e SCRAPFLY_KEY="${SCRAPFLY_KEY:-}" \
   "${CHECKPOINT_MOUNT[@]}" \

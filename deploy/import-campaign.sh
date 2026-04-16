@@ -8,7 +8,7 @@
 #   ./deploy/import-campaign.sh phase2      # pages 101-700 (bulk)
 #   ./deploy/import-campaign.sh all         # phase1 then phase2
 #
-# Env (from .env.deploy): TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, USE_SCRAPFLY, SCRAPFLY_KEY
+# Env (from .env.deploy): TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, USE_PROXY, PROXY_URL, USE_SCRAPFLY, SCRAPFLY_KEY
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
