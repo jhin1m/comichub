@@ -39,15 +39,20 @@ function resolveThrottleMs(opts?: ThrottleOpts): number {
   return opts?.throttleMs ?? 250;
 }
 
+async function resolveFetchFn(): Promise<typeof fetch> {
+  if (process.env.USE_PROXY === '1')
+    return (await import('./proxy-fetch.js')).proxyFetch;
+  if (process.env.USE_SCRAPFLY === '1')
+    return (await import('./scrapfly-fetch.js')).scrapflyFetch;
+  return fetch;
+}
+
 export async function throttledFetch(url: string, opts?: ThrottleOpts): Promise<Response> {
   const ms = resolveThrottleMs(opts);
   const elapsed = Date.now() - lastReq;
   if (elapsed < ms) await sleep(ms - elapsed);
   lastReq = Date.now();
-  const fetchFn: typeof fetch =
-    process.env.USE_SCRAPFLY === '1'
-      ? (await import('./scrapfly-fetch.js')).scrapflyFetch
-      : fetch;
+  const fetchFn = await resolveFetchFn();
   return fetchFn(url, { headers: opts?.headers });
 }
 

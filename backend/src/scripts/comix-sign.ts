@@ -185,10 +185,12 @@ export async function signedFetch<T>(
   signedFetchLastReq = Date.now();
 
   const headers = { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' };
-  const fetchFn: typeof fetch =
-    process.env.USE_SCRAPFLY === '1'
-      ? (await import('./scrapfly-fetch.js')).scrapflyFetch
-      : fetch;
+  let fetchFn: typeof fetch;
+  if (process.env.USE_PROXY === '1')
+    fetchFn = (await import('./proxy-fetch.js')).proxyFetch;
+  else if (process.env.USE_SCRAPFLY === '1')
+    fetchFn = (await import('./scrapfly-fetch.js')).scrapflyFetch;
+  else fetchFn = fetch;
   const res = await fetchFn(url, { headers });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
