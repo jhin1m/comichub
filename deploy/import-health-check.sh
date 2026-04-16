@@ -34,13 +34,15 @@ if [ -n "${LATEST_LOG:-}" ] && [ -f "$LATEST_LOG" ]; then
   fi
 fi
 
-# 2. Stuck checkpoint — updated >30 min ago while campaign should be running
+# 2. Stuck checkpoint — updated >30 min ago while an import container is actively running.
+# Skip during cooldown (campaign running but no import container = normal cooldown gap).
 if [ -f "$CHECKPOINT" ]; then
   NOW=$(date +%s)
   MTIME=$(stat -c %Y "$CHECKPOINT" 2>/dev/null || stat -f %m "$CHECKPOINT" 2>/dev/null || echo 0)
   AGE=$((NOW - MTIME))
-  if [ "$AGE" -gt 1800 ] && pgrep -f "import-campaign.sh" > /dev/null 2>&1; then
-    notify "⏱ Import health: checkpoint not updated for ${AGE}s but campaign process is running — STUCK?"
+  IMPORT_RUNNING=$(docker ps --format "{{.Image}}" 2>/dev/null | grep -c "${COMPOSE_PROJECT_NAME}-import" || true)
+  if [ "$AGE" -gt 1800 ] && [ "${IMPORT_RUNNING:-0}" -gt 0 ]; then
+    notify "⏱ Import health: checkpoint not updated for ${AGE}s but import container is running — STUCK?"
   fi
 fi
 
