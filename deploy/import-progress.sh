@@ -41,9 +41,9 @@ echo "manga=${MANGA} chapters=${CHAPTERS} images=${IMAGES} db=${DB_SIZE} last_sy
 
 if [ "${1:-}" = "--notify" ]; then
   "${SCRIPT_DIR}/telegram-notify.sh" "📊 Comix progress
-manga: \`${MANGA}\`
-chapters: \`${CHAPTERS}\`
-images: \`${IMAGES}\`
-db: \`${DB_SIZE}\`
-last sync: \`${LAST_SYNC}\`" || true
+manga: ${MANGA}
+chapters: ${CHAPTERS}
+images: ${IMAGES}
+db: ${DB_SIZE}
+last sync: ${LAST_SYNC}" || true
 fi
