@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 export type DisplayMode = 'single' | 'double' | 'longstrip';
-export type ProgressPosition = 'top' | 'bottom' | 'left' | 'right' | 'none';
+
 export type FitMode = 'width' | 'height' | 'original';
 export type ReadingDirection = 'ltr' | 'rtl';
 export type ColorFilter = 'normal' | 'sepia' | 'warm' | 'cool';
@@ -12,7 +12,6 @@ export interface ReaderSettings {
   zoom: number;
   displayMode: DisplayMode;
   stripMargin: number;
-  progressPosition: ProgressPosition;
   fitMode: FitMode;
   readingDirection: ReadingDirection;
   colorFilter: ColorFilter;
@@ -24,10 +23,9 @@ export interface ReaderSettings {
 const STORAGE_KEY = 'comichub:reader-settings';
 
 const defaults: ReaderSettings = {
-  zoom: 68,
+  zoom: 900,
   displayMode: 'longstrip',
   stripMargin: 0,
-  progressPosition: 'left',
   fitMode: 'width',
   readingDirection: 'ltr',
   colorFilter: 'normal',
@@ -40,7 +38,12 @@ function loadSettings(): ReaderSettings {
   if (typeof window === 'undefined') return defaults;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+    if (!stored) return defaults;
+    const parsed = { ...defaults, ...JSON.parse(stored) };
+    // Migrate old vw-based zoom (30-200) to px-based max-width (400-1400).
+    // Threshold = ZOOM_MIN so any sub-range value snaps to default.
+    if (parsed.zoom < 400) parsed.zoom = defaults.zoom;
+    return parsed;
   } catch {
     return defaults;
   }

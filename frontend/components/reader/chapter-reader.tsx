@@ -12,7 +12,7 @@ import { useAutoHide } from '@/hooks/use-auto-hide';
 import { ReaderTopBar } from '@/components/reader/reader-top-bar';
 import { ReaderBottomBar } from '@/components/reader/reader-bottom-bar';
 import { ReaderImage } from '@/components/reader/reader-image';
-import { ReaderProgressBar } from '@/components/reader/reader-progress-bar';
+
 import { ReaderZoomControls } from '@/components/reader/reader-zoom-controls';
 import { ReaderSidebar } from '@/components/reader/reader-sidebar';
 import { ReaderSettingsModal } from '@/components/reader/reader-settings-modal';
@@ -37,7 +37,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const [nsfwDismissed, setNsfwDismissed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'chapters' | 'comments' | 'settings' | null>(null);
 
@@ -99,21 +99,6 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
     setCurrentPage(1);
   }, [chapter.id, setCurrentPage]);
 
-  // ─── Fullscreen ────────────────────────────────────────
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
-    } else {
-      document.exitFullscreen?.().catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, []);
-
   // ─── Navigation helpers ────────────────────────────────
   const goToPrevChapter = useCallback(() => {
     if (nav?.prev) router.push(`/manga/${slug}/${nav.prev.id}`);
@@ -135,18 +120,20 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
 
   // ─── Keyboard shortcuts (stable ref to avoid listener churn) ─
+  // Esc unwinds in order: settings modal → sidebar → exit reader.
   const onExit = useCallback(() => {
-    if (settingsOpen) setSettingsOpen(false); else router.push(`/manga/${slug}`);
-  }, [settingsOpen, router, slug]);
+    if (settingsOpen) { setSettingsOpen(false); return; }
+    if (sidebarOpen) { setSidebarOpen(false); return; }
+    router.push(`/manga/${slug}`);
+  }, [settingsOpen, sidebarOpen, router, slug]);
 
   const keyboardActions = useMemo(() => ({
     onPrevChapter: goToPrevChapter,
     onNextChapter: goToNextChapter,
     onPrevPage: () => scrollByPage(-1),
     onNextPage: () => scrollByPage(1),
-    onToggleFullscreen: toggleFullscreen,
     onExit,
-  }), [goToPrevChapter, goToNextChapter, scrollByPage, toggleFullscreen, onExit]);
+  }), [goToPrevChapter, goToNextChapter, scrollByPage, onExit]);
 
   useReaderKeyboard(keyboardActions, !settingsOpen);
 
@@ -186,7 +173,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   }, [nav, slug]);
 
   // ─── Fit mode + width styles ───────────────────────────
-  const readerWidth = isMobile ? '100%' : `${settings.zoom}vw`;
+  const readerMaxWidth = isMobile ? '100%' : `${settings.zoom}px`;
 
   const fitClass = useMemo(() => {
     if (isManualMode) {
@@ -216,7 +203,6 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black">
-      <ReaderProgressBar position={settings.progressPosition} scrollRef={scrollRef} />
 
       {!nsfwDismissed && (chapter.contentRating === 'erotica' || chapter.contentRating === 'pornographic') && (
         <div className="fixed top-12 left-0 right-0 z-40 flex items-center justify-center px-4 py-2 bg-accent/90 backdrop-blur-sm text-white text-sm font-medium">
@@ -235,8 +221,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
           mangaTitle={mangaTitle} slug={slug} chapterNumber={chapter.number}
           currentPage={currentPage} totalPages={sortedImages.length}
           sidebarOpen={sidebarOpen} hidden={topBarHidden}
-          isFullscreen={isFullscreen}
-          onToggleSidebar={toggleSidebar} onToggleFullscreen={toggleFullscreen}
+          onToggleSidebar={toggleSidebar}
         />
 
         {/* Scrollable image area */}
@@ -253,7 +238,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
           {/* Images */}
           <div
             className={`mx-auto ${isManualMode && settings.displayMode === 'double' ? 'flex gap-1 justify-center items-start' : ''} ${isManualMode ? 'flex flex-col items-center justify-center min-h-[calc(100vh-7rem)]' : ''}`}
-            style={isManualMode ? undefined : { width: readerWidth, maxWidth: '100%' }}
+            style={isManualMode ? undefined : { width: '100%', maxWidth: readerMaxWidth }}
           >
             {!isManualMode ? (
               // Long strip — all images
@@ -264,7 +249,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
               ))
             ) : (
               // Single or Double — visible pages only
-              <div className={settings.displayMode === 'double' ? 'flex gap-1 justify-center items-start max-w-full' : 'max-w-full'} style={{ width: readerWidth, maxWidth: '100%' }}>
+              <div className={settings.displayMode === 'double' ? 'flex gap-1 justify-center items-start max-w-full' : 'max-w-full'} style={{ width: '100%', maxWidth: readerMaxWidth }}>
                 {visiblePages.map((img) => (
                   <div key={img.id} className={`${settings.displayMode === 'double' ? 'flex-1 max-w-[50%]' : ''} ${fitClass}`}>
                     <ReaderImage src={img.imageUrl} alt={`Page ${img.pageNumber}`} filterStyle={imageFilterStyle} />
@@ -330,6 +315,11 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
           />
         )}
       </div>
+
+      {/* Sidebar backdrop (mobile) */}
+      {isMobile && sidebarOpen && (
+        <div className="absolute inset-0 z-[49] bg-black/50" onClick={toggleSidebar} />
+      )}
 
       {/* Sidebar */}
       <div className={`absolute top-0 right-0 h-full z-50 ${mounted ? 'transition-transform duration-300 ease-in-out' : ''} ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>

@@ -7,7 +7,6 @@ export interface ReaderKeyboardActions {
   onNextChapter: () => void;
   onPrevPage: () => void;
   onNextPage: () => void;
-  onToggleFullscreen: () => void;
   onExit: () => void;
 }
 
@@ -40,11 +39,6 @@ export function useReaderKeyboard(actions: ReaderKeyboardActions, enabled = true
         case ' ':
           e.preventDefault();
           actions.onNextPage();
-          break;
-        case 'f':
-        case 'F':
-          e.preventDefault();
-          actions.onToggleFullscreen();
           break;
         case 'Escape':
           actions.onExit();

@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import type {
   ReaderSettings,
   DisplayMode,
-  ProgressPosition,
   FitMode,
   ReadingDirection,
   ColorFilter,
@@ -90,14 +89,6 @@ function LayoutTab({ settings, onUpdate }: Pick<Props, 'settings' | 'onUpdate'>)
     { value: 'ltr', label: 'LTR →' },
     { value: 'rtl', label: 'RTL ←' },
   ];
-  const posOptions: { value: ProgressPosition; label: string }[] = [
-    { value: 'top', label: 'Top' },
-    { value: 'bottom', label: 'Bottom' },
-    { value: 'left', label: 'Left' },
-    { value: 'right', label: 'Right' },
-    { value: 'none', label: 'None' },
-  ];
-
   return (
     <>
       <SettingRow label="Display Mode">
@@ -119,9 +110,6 @@ function LayoutTab({ settings, onUpdate }: Pick<Props, 'settings' | 'onUpdate'>)
           <span className="text-xs text-secondary min-w-[32px] text-right tabular-nums">{settings.stripMargin}px</span>
           <button onClick={() => onUpdate('stripMargin', 0)} className="text-xs text-muted hover:text-primary transition-colors">Reset</button>
         </div>
-      </SettingRow>
-      <SettingRow label="Progress Bar">
-        <PillGroup options={posOptions} value={settings.progressPosition} onChange={(v) => onUpdate('progressPosition', v)} />
       </SettingRow>
     </>
   );
@@ -157,7 +145,6 @@ const shortcuts: [string, string][] = [
   ['→', 'Next chapter'],
   ['↑', 'Scroll up / Prev page'],
   ['↓ / Space', 'Scroll down / Next page'],
-  ['F', 'Toggle fullscreen'],
   ['Esc', 'Exit / Close'],
 ];
 

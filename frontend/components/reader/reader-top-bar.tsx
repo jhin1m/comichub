@@ -4,8 +4,6 @@ import Link from 'next/link';
 import {
   CaretLeftIcon,
   SidebarSimpleIcon,
-  CornersOutIcon,
-  CornersInIcon,
 } from '@phosphor-icons/react';
 
 interface Props {
@@ -16,9 +14,7 @@ interface Props {
   totalPages: number;
   sidebarOpen: boolean;
   hidden: boolean;
-  isFullscreen: boolean;
   onToggleSidebar: () => void;
-  onToggleFullscreen: () => void;
 }
 
 export function ReaderTopBar({
@@ -29,9 +25,7 @@ export function ReaderTopBar({
   totalPages,
   sidebarOpen,
   hidden,
-  isFullscreen,
   onToggleSidebar,
-  onToggleFullscreen,
 }: Props) {
   return (
     <div
@@ -58,13 +52,6 @@ export function ReaderTopBar({
 
       {/* Right — actions */}
       <div className="flex items-center gap-1 text-secondary">
-        <button
-          onClick={onToggleFullscreen}
-          aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          className="hover:text-primary transition-colors p-1.5 rounded hover:bg-elevated/50"
-        >
-          {isFullscreen ? <CornersInIcon size={18} /> : <CornersOutIcon size={18} />}
-        </button>
         <button
           onClick={onToggleSidebar}
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}

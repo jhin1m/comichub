@@ -444,6 +444,7 @@ async function main() {
           if (!raw.has_chapters) {
             if (isNew) cp.stats.imported++; else cp.stats.skipped++;
             console.log(`${tag} ${raw.title} → id:${mangaId} (no chapters)`);
+            if (!DRY_RUN) saveCheckpoint(cp);
             continue;
           }
 
@@ -455,6 +456,7 @@ async function main() {
             if (local?.chapterUpdatedAt && sourceUpdated && local.chapterUpdatedAt >= sourceUpdated) {
               cp.stats.skipped++;
               console.log(`${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`);
+              if (!DRY_RUN) saveCheckpoint(cp);
               continue;
             }
           }
@@ -469,10 +471,13 @@ async function main() {
           cp.stats.failed++;
           console.error(`${tag} FAIL ${raw.title}: ${err.message}`);
         }
+        // Per-manga heartbeat — bumps checkpoint mtime so health-check sees progress
+        // even when a single page takes >30 min. lastCompletedPage only advances at page end.
+        if (!DRY_RUN) saveCheckpoint(cp);
       }
     }
 
-    // Checkpoint after each page (atomic)
+    // Checkpoint after each page (atomic) — advances lastCompletedPage for --resume
     cp.lastCompletedPage = page;
     if (!DRY_RUN) saveCheckpoint(cp);
 

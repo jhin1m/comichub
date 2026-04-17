@@ -13,9 +13,9 @@ interface Props {
   isMobile?: boolean;
 }
 
-const ZOOM_STEP = 10;
-const ZOOM_MIN = 30;
-const ZOOM_MAX = 200;
+const ZOOM_STEP = 50;
+const ZOOM_MIN = 400;
+const ZOOM_MAX = 1400;
 
 export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick, scrollRef, isMobile }: Props) {
   const decrease = () => onZoomChange(Math.max(ZOOM_MIN, zoom - ZOOM_STEP));
@@ -29,7 +29,7 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick, scroll
           <button onClick={decrease} disabled={zoom <= ZOOM_MIN} aria-label="Zoom out" className="text-secondary hover:text-primary disabled:opacity-40 transition-colors p-0.5">
             <MinusIcon size={14} />
           </button>
-          <span className="text-xs text-secondary min-w-[36px] text-center tabular-nums">{zoom}%</span>
+          <span className="text-xs text-secondary min-w-[42px] text-center tabular-nums">{zoom}px</span>
           <button onClick={increase} disabled={zoom >= ZOOM_MAX} aria-label="Zoom in" className="text-secondary hover:text-primary disabled:opacity-40 transition-colors p-0.5">
             <PlusIcon size={14} />
           </button>

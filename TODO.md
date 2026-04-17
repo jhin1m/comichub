@@ -15,3 +15,4 @@
 [ ] Bug fix OAuth login google.
 [ ] Add latest chapter in result search.
 [ ] Add histories search in search form.
+[x] Fix bug navigate incorrect manga in chapter reader.
