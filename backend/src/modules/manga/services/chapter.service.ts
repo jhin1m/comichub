@@ -194,12 +194,14 @@ export class ChapterService {
       })
       .returning();
 
-    // Update manga chaptersCount and chapterUpdatedAt
+    // Update manga chaptersCount, chapterUpdatedAt, and bump updatedAt (new chapter released)
+    const now = new Date();
     await this.db
       .update(manga)
       .set({
         chaptersCount: sql<number>`(SELECT count(*) FROM ${chapters} WHERE manga_id = ${mangaId} AND deleted_at IS NULL)`,
-        chapterUpdatedAt: new Date(),
+        chapterUpdatedAt: now,
+        updatedAt: now,
       })
       .where(eq(manga.id, mangaId));
 

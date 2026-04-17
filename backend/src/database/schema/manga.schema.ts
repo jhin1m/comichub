@@ -110,10 +110,9 @@ export const manga = pgTable(
     lastChapterId: integer('last_chapter_id'), // app-managed, no FK (circular)
     chapterUpdatedAt: timestamp('chapter_updated_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
-      .defaultNow()
-      .notNull()
-      .$onUpdateFn(() => new Date()),
+    // Semantic: bumped ONLY when a new chapter is released. Used for "recently updated" sort.
+    // Do NOT let ORM auto-bump this — explicit bump in chapter insert flows only.
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [
@@ -219,10 +218,7 @@ export const chapters = pgTable(
     viewCount: bigint('view_count', { mode: 'number' }).default(0).notNull(),
     order: integer('order').default(0).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
-      .defaultNow()
-      .notNull()
-      .$onUpdateFn(() => new Date()),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
   },
   (table) => [

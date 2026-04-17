@@ -182,12 +182,14 @@ export class ImportService {
         .from(chapters)
         .where(eq(chapters.mangaId, mangaId));
 
+      const now = new Date();
       await this.db
         .update(manga)
         .set({
           lastChapterId: latest?.id ?? null,
           chaptersCount: total,
-          chapterUpdatedAt: new Date(),
+          chapterUpdatedAt: now,
+          updatedAt: now,
         })
         .where(eq(manga.id, mangaId));
     }
