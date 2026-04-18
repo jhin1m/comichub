@@ -371,7 +371,6 @@ async function main() {
     RESUME && 'RESUME',
     DRY_RUN && 'DRY RUN',
     process.env.USE_PROXY === '1' && 'PROXY',
-    process.env.USE_SCRAPFLY === '1' && 'SCRAPFLY',
   ].filter(Boolean).join(', ');
   console.log(`\nComix.to Import — ${filters}\n`);
 

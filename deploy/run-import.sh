@@ -61,7 +61,5 @@ docker run --rm $DOCKER_TTY \
   -e REDIS_URL="redis://redis:6379" \
   -e USE_PROXY="${USE_PROXY:-0}" \
   -e PROXY_URL="${PROXY_URL:-}" \
-  -e USE_SCRAPFLY="${USE_SCRAPFLY:-0}" \
-  -e SCRAPFLY_KEY="${SCRAPFLY_KEY:-}" \
   "${CHECKPOINT_MOUNT[@]}" \
   "$IMAGE" "$@"

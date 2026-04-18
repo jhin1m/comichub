@@ -29,7 +29,7 @@ if [ -n "${LATEST_LOG:-}" ] && [ -f "$LATEST_LOG" ]; then
     NEW_ERR=$(tail -n "+$((LAST_LINE + 1))" "$LATEST_LOG" 2>/dev/null | grep -cE "API (403|429)" || true)
     echo "$TOTAL_LINES" > "$STATE_FILE"
     if [ "${NEW_ERR:-0}" -gt 10 ]; then
-      notify "🚨 Import health: ${NEW_ERR} new API 403/429 since last check — IP may be blocked. Consider USE_SCRAPFLY=1."
+      notify "🚨 Import health: ${NEW_ERR} new API 403/429 since last check — IP may be blocked. Check proxy rotation / rotate PROXY_URLS."
     fi
   fi
 fi

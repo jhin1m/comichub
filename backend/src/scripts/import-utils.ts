@@ -42,8 +42,6 @@ function resolveThrottleMs(opts?: ThrottleOpts): number {
 async function resolveFetchFn(): Promise<typeof fetch> {
   if (process.env.USE_PROXY === '1')
     return (await import('./proxy-fetch.js')).proxyFetch;
-  if (process.env.USE_SCRAPFLY === '1')
-    return (await import('./scrapfly-fetch.js')).scrapflyFetch;
   return fetch;
 }
 
