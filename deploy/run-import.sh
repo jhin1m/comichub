@@ -61,5 +61,7 @@ docker run --rm $DOCKER_TTY \
   -e REDIS_URL="redis://redis:6379" \
   -e USE_PROXY="${USE_PROXY:-0}" \
   -e PROXY_URL="${PROXY_URL:-}" \
+  -e PAGE_RETRY_MAX="${PAGE_RETRY_MAX:-3}" \
+  -e PAGE_RETRY_BACKOFF="${PAGE_RETRY_BACKOFF:-5,15,45}" \
   "${CHECKPOINT_MOUNT[@]}" \
   "$IMAGE" "$@"
