@@ -39,6 +39,13 @@ const CHECKPOINT_FILE = flag('checkpoint-file', './comix-checkpoint.json');
 const RESET_CHECKPOINT = hasFlag('reset-checkpoint');
 const HEALTH_INTERVAL = parseInt(flag('health-interval', '0'), 10); // pages between re-checks (0 = only at start)
 
+// Page-fetch retry — resist transient 502 without aborting run
+const PAGE_RETRY_MAX = parseInt(flag('page-retry-max', '3'), 10);
+const PAGE_RETRY_BACKOFF = flag('page-retry-backoff', '5,15,45')
+  .split(',')
+  .map((s) => parseInt(s.trim(), 10))
+  .filter((n) => Number.isFinite(n) && n >= 0);
+
 const BASE = 'https://comix.to/api/v2';
 const SOURCE = 'comix';
 const LINK_MAP: Record<string, string> = { al: 'anilist', mal: 'mal', mu: 'mu' };
@@ -108,6 +115,28 @@ function resolveTermIds(termIds: number[]): {
 
 function api<T>(path: string) {
   return apiFetch<T>(BASE, path, { jitter: JITTER });
+}
+
+async function fetchPageWithRetry(path: string): Promise<any> {
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt <= PAGE_RETRY_MAX; attempt++) {
+    try {
+      return await api<any>(path);
+    } catch (err: any) {
+      lastErr = err;
+      if (attempt < PAGE_RETRY_MAX) {
+        const delaySec =
+          PAGE_RETRY_BACKOFF[attempt] ??
+          PAGE_RETRY_BACKOFF[PAGE_RETRY_BACKOFF.length - 1] ??
+          5;
+        console.warn(
+          `  Page fetch attempt ${attempt + 1}/${PAGE_RETRY_MAX + 1} FAIL: ${err.message}. Retry in ${delaySec}s...`,
+        );
+        await sleep(delaySec * 1000);
+      }
+    }
+  }
+  throw lastErr!;
 }
 
 function normalizeStatus(status?: string): string {
@@ -312,14 +341,21 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
 interface Checkpoint {
   startedAt: string;
   lastCompletedPage: number;
-  stats: { imported: number; skipped: number; failed: number; chapters: number; images: number };
+  stats: {
+    imported: number;
+    skipped: number;
+    failed: number;
+    chapters: number;
+    images: number;
+    failedPages: number[];
+  };
 }
 
 function emptyCheckpoint(): Checkpoint {
   return {
     startedAt: new Date().toISOString(),
     lastCompletedPage: PAGE_FROM - 1,
-    stats: { imported: 0, skipped: 0, failed: 0, chapters: 0, images: 0 },
+    stats: { imported: 0, skipped: 0, failed: 0, chapters: 0, images: 0, failedPages: [] },
   };
 }
 
@@ -330,7 +366,11 @@ function loadCheckpoint(): Checkpoint {
   }
   try {
     const parsed = JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')) as Checkpoint;
-    if (typeof parsed?.lastCompletedPage === 'number' && parsed.stats) return parsed;
+    if (typeof parsed?.lastCompletedPage === 'number' && parsed.stats) {
+      // Backward-compat: pre-retry checkpoints lack failedPages
+      if (!Array.isArray(parsed.stats.failedPages)) parsed.stats.failedPages = [];
+      return parsed;
+    }
   } catch { /* corrupt or missing — start fresh */ }
   return emptyCheckpoint();
 }
@@ -413,11 +453,15 @@ async function main() {
     params.set('page', String(page));
     let data: any;
     try {
-      data = await api<any>(`/manga?${params.toString()}`);
+      data = await fetchPageWithRetry(`/manga?${params.toString()}`);
     } catch (err: any) {
-      console.error(`  Page ${page} fetch FAILED: ${err.message}. Aborting.`);
-      await sqlClient.end();
-      process.exit(1);
+      console.error(
+        `  Page ${page} fetch FAILED after ${PAGE_RETRY_MAX} retries: ${err.message}. Skipping page.`,
+      );
+      cp.stats.failedPages.push(page);
+      cp.lastCompletedPage = page;
+      if (!DRY_RUN) saveCheckpoint(cp);
+      continue;
     }
     const items = data.result?.items ?? [];
     if (!items.length) {
@@ -492,6 +536,12 @@ async function main() {
   );
   console.log(`Chapters: ${cp.stats.chapters} | Images: ${cp.stats.images}`);
   console.log(`Last completed page: ${cp.lastCompletedPage}`);
+  if (cp.stats.failedPages.length > 0) {
+    console.log(
+      `\n⚠️ Failed pages (${cp.stats.failedPages.length}): ${cp.stats.failedPages.join(', ')}`,
+    );
+    console.log(`  Re-run: --from <N> --to <N> per failed page to recover.`);
+  }
   console.log(`${'═'.repeat(50)}\n`);
   await sqlClient.end();
 }
