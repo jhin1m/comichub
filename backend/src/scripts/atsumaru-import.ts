@@ -10,8 +10,18 @@
  *   pnpm run import:atsumaru -- --id m7bps --no-chapters    # metadata only, skip chapters
  */
 import {
-  db, schema, sqlClient, flag, hasFlag, upsertManga,
-  resolveByName, eq, and, desc, count, sleep,
+  db,
+  schema,
+  sqlClient,
+  flag,
+  hasFlag,
+  upsertManga,
+  resolveByName,
+  eq,
+  and,
+  desc,
+  count,
+  sleep,
 } from './import-utils.js';
 
 // ─── CLI args ────────────────────────────────────────────────────
@@ -35,17 +45,31 @@ const HEADERS: Record<string, string> = {
 };
 
 const STATUS_MAP: Record<string, string> = {
-  ongoing: 'ongoing', completed: 'completed', hiatus: 'hiatus', canceled: 'cancelled',
+  ongoing: 'ongoing',
+  completed: 'completed',
+  hiatus: 'hiatus',
+  canceled: 'cancelled',
 };
 const TYPE_MAP: Record<string, string> = {
-  manga: 'manga', manwha: 'manhwa', manhwa: 'manhwa', manhua: 'manhua', oel: 'manga',
+  manga: 'manga',
+  manwha: 'manhwa',
+  manhwa: 'manhwa',
+  manhua: 'manhua',
+  oel: 'manga',
 };
 const NSFW_GENRES: Record<string, string> = {
-  hentai: 'pornographic', adult: 'erotica', mature: 'erotica',
-  smut: 'erotica', erotica: 'erotica', ecchi: 'suggestive',
+  hentai: 'pornographic',
+  adult: 'erotica',
+  mature: 'erotica',
+  smut: 'erotica',
+  erotica: 'erotica',
+  ecchi: 'suggestive',
 };
 const SEVERITY: Record<string, number> = {
-  safe: 0, suggestive: 1, erotica: 2, pornographic: 3,
+  safe: 0,
+  suggestive: 1,
+  erotica: 2,
+  pornographic: 3,
 };
 
 // ─── Throttled API ──────────────────────────────────────────────
@@ -54,7 +78,10 @@ async function api<T>(path: string, opts?: RequestInit): Promise<T> {
   const elapsed = Date.now() - lastReq;
   if (elapsed < THROTTLE_MS) await sleep(THROTTLE_MS - elapsed);
   lastReq = Date.now();
-  const res = await fetch(`${BASE}${path}`, { ...opts, headers: { ...HEADERS, ...opts?.headers } });
+  const res = await fetch(`${BASE}${path}`, {
+    ...opts,
+    headers: { ...HEADERS, ...opts?.headers },
+  });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
@@ -62,7 +89,8 @@ async function api<T>(path: string, opts?: RequestInit): Promise<T> {
 // ─── Image URL resolution ───────────────────────────────────────
 function resolveImage(path?: unknown): string | null {
   if (!path || typeof path !== 'string') return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path.replace(/^http:/, 'https:');
+  if (path.startsWith('http://') || path.startsWith('https://'))
+    return path.replace(/^http:/, 'https:');
   if (path.startsWith('//')) return `https:${path}`;
   return `${BASE}/static/${path.replace(/^\//, '')}`;
 }
@@ -78,8 +106,12 @@ function inferContentRating(tags: string[]): string {
 }
 
 // ─── Import single manga ────────────────────────────────────────
-async function importOneManga(mangaId: string): Promise<{ mangaId: number; isNew: boolean; title: string }> {
-  const data = await api<any>(`/api/manga/page?id=${encodeURIComponent(mangaId)}`);
+async function importOneManga(
+  mangaId: string,
+): Promise<{ mangaId: number; isNew: boolean; title: string }> {
+  const data = await api<any>(
+    `/api/manga/page?id=${encodeURIComponent(mangaId)}`,
+  );
   const raw = data.mangaPage;
 
   const tagNames = (raw.tags ?? []).map((t: any) => t.name);
@@ -113,7 +145,9 @@ async function importChapters(
   internalId: number,
   externalId: string,
 ): Promise<{ chapters: number; images: number }> {
-  const data = await api<any>(`/api/manga/allChapters?mangaId=${encodeURIComponent(externalId)}`);
+  const data = await api<any>(
+    `/api/manga/allChapters?mangaId=${encodeURIComponent(externalId)}`,
+  );
   const chapters = data.chapters ?? [];
 
   let totalChapters = 0;
@@ -124,45 +158,63 @@ async function importChapters(
 
     // Skip if this exact external chapter was already imported
     const compoundId = `${externalId}:::${raw.id}`;
-    const [existingSrc] = await db.select({ chapterId: schema.chapterSources.chapterId })
+    const [existingSrc] = await db
+      .select({ chapterId: schema.chapterSources.chapterId })
       .from(schema.chapterSources)
-      .where(and(
-        eq(schema.chapterSources.source, SOURCE),
-        eq(schema.chapterSources.externalId, compoundId),
-      ))
+      .where(
+        and(
+          eq(schema.chapterSources.source, SOURCE),
+          eq(schema.chapterSources.externalId, compoundId),
+        ),
+      )
       .limit(1);
     if (existingSrc) continue;
 
     // Try insert chapter
-    const [inserted] = await db.insert(schema.chapters).values({
-      mangaId: internalId,
-      number: String(num),
-      title: raw.title ?? null,
-      slug: `chapter-${num}`,
-      language: 'en',
-      publishedAt: raw.createdAt ? new Date(raw.createdAt) : null,
-      order: Math.round(num * 10),
-    }).onConflictDoNothing().returning({ id: schema.chapters.id });
+    const [inserted] = await db
+      .insert(schema.chapters)
+      .values({
+        mangaId: internalId,
+        number: String(num),
+        title: raw.title ?? null,
+        slug: `chapter-${num}`,
+        language: 'en',
+        publishedAt: raw.createdAt ? new Date(raw.createdAt) : null,
+        order: Math.round(num * 10),
+      })
+      .onConflictDoNothing()
+      .returning({ id: schema.chapters.id });
 
     let chapterId: number;
     if (inserted) {
       chapterId = inserted.id;
       totalChapters++;
     } else {
-      const [found] = await db.select({ id: schema.chapters.id }).from(schema.chapters)
-        .where(and(
-          eq(schema.chapters.mangaId, internalId),
-          eq(schema.chapters.number, String(num)),
-          eq(schema.chapters.language, 'en'),
-        )).limit(1);
+      const [found] = await db
+        .select({ id: schema.chapters.id })
+        .from(schema.chapters)
+        .where(
+          and(
+            eq(schema.chapters.mangaId, internalId),
+            eq(schema.chapters.number, String(num)),
+            eq(schema.chapters.language, 'en'),
+          ),
+        )
+        .limit(1);
       if (!found) continue;
       chapterId = found.id;
     }
 
     // Source mapping
-    await db.insert(schema.chapterSources).values({
-      chapterId, source: SOURCE, externalId: compoundId, lastSyncedAt: new Date(),
-    }).onConflictDoNothing();
+    await db
+      .insert(schema.chapterSources)
+      .values({
+        chapterId,
+        source: SOURCE,
+        externalId: compoundId,
+        lastSyncedAt: new Date(),
+      })
+      .onConflictDoNothing();
 
     // Fetch and insert images
     try {
@@ -171,16 +223,19 @@ async function importChapters(
       );
       const pages = imgData.readChapter?.pages ?? [];
       if (pages.length) {
-        await db.insert(schema.chapterImages).values(
-          pages.map((p: any, idx: number) => ({
-            chapterId,
-            groupId: null,
-            imageUrl: resolveImage(p.image) ?? '',
-            sourceUrl: resolveImage(p.image) ?? '',
-            pageNumber: idx + 1,
-            order: idx + 1,
-          })),
-        ).onConflictDoNothing();
+        await db
+          .insert(schema.chapterImages)
+          .values(
+            pages.map((p: any, idx: number) => ({
+              chapterId,
+              groupId: null,
+              imageUrl: resolveImage(p.image) ?? '',
+              sourceUrl: resolveImage(p.image) ?? '',
+              pageNumber: idx + 1,
+              order: idx + 1,
+            })),
+          )
+          .onConflictDoNothing();
         totalImages += pages.length;
       }
     } catch (err: any) {
@@ -189,17 +244,25 @@ async function importChapters(
   }
 
   // Sync counters
-  const [latest] = await db.select({ id: schema.chapters.id })
-    .from(schema.chapters).where(eq(schema.chapters.mangaId, internalId))
-    .orderBy(desc(schema.chapters.order)).limit(1);
-  const [{ total }] = await db.select({ total: count() })
-    .from(schema.chapters).where(eq(schema.chapters.mangaId, internalId));
+  const [latest] = await db
+    .select({ id: schema.chapters.id })
+    .from(schema.chapters)
+    .where(eq(schema.chapters.mangaId, internalId))
+    .orderBy(desc(schema.chapters.order))
+    .limit(1);
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(schema.chapters)
+    .where(eq(schema.chapters.mangaId, internalId));
   if (total > 0) {
-    await db.update(schema.manga).set({
-      lastChapterId: latest?.id ?? null,
-      chaptersCount: total,
-      chapterUpdatedAt: new Date(),
-    }).where(eq(schema.manga.id, internalId));
+    await db
+      .update(schema.manga)
+      .set({
+        lastChapterId: latest?.id ?? null,
+        chaptersCount: total,
+        chapterUpdatedAt: new Date(),
+      })
+      .where(eq(schema.manga.id, internalId));
   }
 
   return { chapters: totalChapters, images: totalImages };
@@ -214,21 +277,30 @@ async function fetchMangaList(): Promise<{ id: string; title: string }[]> {
       method: 'POST',
       body: JSON.stringify({
         page: 0,
-        filter: { search: SEARCH, types: ['Manga', 'Manwha', 'Manhua', 'OEL'], showAdult: false },
+        filter: {
+          search: SEARCH,
+          types: ['Manga', 'Manwha', 'Manhua', 'OEL'],
+          showAdult: false,
+        },
       }),
     });
     const mangas = data.hits
       ? data.hits.map((h: any) => h.document)
-      : data.items ?? [];
+      : (data.items ?? []);
     return mangas.map((m: any) => ({ id: m.id, title: m.title }));
   }
 
   // Default: browse trending pages
   const list: { id: string; title: string }[] = [];
   for (let page = PAGE_FROM; page <= PAGE_TO; page++) {
-    const data = await api<any>(`/api/infinite/trending?page=${page}&types=Manga,Manwha,Manhua,OEL`);
+    const data = await api<any>(
+      `/api/infinite/trending?page=${page}&types=Manga,Manwha,Manhua,OEL`,
+    );
     const items = data.items ?? [];
-    if (!items.length) { console.log(`  Page ${page}: empty, stopping.`); break; }
+    if (!items.length) {
+      console.log(`  Page ${page}: empty, stopping.`);
+      break;
+    }
     for (const m of items) list.push({ id: m.id, title: m.title });
     console.log(`  Page ${page}: ${items.length} found, total ${list.length}`);
   }
@@ -237,20 +309,32 @@ async function fetchMangaList(): Promise<{ id: string; title: string }[]> {
 
 // ─── Main ────────────────────────────────────────────────────────
 async function main() {
-  const mode = SINGLE_ID ? `id=${SINGLE_ID}` : SEARCH ? `search="${SEARCH}"` : `trending pages ${PAGE_FROM}-${PAGE_TO}`;
-  console.log(`\nAtsumaru Import — ${mode}${DRY_RUN ? ' [DRY RUN]' : ''}${NO_CHAPTERS ? ' [NO CHAPTERS]' : ''}\n`);
+  const mode = SINGLE_ID
+    ? `id=${SINGLE_ID}`
+    : SEARCH
+      ? `search="${SEARCH}"`
+      : `trending pages ${PAGE_FROM}-${PAGE_TO}`;
+  console.log(
+    `\nAtsumaru Import — ${mode}${DRY_RUN ? ' [DRY RUN]' : ''}${NO_CHAPTERS ? ' [NO CHAPTERS]' : ''}\n`,
+  );
 
   const mangaList = await fetchMangaList();
   console.log(`Found ${mangaList.length} manga to import\n`);
 
   if (DRY_RUN) {
-    mangaList.forEach((m, i) => console.log(`  ${i + 1}. ${m.title} (${m.id})`));
+    mangaList.forEach((m, i) =>
+      console.log(`  ${i + 1}. ${m.title} (${m.id})`),
+    );
     console.log('\n(dry run)');
     await sqlClient.end();
     return;
   }
 
-  let imported = 0, skipped = 0, failed = 0, totalCh = 0, totalImg = 0;
+  let imported = 0,
+    skipped = 0,
+    failed = 0,
+    totalCh = 0,
+    totalImg = 0;
   for (let i = 0; i < mangaList.length; i++) {
     const m = mangaList[i];
     const tag = `[${i + 1}/${mangaList.length}]`;
@@ -264,10 +348,13 @@ async function main() {
         const r = await importChapters(mangaId, m.id);
         totalCh += r.chapters;
         totalImg += r.images;
-        console.log(`${tag} ${title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`);
+        console.log(
+          `${tag} ${title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`,
+        );
       }
 
-      if (isNew) imported++; else skipped++;
+      if (isNew) imported++;
+      else skipped++;
     } catch (err: any) {
       failed++;
       console.error(`${tag} FAIL ${m.title}: ${err.message}`);
@@ -275,10 +362,15 @@ async function main() {
   }
 
   console.log(`\n${'═'.repeat(50)}`);
-  console.log(`Imported: ${imported} | Skipped: ${skipped} | Failed: ${failed}`);
+  console.log(
+    `Imported: ${imported} | Skipped: ${skipped} | Failed: ${failed}`,
+  );
   if (!NO_CHAPTERS) console.log(`Chapters: ${totalCh} | Images: ${totalImg}`);
   console.log(`${'═'.repeat(50)}\n`);
   await sqlClient.end();
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

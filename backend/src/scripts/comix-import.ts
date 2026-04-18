@@ -13,8 +13,19 @@
  */
 import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
 import {
-  db, schema, sqlClient, flag, hasFlag, apiFetch, upsertManga,
-  resolveByName, sleep, eq, and, desc, count,
+  db,
+  schema,
+  sqlClient,
+  flag,
+  hasFlag,
+  apiFetch,
+  upsertManga,
+  resolveByName,
+  sleep,
+  eq,
+  and,
+  desc,
+  count,
 } from './import-utils.js';
 import { nsfwToContentRating } from '../common/utils/content-rating.util.js';
 import { signUrl, signedFetch } from './comix-sign.js';
@@ -48,50 +59,113 @@ const PAGE_RETRY_BACKOFF = flag('page-retry-backoff', '5,15,45')
 
 const BASE = 'https://comix.to/api/v2';
 const SOURCE = 'comix';
-const LINK_MAP: Record<string, string> = { al: 'anilist', mal: 'mal', mu: 'mu' };
+const LINK_MAP: Record<string, string> = {
+  al: 'anilist',
+  mal: 'mal',
+  mu: 'mu',
+};
 
 // Comix.to term_id → demographic mapping (extracted from /browser filter)
 const DEMOGRAPHIC_IDS: Record<number, string> = {
-  1: 'shoujo', 2: 'shounen', 3: 'josei', 4: 'seinen',
+  1: 'shoujo',
+  2: 'shounen',
+  3: 'josei',
+  4: 'seinen',
 };
 
 // NSFW theme term_ids → content rating escalation (highest severity wins)
 const NSFW_RATING_MAP: Record<number, string> = {
   87266: 'pornographic', // Hentai
-  87264: 'erotica',      // Adult
-  87267: 'erotica',      // Mature
-  87268: 'erotica',      // Smut
-  87265: 'suggestive',   // Ecchi
+  87264: 'erotica', // Adult
+  87267: 'erotica', // Mature
+  87268: 'erotica', // Smut
+  87265: 'suggestive', // Ecchi
 };
 const RATING_SEVERITY: Record<string, number> = {
-  safe: 0, suggestive: 1, erotica: 2, pornographic: 3,
+  safe: 0,
+  suggestive: 1,
+  erotica: 2,
+  pornographic: 3,
 };
 
 // Comix.to term_id → genre/theme name mapping (extracted from /genres page)
 const GENRE_IDS: Record<number, string> = {
-  6: 'Action', 7: 'Adventure', 8: 'Boys Love', 9: 'Comedy', 10: 'Crime',
-  11: 'Drama', 12: 'Fantasy', 13: 'Girls Love', 14: 'Historical', 15: 'Horror',
-  16: 'Isekai', 17: 'Magical Girls', 18: 'Mecha', 19: 'Medical', 20: 'Mystery',
-  21: 'Philosophical', 22: 'Psychological', 23: 'Romance', 24: 'Sci-Fi',
-  25: 'Slice of Life', 26: 'Sports', 27: 'Superhero', 28: 'Thriller',
-  29: 'Tragedy', 30: 'Wuxia',
+  6: 'Action',
+  7: 'Adventure',
+  8: 'Boys Love',
+  9: 'Comedy',
+  10: 'Crime',
+  11: 'Drama',
+  12: 'Fantasy',
+  13: 'Girls Love',
+  14: 'Historical',
+  15: 'Horror',
+  16: 'Isekai',
+  17: 'Magical Girls',
+  18: 'Mecha',
+  19: 'Medical',
+  20: 'Mystery',
+  21: 'Philosophical',
+  22: 'Psychological',
+  23: 'Romance',
+  24: 'Sci-Fi',
+  25: 'Slice of Life',
+  26: 'Sports',
+  27: 'Superhero',
+  28: 'Thriller',
+  29: 'Tragedy',
+  30: 'Wuxia',
 };
 const THEME_IDS: Record<number, string> = {
-  31: 'Aliens', 32: 'Animals', 33: 'Cooking', 34: 'Crossdressing',
-  35: 'Delinquents', 36: 'Demons', 37: 'Genderswap', 38: 'Ghosts',
-  39: 'Gyaru', 40: 'Harem', 41: 'Incest', 42: 'Loli', 43: 'Mafia',
-  44: 'Magic', 45: 'Martial Arts', 46: 'Military', 47: 'Monster Girls',
-  48: 'Monsters', 49: 'Music', 50: 'Ninja', 51: 'Office Workers',
-  52: 'Police', 53: 'Post-Apocalyptic', 54: 'Reincarnation',
-  55: 'Reverse Harem', 56: 'Samurai', 57: 'School Life', 58: 'Shota',
-  59: 'Supernatural', 60: 'Survival', 61: 'Time Travel',
-  62: 'Traditional Games', 63: 'Vampires', 64: 'Video Games',
-  65: 'Villainess', 66: 'Virtual Reality', 67: 'Zombies',
-  87264: 'Adult', 87265: 'Ecchi', 87266: 'Hentai', 87267: 'Mature', 87268: 'Smut',
+  31: 'Aliens',
+  32: 'Animals',
+  33: 'Cooking',
+  34: 'Crossdressing',
+  35: 'Delinquents',
+  36: 'Demons',
+  37: 'Genderswap',
+  38: 'Ghosts',
+  39: 'Gyaru',
+  40: 'Harem',
+  41: 'Incest',
+  42: 'Loli',
+  43: 'Mafia',
+  44: 'Magic',
+  45: 'Martial Arts',
+  46: 'Military',
+  47: 'Monster Girls',
+  48: 'Monsters',
+  49: 'Music',
+  50: 'Ninja',
+  51: 'Office Workers',
+  52: 'Police',
+  53: 'Post-Apocalyptic',
+  54: 'Reincarnation',
+  55: 'Reverse Harem',
+  56: 'Samurai',
+  57: 'School Life',
+  58: 'Shota',
+  59: 'Supernatural',
+  60: 'Survival',
+  61: 'Time Travel',
+  62: 'Traditional Games',
+  63: 'Vampires',
+  64: 'Video Games',
+  65: 'Villainess',
+  66: 'Virtual Reality',
+  67: 'Zombies',
+  87264: 'Adult',
+  87265: 'Ecchi',
+  87266: 'Hentai',
+  87267: 'Mature',
+  87268: 'Smut',
 };
 
 function resolveTermIds(termIds: number[]): {
-  genres: string[]; themes: string[]; demographic: string | null; contentRating: string;
+  genres: string[];
+  themes: string[];
+  demographic: string | null;
+  contentRating: string;
 } {
   const genres: string[] = [];
   const themes: string[] = [];
@@ -100,7 +174,10 @@ function resolveTermIds(termIds: number[]): {
   let contentRating = 'safe';
 
   for (const id of termIds) {
-    if (DEMOGRAPHIC_IDS[id]) { demographic = DEMOGRAPHIC_IDS[id]; continue; }
+    if (DEMOGRAPHIC_IDS[id]) {
+      demographic = DEMOGRAPHIC_IDS[id];
+      continue;
+    }
     if (GENRE_IDS[id]) genres.push(GENRE_IDS[id]);
     else if (THEME_IDS[id]) themes.push(THEME_IDS[id]);
     // Escalate content rating based on NSFW themes
@@ -178,7 +255,9 @@ function extractIdFromUrl(key: string, url: string): string | null {
 }
 
 // ─── Import single manga ────────────────────────────────────────
-async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boolean }> {
+async function importOneManga(
+  raw: any,
+): Promise<{ mangaId: number; isNew: boolean }> {
   const hashId = raw.hash_id;
   const altTitles = raw.alt_titles ?? [];
   const coverUrl = raw.poster?.large ?? raw.poster?.medium ?? null;
@@ -186,7 +265,9 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
   // External links — extract IDs from URLs
   const links: { type: string; externalId?: string; url?: string }[] = [];
   if (raw.links) {
-    for (const [key, url] of Object.entries(raw.links as Record<string, string>)) {
+    for (const [key, url] of Object.entries(
+      raw.links as Record<string, string>,
+    )) {
       const type = LINK_MAP[key];
       if (!type || !url) continue;
       const id = extractIdFromUrl(key, url);
@@ -198,8 +279,11 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
 
   // Use theme-based rating if higher severity than is_nsfw flag
   const flagRating = nsfwToContentRating(!!raw.is_nsfw);
-  const finalRating = (RATING_SEVERITY[resolved.contentRating] ?? 0) >= (RATING_SEVERITY[flagRating] ?? 0)
-    ? resolved.contentRating : flagRating;
+  const finalRating =
+    (RATING_SEVERITY[resolved.contentRating] ?? 0) >=
+    (RATING_SEVERITY[flagRating] ?? 0)
+      ? resolved.contentRating
+      : flagRating;
 
   const { mangaId, isNew } = await upsertManga({
     title: raw.title,
@@ -225,7 +309,10 @@ async function importOneManga(raw: any): Promise<{ mangaId: number; isNew: boole
 }
 
 // ─── Import chapters for a manga ────────────────────────────────
-async function importChapters(mangaId: number, hashId: string): Promise<{ chapters: number; images: number }> {
+async function importChapters(
+  mangaId: number,
+  hashId: string,
+): Promise<{ chapters: number; images: number }> {
   let page = 1;
   let totalChapters = 0;
   let totalImages = 0;
@@ -233,35 +320,45 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
 
   while (hasMore) {
     // Chapters endpoint requires signed URL (Comix.to anti-bot protection)
-    const data = await signedFetch<any>(`/manga/${hashId}/chapters`, { limit: 100, page }, { jitter: JITTER });
+    const data = await signedFetch<any>(
+      `/manga/${hashId}/chapters`,
+      { limit: 100, page },
+      { jitter: JITTER },
+    );
     const items = data.result?.items ?? [];
 
-    const filtered = LANG === 'all'
-      ? items
-      : items.filter((ch: any) => ch.language === LANG);
+    const filtered =
+      LANG === 'all' ? items : items.filter((ch: any) => ch.language === LANG);
 
     for (const raw of filtered) {
       const extId = String(raw.chapter_id);
 
       // Skip if this exact external chapter was already imported
-      const [existingSrc] = await db.select({ chapterId: schema.chapterSources.chapterId })
-        .from(schema.chapterSources).where(eq(schema.chapterSources.externalId, extId)).limit(1);
+      const [existingSrc] = await db
+        .select({ chapterId: schema.chapterSources.chapterId })
+        .from(schema.chapterSources)
+        .where(eq(schema.chapterSources.externalId, extId))
+        .limit(1);
       if (existingSrc) continue;
 
       const num = parseFloat(raw.number ?? '0');
       const group = raw.scanlation_group;
 
       // Try insert chapter — may conflict if same number+lang already exists from another group
-      const [inserted] = await db.insert(schema.chapters).values({
-        mangaId,
-        number: String(num),
-        title: raw.name ?? null,
-        slug: `chapter-${num}`,
-        language: raw.language ?? 'en',
-        volume: raw.volume && raw.volume > 0 ? String(raw.volume) : null,
-        publishedAt: unixToDate(raw.created_at),
-        order: Math.round(num * 10),
-      }).onConflictDoNothing().returning({ id: schema.chapters.id });
+      const [inserted] = await db
+        .insert(schema.chapters)
+        .values({
+          mangaId,
+          number: String(num),
+          title: raw.name ?? null,
+          slug: `chapter-${num}`,
+          language: raw.language ?? 'en',
+          volume: raw.volume && raw.volume > 0 ? String(raw.volume) : null,
+          publishedAt: unixToDate(raw.created_at),
+          order: Math.round(num * 10),
+        })
+        .onConflictDoNothing()
+        .returning({ id: schema.chapters.id });
 
       // Get chapter ID — either newly inserted or existing
       let chapterId: number;
@@ -269,17 +366,31 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
         chapterId = inserted.id;
         totalChapters++;
       } else {
-        const [found] = await db.select({ id: schema.chapters.id }).from(schema.chapters)
-          .where(and(eq(schema.chapters.mangaId, mangaId), eq(schema.chapters.number, String(num)), eq(schema.chapters.language, raw.language ?? 'en')))
+        const [found] = await db
+          .select({ id: schema.chapters.id })
+          .from(schema.chapters)
+          .where(
+            and(
+              eq(schema.chapters.mangaId, mangaId),
+              eq(schema.chapters.number, String(num)),
+              eq(schema.chapters.language, raw.language ?? 'en'),
+            ),
+          )
           .limit(1);
         if (!found) continue;
         chapterId = found.id;
       }
 
       // Source mapping
-      await db.insert(schema.chapterSources).values({
-        chapterId, source: SOURCE, externalId: extId, lastSyncedAt: new Date(),
-      }).onConflictDoNothing();
+      await db
+        .insert(schema.chapterSources)
+        .values({
+          chapterId,
+          source: SOURCE,
+          externalId: extId,
+          lastSyncedAt: new Date(),
+        })
+        .onConflictDoNothing();
 
       // Resolve scanlation group
       let groupId: number | null = null;
@@ -287,7 +398,8 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
         const groupIds = await resolveByName(schema.groups, [group.name]);
         if (groupIds.length) {
           groupId = groupIds[0];
-          await db.insert(schema.chapterGroups)
+          await db
+            .insert(schema.chapterGroups)
             .values(groupIds.map((gid) => ({ chapterId, groupId: gid })))
             .onConflictDoNothing();
         }
@@ -298,18 +410,21 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
         const chDetail = await api<any>(`/chapters/${raw.chapter_id}`);
         const images = chDetail.result?.images ?? [];
         if (images.length) {
-          await db.insert(schema.chapterImages).values(
-            images.map((img: any, idx: number) => ({
-              chapterId,
-              groupId,
-              imageUrl: img.url,
-              sourceUrl: img.url,
-              pageNumber: idx + 1,
-              order: idx + 1,
-              width: img.width ?? null,
-              height: img.height ?? null,
-            })),
-          ).onConflictDoNothing();
+          await db
+            .insert(schema.chapterImages)
+            .values(
+              images.map((img: any, idx: number) => ({
+                chapterId,
+                groupId,
+                imageUrl: img.url,
+                sourceUrl: img.url,
+                pageNumber: idx + 1,
+                order: idx + 1,
+                width: img.width ?? null,
+                height: img.height ?? null,
+              })),
+            )
+            .onConflictDoNothing();
           totalImages += images.length;
         }
       } catch (err: any) {
@@ -318,20 +433,32 @@ async function importChapters(mangaId: number, hashId: string): Promise<{ chapte
     }
 
     const pagination = data.result?.pagination;
-    hasMore = pagination ? pagination.current_page < pagination.last_page : false;
+    hasMore = pagination
+      ? pagination.current_page < pagination.last_page
+      : false;
     page++;
   }
 
   // Always sync counters — conflicts may leave chaptersCount stale
-  const [latest] = await db.select({ id: schema.chapters.id })
-    .from(schema.chapters).where(eq(schema.chapters.mangaId, mangaId))
-    .orderBy(desc(schema.chapters.order)).limit(1);
-  const [{ total }] = await db.select({ total: count() })
-    .from(schema.chapters).where(eq(schema.chapters.mangaId, mangaId));
+  const [latest] = await db
+    .select({ id: schema.chapters.id })
+    .from(schema.chapters)
+    .where(eq(schema.chapters.mangaId, mangaId))
+    .orderBy(desc(schema.chapters.order))
+    .limit(1);
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(schema.chapters)
+    .where(eq(schema.chapters.mangaId, mangaId));
   if (total > 0) {
-    await db.update(schema.manga).set({
-      lastChapterId: latest?.id ?? null, chaptersCount: total, chapterUpdatedAt: new Date(),
-    }).where(eq(schema.manga.id, mangaId));
+    await db
+      .update(schema.manga)
+      .set({
+        lastChapterId: latest?.id ?? null,
+        chaptersCount: total,
+        chapterUpdatedAt: new Date(),
+      })
+      .where(eq(schema.manga.id, mangaId));
   }
 
   return { chapters: totalChapters, images: totalImages };
@@ -355,23 +482,39 @@ function emptyCheckpoint(): Checkpoint {
   return {
     startedAt: new Date().toISOString(),
     lastCompletedPage: PAGE_FROM - 1,
-    stats: { imported: 0, skipped: 0, failed: 0, chapters: 0, images: 0, failedPages: [] },
+    stats: {
+      imported: 0,
+      skipped: 0,
+      failed: 0,
+      chapters: 0,
+      images: 0,
+      failedPages: [],
+    },
   };
 }
 
 function loadCheckpoint(): Checkpoint {
   if (RESET_CHECKPOINT) {
-    try { unlinkSync(CHECKPOINT_FILE); } catch { /* no-op */ }
+    try {
+      unlinkSync(CHECKPOINT_FILE);
+    } catch {
+      /* no-op */
+    }
     return emptyCheckpoint();
   }
   try {
-    const parsed = JSON.parse(readFileSync(CHECKPOINT_FILE, 'utf-8')) as Checkpoint;
+    const parsed = JSON.parse(
+      readFileSync(CHECKPOINT_FILE, 'utf-8'),
+    ) as Checkpoint;
     if (typeof parsed?.lastCompletedPage === 'number' && parsed.stats) {
       // Backward-compat: pre-retry checkpoints lack failedPages
-      if (!Array.isArray(parsed.stats.failedPages)) parsed.stats.failedPages = [];
+      if (!Array.isArray(parsed.stats.failedPages))
+        parsed.stats.failedPages = [];
       return parsed;
     }
-  } catch { /* corrupt or missing — start fresh */ }
+  } catch {
+    /* corrupt or missing — start fresh */
+  }
   return emptyCheckpoint();
 }
 
@@ -411,7 +554,9 @@ async function main() {
     RESUME && 'RESUME',
     DRY_RUN && 'DRY RUN',
     process.env.USE_PROXY === '1' && 'PROXY',
-  ].filter(Boolean).join(', ');
+  ]
+    .filter(Boolean)
+    .join(', ');
   console.log(`\nComix.to Import — ${filters}\n`);
 
   // Pre-flight health check — validate signing + API before doing any work
@@ -426,7 +571,9 @@ async function main() {
   // Load checkpoint (may be empty)
   const cp = loadCheckpoint();
   if (cp.lastCompletedPage >= PAGE_FROM) {
-    console.log(`  Resuming from checkpoint: last completed page ${cp.lastCompletedPage}`);
+    console.log(
+      `  Resuming from checkpoint: last completed page ${cp.lastCompletedPage}`,
+    );
     console.log(`    stats so far: ${JSON.stringify(cp.stats)}\n`);
   }
 
@@ -442,9 +589,15 @@ async function main() {
 
   for (let page = startPage; page <= PAGE_TO; page++) {
     // Periodic re-health-check between pages
-    if (HEALTH_INTERVAL > 0 && page > startPage && (page - startPage) % HEALTH_INTERVAL === 0) {
+    if (
+      HEALTH_INTERVAL > 0 &&
+      page > startPage &&
+      (page - startPage) % HEALTH_INTERVAL === 0
+    ) {
       if (!(await healthCheck())) {
-        console.error(`  Health check FAILED mid-run at page ${page}. Exiting with code 2.`);
+        console.error(
+          `  Health check FAILED mid-run at page ${page}. Exiting with code 2.`,
+        );
         await sqlClient.end();
         process.exit(2);
       }
@@ -474,7 +627,9 @@ async function main() {
 
     if (DRY_RUN) {
       items.forEach((m: any, i: number) =>
-        console.log(`    ${i + 1}. [${m.hash_id}] ${m.title} (${m.type}, ${m.status})`),
+        console.log(
+          `    ${i + 1}. [${m.hash_id}] ${m.title} (${m.type}, ${m.status})`,
+        ),
       );
     } else {
       for (let i = 0; i < items.length; i++) {
@@ -485,7 +640,8 @@ async function main() {
           const { mangaId, isNew } = await importOneManga(raw);
 
           if (!raw.has_chapters) {
-            if (isNew) cp.stats.imported++; else cp.stats.skipped++;
+            if (isNew) cp.stats.imported++;
+            else cp.stats.skipped++;
             console.log(`${tag} ${raw.title} → id:${mangaId} (no chapters)`);
             if (!DRY_RUN) saveCheckpoint(cp);
             continue;
@@ -493,10 +649,17 @@ async function main() {
 
           // --resume: skip manga whose source hasn't updated since last import
           if (RESUME && !isNew) {
-            const [local] = await db.select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
-              .from(schema.manga).where(eq(schema.manga.id, mangaId)).limit(1);
+            const [local] = await db
+              .select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
+              .from(schema.manga)
+              .where(eq(schema.manga.id, mangaId))
+              .limit(1);
             const sourceUpdated = unixToDate(raw.chapter_updated_at);
-            if (local?.chapterUpdatedAt && sourceUpdated && local.chapterUpdatedAt >= sourceUpdated) {
+            if (
+              local?.chapterUpdatedAt &&
+              sourceUpdated &&
+              local.chapterUpdatedAt >= sourceUpdated
+            ) {
               cp.stats.skipped++;
               console.log(`${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`);
               if (!DRY_RUN) saveCheckpoint(cp);
@@ -505,11 +668,14 @@ async function main() {
           }
 
           const r = await importChapters(mangaId, raw.hash_id);
-          if (isNew) cp.stats.imported++; else cp.stats.skipped++;
+          if (isNew) cp.stats.imported++;
+          else cp.stats.skipped++;
           cp.stats.chapters += r.chapters;
           cp.stats.images += r.images;
           const label = isNew ? '→' : '↻';
-          console.log(`${tag} ${raw.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`);
+          console.log(
+            `${tag} ${raw.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`,
+          );
         } catch (err: any) {
           cp.stats.failed++;
           console.error(`${tag} FAIL ${raw.title}: ${err.message}`);
@@ -546,4 +712,7 @@ async function main() {
   await sqlClient.end();
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

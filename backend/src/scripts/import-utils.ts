@@ -45,7 +45,10 @@ async function resolveFetchFn(): Promise<typeof fetch> {
   return fetch;
 }
 
-export async function throttledFetch(url: string, opts?: ThrottleOpts): Promise<Response> {
+export async function throttledFetch(
+  url: string,
+  opts?: ThrottleOpts,
+): Promise<Response> {
   const ms = resolveThrottleMs(opts);
   const elapsed = Date.now() - lastReq;
   if (elapsed < ms) await sleep(ms - elapsed);
@@ -54,7 +57,11 @@ export async function throttledFetch(url: string, opts?: ThrottleOpts): Promise<
   return fetchFn(url, { headers: opts?.headers });
 }
 
-export async function apiFetch<T>(base: string, path: string, opts?: ThrottleOpts): Promise<T> {
+export async function apiFetch<T>(
+  base: string,
+  path: string,
+  opts?: ThrottleOpts,
+): Promise<T> {
   const res = await throttledFetch(`${base}${path}`, opts);
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
@@ -65,21 +72,29 @@ export function sleep(ms: number) {
 }
 
 // ─── Taxonomy resolvers ──────────────────────────────────────────
-export async function resolveGenres(names: string[], group = 'genre'): Promise<number[]> {
+export async function resolveGenres(
+  names: string[],
+  group = 'genre',
+): Promise<number[]> {
   if (!names.length) return [];
   const slugMap = new Map(names.map((n) => [slugify(n), n]));
   const slugs = [...slugMap.keys()];
-  const existing = await db.select({ id: schema.genres.id, slug: schema.genres.slug })
-    .from(schema.genres).where(inArray(schema.genres.slug, slugs));
+  const existing = await db
+    .select({ id: schema.genres.id, slug: schema.genres.slug })
+    .from(schema.genres)
+    .where(inArray(schema.genres.slug, slugs));
   const found = new Set(existing.map((r) => r.slug));
   const missing = slugs.filter((s) => !found.has(s));
   if (missing.length) {
-    await db.insert(schema.genres)
+    await db
+      .insert(schema.genres)
       .values(missing.map((s) => ({ name: slugMap.get(s)!, slug: s, group })))
       .onConflictDoNothing();
     // Re-query to get correct IDs (positional mapping breaks when conflicts occur)
-    const newlyResolved = await db.select({ id: schema.genres.id, slug: schema.genres.slug })
-      .from(schema.genres).where(inArray(schema.genres.slug, missing));
+    const newlyResolved = await db
+      .select({ id: schema.genres.id, slug: schema.genres.slug })
+      .from(schema.genres)
+      .where(inArray(schema.genres.slug, missing));
     existing.push(...newlyResolved);
   }
   const idMap = new Map(
@@ -96,14 +111,20 @@ export async function resolveByName(
   const t = table as typeof schema.artists;
   const slugMap = new Map(names.map((n) => [slugify(n), n]));
   const slugs = [...slugMap.keys()];
-  const existing = await db.select({ id: t.id, slug: t.slug }).from(t).where(inArray(t.slug, slugs));
+  const existing = await db
+    .select({ id: t.id, slug: t.slug })
+    .from(t)
+    .where(inArray(t.slug, slugs));
   const found = new Set(existing.map((r) => r.slug));
   const missing = slugs.filter((s) => !found.has(s));
   if (missing.length) {
-    await db.insert(t)
+    await db
+      .insert(t)
       .values(missing.map((s) => ({ name: slugMap.get(s)!, slug: s }) as any))
       .onConflictDoNothing();
-    const newlyResolved = await db.select({ id: t.id, slug: t.slug }).from(t)
+    const newlyResolved = await db
+      .select({ id: t.id, slug: t.slug })
+      .from(t)
       .where(inArray(t.slug, missing));
     existing.push(...newlyResolved);
   }
@@ -134,14 +155,22 @@ export interface MangaInsertData {
   externalId: string;
 }
 
-export async function upsertManga(data: MangaInsertData): Promise<{ mangaId: number; isNew: boolean }> {
+export async function upsertManga(
+  data: MangaInsertData,
+): Promise<{ mangaId: number; isNew: boolean }> {
   // Check if already imported from this source
-  const [existingSrc] = await db.select({ mangaId: schema.mangaSources.mangaId })
+  const [existingSrc] = await db
+    .select({ mangaId: schema.mangaSources.mangaId })
     .from(schema.mangaSources)
-    .where(and(
-      eq(schema.mangaSources.source, data.source as typeof schema.mangaSources.$inferInsert.source),
-      eq(schema.mangaSources.externalId, data.externalId),
-    ))
+    .where(
+      and(
+        eq(
+          schema.mangaSources.source,
+          data.source as typeof schema.mangaSources.$inferInsert.source,
+        ),
+        eq(schema.mangaSources.externalId, data.externalId),
+      ),
+    )
     .limit(1);
   if (existingSrc) return { mangaId: existingSrc.mangaId, isNew: false };
 
@@ -155,20 +184,32 @@ export async function upsertManga(data: MangaInsertData): Promise<{ mangaId: num
   // Slug with collision handling
   const baseSlug = slugify(data.title);
   let slug = baseSlug;
-  const [conflict] = await db.select({ id: schema.manga.id }).from(schema.manga)
-    .where(eq(schema.manga.slug, slug)).limit(1);
+  const [conflict] = await db
+    .select({ id: schema.manga.id })
+    .from(schema.manga)
+    .where(eq(schema.manga.slug, slug))
+    .limit(1);
   if (conflict) slug = `${baseSlug}-${Date.now()}`;
 
   // Insert manga
-  const [inserted] = await db.insert(schema.manga).values({
-    title: data.title, altTitles: data.altTitles,
-    description: data.description, cover: data.coverUrl,
-    originalLanguage: data.originalLanguage,
-    status: (data.status || 'ongoing') as typeof schema.manga.$inferInsert.status,
-    type: (data.type || 'manga') as typeof schema.manga.$inferInsert.type,
-    contentRating: (data.contentRating || 'suggestive') as typeof schema.manga.$inferInsert.contentRating,
-    demographic: data.demographic, year: data.year, slug,
-  }).returning({ id: schema.manga.id });
+  const [inserted] = await db
+    .insert(schema.manga)
+    .values({
+      title: data.title,
+      altTitles: data.altTitles,
+      description: data.description,
+      cover: data.coverUrl,
+      originalLanguage: data.originalLanguage,
+      status: (data.status ||
+        'ongoing') as typeof schema.manga.$inferInsert.status,
+      type: (data.type || 'manga') as typeof schema.manga.$inferInsert.type,
+      contentRating: (data.contentRating ||
+        'suggestive') as typeof schema.manga.$inferInsert.contentRating,
+      demographic: data.demographic,
+      year: data.year,
+      slug,
+    })
+    .returning({ id: schema.manga.id });
 
   const mangaId = inserted.id;
 
@@ -182,17 +223,32 @@ export async function upsertManga(data: MangaInsertData): Promise<{ mangaId: num
 
   // Pivots
   if (allGenreIds.length)
-    await db.insert(schema.mangaGenres).values(allGenreIds.map((genreId) => ({ mangaId, genreId }))).onConflictDoNothing();
+    await db
+      .insert(schema.mangaGenres)
+      .values(allGenreIds.map((genreId) => ({ mangaId, genreId })))
+      .onConflictDoNothing();
   if (artistIds.length)
-    await db.insert(schema.mangaArtists).values(artistIds.map((artistId) => ({ mangaId, artistId }))).onConflictDoNothing();
+    await db
+      .insert(schema.mangaArtists)
+      .values(artistIds.map((artistId) => ({ mangaId, artistId })))
+      .onConflictDoNothing();
   if (authorIds.length)
-    await db.insert(schema.mangaAuthors).values(authorIds.map((authorId) => ({ mangaId, authorId }))).onConflictDoNothing();
+    await db
+      .insert(schema.mangaAuthors)
+      .values(authorIds.map((authorId) => ({ mangaId, authorId })))
+      .onConflictDoNothing();
 
   // Links
   for (const link of data.links) {
-    await db.insert(schema.mangaLinks).values({
-      mangaId, type: link.type, externalId: link.externalId, url: link.url,
-    }).onConflictDoNothing();
+    await db
+      .insert(schema.mangaLinks)
+      .values({
+        mangaId,
+        type: link.type,
+        externalId: link.externalId,
+        url: link.url,
+      })
+      .onConflictDoNothing();
   }
 
   return { mangaId, isNew: true };

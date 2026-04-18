@@ -5,7 +5,9 @@
  */
 
 // ─── Turbopack module loader ────────────────────────────────────
-interface TurbopackModule { exports: Record<string, any> }
+interface TurbopackModule {
+  exports: Record<string, any>;
+}
 
 function createModuleLoader() {
   const modules: Record<number, Function> = {};
@@ -49,7 +51,11 @@ function createModuleLoader() {
       },
     };
 
-    try { factory(e); } catch { /* signing module self-initialises; swallow factory errors */ }
+    try {
+      factory(e);
+    } catch {
+      /* signing module self-initialises; swallow factory errors */
+    }
     return mod.exports;
   }
 
@@ -77,9 +83,12 @@ async function loadApiClient(): Promise<any> {
   // 2. Find the chunk containing the apiClient (module 9165)
   let apiChunkCode: string | null = null;
   for (const chunkFile of chunkUrls) {
-    const res = await fetch(`https://comix.to/_next/static/chunks/${chunkFile}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
+    const res = await fetch(
+      `https://comix.to/_next/static/chunks/${chunkFile}`,
+      {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      },
+    );
     const code = await res.text();
     if (code.includes('apiClient') && code.includes('9165,e=>')) {
       apiChunkCode = code;
@@ -87,7 +96,8 @@ async function loadApiClient(): Promise<any> {
     }
   }
 
-  if (!apiChunkCode) throw new Error('Could not find Comix.to API chunk with signing module');
+  if (!apiChunkCode)
+    throw new Error('Could not find Comix.to API chunk with signing module');
 
   // 3. Set up minimal browser globals for the signing code
   const savedDoc = (globalThis as any).document;
@@ -95,7 +105,11 @@ async function loadApiClient(): Promise<any> {
   const savedSS = (globalThis as any).sessionStorage;
 
   (globalThis as any).document = { currentScript: null };
-  (globalThis as any).localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+  (globalThis as any).localStorage = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
   (globalThis as any).sessionStorage = (globalThis as any).localStorage;
 
   // 4. Evaluate the chunk with our Turbopack loader
@@ -105,7 +119,9 @@ async function loadApiClient(): Promise<any> {
 
   try {
     new Function(apiChunkCode)();
-  } catch { /* chunk may throw on non-module code; signing module is self-contained */ }
+  } catch {
+    /* chunk may throw on non-module code; signing module is self-contained */
+  }
 
   // 5. Extract the apiClient
   const mod = loader.requireModule(9165);
@@ -142,8 +158,16 @@ export async function signUrl(
     const urlStr = url.toString();
     if (urlStr.includes('csrf-cookie')) {
       return {
-        ok: true, status: 204,
-        headers: { get: (n: string) => n === 'XSRF-TOKEN' ? 'tok' : n === 'set-cookie' ? 'XSRF-TOKEN=tok' : null },
+        ok: true,
+        status: 204,
+        headers: {
+          get: (n: string) =>
+            n === 'XSRF-TOKEN'
+              ? 'tok'
+              : n === 'set-cookie'
+                ? 'XSRF-TOKEN=tok'
+                : null,
+        },
       };
     }
     signedUrl = urlStr;

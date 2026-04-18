@@ -19,7 +19,12 @@ export async function proxyFetch(
   url: string | URL | Request,
   init?: RequestInit,
 ): Promise<Response> {
-  const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : url.url;
+  const urlStr =
+    typeof url === 'string'
+      ? url
+      : url instanceof URL
+        ? url.toString()
+        : url.url;
   const headers = init?.headers as Record<string, string> | undefined;
   const res = await undiFetch(urlStr, { dispatcher: getAgent(), headers });
   return res as unknown as Response;
