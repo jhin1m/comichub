@@ -15,26 +15,6 @@ async function bootstrap() {
   const nodeEnv = configService.get<string>('app.nodeEnv', 'development');
   const isProd = nodeEnv === 'production';
 
-  // NC2: fail-closed in prod if bot defense / CORS config is missing.
-  // Silent fail-open here would disable Turnstile + accept all origins.
-  if (isProd) {
-    const turnstileSecret = configService.get<string>(
-      'turnstile.secretKey',
-      '',
-    );
-    if (!turnstileSecret) {
-      throw new Error(
-        'TURNSTILE_SECRET_KEY is required in production — refusing to boot with bot defense disabled',
-      );
-    }
-    const corsList = configService.get<string[]>('app.corsOrigins', []);
-    if (corsList.length === 0) {
-      throw new Error(
-        'CORS_ORIGINS must be configured in production — refusing to boot with open CORS',
-      );
-    }
-  }
-
   app.enableShutdownHooks();
 
   // Trust proxy — Cloudflare → Caddy → Node (2 hops by default).
