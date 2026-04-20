@@ -30,4 +30,9 @@ export const authApi = {
 
   resetPassword: (data: ResetPasswordForm) =>
     apiClient.post('/auth/reset-password', data).then((r) => r.data),
+
+  exchangeGoogleCode: (code: string) =>
+    apiClient
+      .post<TokenResponse>('/auth/google/exchange', { code })
+      .then((r) => r.data),
 };

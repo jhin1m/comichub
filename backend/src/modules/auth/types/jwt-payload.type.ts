@@ -5,5 +5,7 @@ export interface JwtPayload {
   role: 'admin' | 'user';
 }
 
-// Same shape as JwtPayload — differentiated by signing secret
-export type JwtRefreshPayload = JwtPayload;
+// H3: refresh token carries a `jti` for reuse detection. Access token doesn't need it.
+export interface JwtRefreshPayload extends JwtPayload {
+  jti?: string;
+}

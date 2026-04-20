@@ -73,6 +73,8 @@ export const userContentPreferences = pgTable('user_content_preferences', {
 });
 
 // refresh_tokens — DB fallback when Redis is unavailable
+// H3: `jti` enables reuse detection — if client presents a refresh token
+// whose jti doesn't match the DB row, it's been rotated (likely stolen).
 export const refreshTokens = pgTable('refresh_tokens', {
   id: serial('id').primaryKey(),
   userId: integer('user_id')
@@ -80,6 +82,7 @@ export const refreshTokens = pgTable('refresh_tokens', {
     .references(() => users.id, { onDelete: 'cascade' })
     .unique(),
   token: text('token').notNull(),
+  jti: text('jti'),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

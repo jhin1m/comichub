@@ -4,7 +4,9 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   ServiceUnavailableException,
+  Logger,
   Inject,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -23,15 +25,18 @@ import {
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { TokenResponseDto } from './dto/token-response.dto.js';
-import type { JwtPayload } from './types/jwt-payload.type.js';
+import type { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.type.js';
 
-// Password reset token TTL in seconds (15 min)
 const RESET_TTL = 60 * 15;
+// H5 login lockout — 15-minute window, hard lock at 10 failed attempts per email.
+const LOGIN_FAIL_WINDOW_SEC = 15 * 60;
+const LOGIN_FAIL_LOCK_THRESHOLD = 10;
+// C2 OAuth code exchange — short-lived, single-use.
+const OAUTH_CODE_TTL_SEC = 60;
 
-/** Parse duration string like '7d', '15m', '24h' to seconds */
 function parseDurationToSeconds(duration: string): number {
   const match = duration.match(/^(\d+)(s|m|h|d|w)$/);
-  if (!match) return 60 * 60 * 24 * 7; // default 7d
+  if (!match) return 60 * 60 * 24 * 7;
   const n = Number(match[1]);
   switch (match[2]) {
     case 's': return n;
@@ -43,13 +48,20 @@ function parseDurationToSeconds(duration: string): number {
   }
 }
 
-/** SHA-256 hash for storing tokens in DB (not reversible) */
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+// H5: key emails by hash so we don't keep raw PII in Redis.
+function emailKey(email: string): string {
+  const h = crypto.createHash('sha256').update(email.toLowerCase()).digest('hex');
+  return `login-fail:${h}`;
+}
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly jwtService: JwtService,
@@ -77,20 +89,63 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<TokenResponseDto> {
+    await this.assertNotLockedOut(dto.email);
+
     const user = await this.db.query.users.findFirst({
       where: eq(users.email, dto.email),
     });
 
     if (!user || !user.password) {
+      await this.recordLoginFailure(dto.email);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) {
+      await this.recordLoginFailure(dto.email);
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    await this.clearLoginFailures(dto.email);
     return this.issueTokens(user);
+  }
+
+  // H5: hard-lock after 10 failed attempts in 15 min. Best-effort — falls
+  // open when Redis is down; per-IP throttle (ThrottlerGuard) still active.
+  private async assertNotLockedOut(email: string): Promise<void> {
+    if (!this.redisStatus.available) return;
+    try {
+      const raw = await this.redis.get(emailKey(email));
+      const count = raw ? Number(raw) : 0;
+      if (count >= LOGIN_FAIL_LOCK_THRESHOLD) {
+        throw new ForbiddenException(
+          'Too many failed login attempts. Try again in 15 minutes.',
+        );
+      }
+    } catch (err) {
+      if (err instanceof ForbiddenException) throw err;
+      this.logger.warn('Lockout check failed, allowing login', err);
+    }
+  }
+
+  private async recordLoginFailure(email: string): Promise<void> {
+    if (!this.redisStatus.available) return;
+    try {
+      const key = emailKey(email);
+      const count = await this.redis.incr(key);
+      if (count === 1) await this.redis.expire(key, LOGIN_FAIL_WINDOW_SEC);
+    } catch (err) {
+      this.logger.warn('Failed to record login failure', err);
+    }
+  }
+
+  private async clearLoginFailures(email: string): Promise<void> {
+    if (!this.redisStatus.available) return;
+    try {
+      await this.redis.del(emailKey(email));
+    } catch {
+      /* ignore */
+    }
   }
 
   async getMe(userId: number) {
@@ -102,7 +157,6 @@ export class AuthService {
     return user;
   }
 
-  /** Get refresh token TTL in seconds from config */
   private get refreshTtl(): number {
     return parseDurationToSeconds(
       this.configService.get<string>('jwt.refreshExpiry', '7d'),
@@ -110,7 +164,6 @@ export class AuthService {
   }
 
   async logout(userId: number): Promise<void> {
-    // allSettled ensures both always run even if one fails
     await Promise.allSettled([
       this.redis.del(`refresh:${userId}`),
       this.db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)),
@@ -118,31 +171,46 @@ export class AuthService {
   }
 
   async refresh(
-    user: User & { refreshToken: string },
+    user: User & { refreshToken: string; jti?: string },
   ): Promise<TokenResponseDto> {
-    // Try Redis first (stores raw token), fallback to DB (stores hashed token)
-    let stored = await this.redis.get(`refresh:${user.id}`);
+    const [row] = await this.db
+      .select({
+        token: refreshTokens.token,
+        jti: refreshTokens.jti,
+      })
+      .from(refreshTokens)
+      .where(
+        and(
+          eq(refreshTokens.userId, user.id),
+          gt(refreshTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+
+    // H3 reuse detection: row.jti is set AND doesn't match the presented token →
+    // someone replayed a previously rotated refresh token. Nuke the session and
+    // force re-login for everyone (both victim and attacker).
+    if (row?.jti && user.jti && row.jti !== user.jti) {
+      this.logger.warn(
+        `Refresh reuse detected for user ${user.id}; revoking session`,
+      );
+      await Promise.allSettled([
+        this.db.delete(refreshTokens).where(eq(refreshTokens.userId, user.id)),
+        this.redis.del(`refresh:${user.id}`),
+      ]);
+      throw new UnauthorizedException('Refresh token reuse detected');
+    }
+
+    // Match against Redis (raw) first, DB (hash) second — existing dual-write logic.
+    const stored = await this.redis.get(`refresh:${user.id}`);
     if (stored) {
-      // Redis has raw token — direct compare
       if (stored !== user.refreshToken) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
     } else {
-      // DB fallback — compare hashed
-      const [row] = await this.db
-        .select({ token: refreshTokens.token })
-        .from(refreshTokens)
-        .where(
-          and(
-            eq(refreshTokens.userId, user.id),
-            gt(refreshTokens.expiresAt, new Date()),
-          ),
-        )
-        .limit(1);
       if (!row || row.token !== hashToken(user.refreshToken)) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
-      // Re-populate Redis with raw token
       await this.redis.setex(
         `refresh:${user.id}`,
         this.refreshTtl,
@@ -156,8 +224,36 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
+  // C2: single-use code bound to user — avoids leaking tokens via URL.
+  async createOauthCode(userId: number): Promise<string> {
+    if (!this.redisStatus.available) {
+      throw new ServiceUnavailableException(
+        'OAuth temporarily unavailable — Redis down',
+      );
+    }
+    const code = crypto.randomBytes(32).toString('hex');
+    await this.redis.setex(`oauth-code:${code}`, OAUTH_CODE_TTL_SEC, String(userId));
+    return code;
+  }
+
+  async exchangeOauthCode(code: string): Promise<TokenResponseDto> {
+    if (!this.redisStatus.available) {
+      throw new ServiceUnavailableException(
+        'OAuth temporarily unavailable — Redis down',
+      );
+    }
+    const userIdRaw = await this.redis.getdel(`oauth-code:${code}`);
+    if (!userIdRaw) {
+      throw new UnauthorizedException('Invalid or expired OAuth code');
+    }
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.id, Number(userIdRaw)),
+    });
+    if (!user) throw new UnauthorizedException('User no longer exists');
+    return this.issueTokens(user);
+  }
+
   async forgotPassword(email: string): Promise<void> {
-    // Password reset requires Redis
     if (!this.redisStatus.available) {
       throw new ServiceUnavailableException(
         'Password reset is temporarily unavailable',
@@ -167,14 +263,10 @@ export class AuthService {
     const user = await this.db.query.users.findFirst({
       where: eq(users.email, email),
     });
-    // Silent return for non-existent users or OAuth-only accounts (no password)
     if (!user || !user.password) return;
 
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const hash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
+    const hash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
     await this.redis.setex(`pwd-reset:${hash}`, RESET_TTL, String(user.id));
 
@@ -187,10 +279,7 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    const hash = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
 
     const userId = await this.redis.get(`pwd-reset:${hash}`);
     if (!userId) {
@@ -203,7 +292,6 @@ export class AuthService {
       .set({ password: hashed })
       .where(eq(users.id, Number(userId)));
 
-    // Delete reset token (single-use) + force re-login (Redis + DB)
     await Promise.allSettled([
       this.redis.del(`pwd-reset:${hash}`),
       this.redis.del(`refresh:${userId}`),
@@ -214,12 +302,14 @@ export class AuthService {
   }
 
   private async issueTokens(user: User): Promise<TokenResponseDto> {
-    const payload: JwtPayload = {
+    const jti = crypto.randomUUID();
+    const basePayload: JwtPayload = {
       sub: user.id,
       uuid: user.uuid,
       email: user.email,
       role: user.role,
     };
+    const refreshPayload: JwtRefreshPayload = { ...basePayload, jti };
 
     const accessSecret =
       this.configService.getOrThrow<string>('jwt.accessSecret');
@@ -236,7 +326,7 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { ...payload },
+        { ...basePayload },
         {
           secret: accessSecret,
           expiresIn: accessExpiry as
@@ -244,27 +334,27 @@ export class AuthService {
             | number,
         },
       ),
-
-      this.jwtService.signAsync(
-        { ...payload },
-        {
-          secret: refreshSecret,
-          expiresIn: refreshExpiry as
-            | `${number}${'s' | 'm' | 'h' | 'd' | 'w'}`
-            | number,
-        },
-      ),
+      this.jwtService.signAsync(refreshPayload, {
+        secret: refreshSecret,
+        expiresIn: refreshExpiry as
+          | `${number}${'s' | 'm' | 'h' | 'd' | 'w'}`
+          | number,
+      }),
     ]);
 
-    // Dual-write: DB (hashed token, authoritative) then Redis (raw, cache)
     const ttl = this.refreshTtl;
     const expiresAt = new Date(Date.now() + ttl * 1000);
     await this.db
       .insert(refreshTokens)
-      .values({ userId: user.id, token: hashToken(refreshToken), expiresAt })
+      .values({
+        userId: user.id,
+        token: hashToken(refreshToken),
+        jti,
+        expiresAt,
+      })
       .onConflictDoUpdate({
         target: refreshTokens.userId,
-        set: { token: hashToken(refreshToken), expiresAt },
+        set: { token: hashToken(refreshToken), jti, expiresAt },
       });
     await this.redis.setex(`refresh:${user.id}`, ttl, refreshToken);
 

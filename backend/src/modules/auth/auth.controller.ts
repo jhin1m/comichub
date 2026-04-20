@@ -24,6 +24,7 @@ import { LoginDto } from './dto/login.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { TokenResponseDto } from './dto/token-response.dto.js';
+import { GoogleExchangeDto } from './dto/google-exchange.dto.js';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard.js';
 import { GoogleAuthGuard } from './guards/google-auth.guard.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
@@ -73,6 +74,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -98,16 +100,41 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Google OAuth callback' })
   async googleCallback(@CurrentUser() user: User, @Res() res: Response) {
-    const tokens = await this.authService.loginWithGoogle(user);
     const frontendUrl = this.configService.get<string>(
       'app.frontendUrl',
       'http://localhost:3000',
     );
-    const params = new URLSearchParams({
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    });
-    return res.redirect(`${frontendUrl}/auth/callback#${params.toString()}`);
+
+    // C2 rollout flag: legacy frontend still reads tokens from URL fragment.
+    // Set OAUTH_LEGACY_FRAGMENT=1 during phased rollout; remove once frontend
+    // is fully on the code-exchange flow.
+    const legacy =
+      this.configService.get<string>('OAUTH_LEGACY_FRAGMENT') === '1';
+    if (legacy) {
+      const tokens = await this.authService.loginWithGoogle(user);
+      const params = new URLSearchParams({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      });
+      return res.redirect(`${frontendUrl}/auth/callback#${params.toString()}`);
+    }
+
+    // C2 default: opaque one-time code in query string. Frontend POSTs
+    // /auth/google/exchange with the code → receives tokens normally.
+    const code = await this.authService.createOauthCode(user.id);
+    return res.redirect(`${frontendUrl}/auth/callback?code=${code}`);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('google/exchange')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange OAuth code for access + refresh tokens' })
+  @ApiResponse({ status: 200, type: TokenResponseDto })
+  exchangeGoogleCode(
+    @Body() dto: GoogleExchangeDto,
+  ): Promise<TokenResponseDto> {
+    return this.authService.exchangeOauthCode(dto.code);
   }
 
   @Public()
@@ -118,7 +145,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset email' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     await this.authService.forgotPassword(dto.email);
-    return { message: 'If that email is registered, a reset link has been sent.' };
+    return {
+      message: 'If that email is registered, a reset link has been sent.',
+    };
   }
 
   @Public()

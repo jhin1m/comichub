@@ -127,6 +127,20 @@
       "when": 1775570000000,
       "tag": "0017_add_refresh_tokens_table",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1776600000000,
+      "tag": "0018_add_report_pending_unique_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1776600001000,
+      "tag": "0019_add_refresh_token_jti",
+      "breakpoints": true
     }
   ]
 }

@@ -40,38 +40,45 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       return done(new Error('No email from Google'), undefined);
     }
 
-    // Find by google_id first, then by email
+    // Find by google_id first (already-linked account).
     let user = await this.db.query.users.findFirst({
       where: eq(users.googleId, googleId),
     });
 
+    // H6: block silent link. If there's a pre-existing LOCAL account with this
+    // email, do NOT auto-link — an attacker can pre-create an account with the
+    // victim's email to hijack their Google sign-in. Frontend must ship an
+    // explicit "link Google" flow (from settings, after password login) before
+    // this branch can be re-enabled.
     if (!user) {
-      // Only link by email if the Google account has a verified email
-      const emailVerified =
-        profile.emails?.[0]?.verified === true ||
-        (profile._json as Record<string, unknown>)?.email_verified === true;
-
-      if (emailVerified) {
-        user = await this.db.query.users.findFirst({
-          where: eq(users.email, email),
-        });
+      const byEmail = await this.db.query.users.findFirst({
+        where: eq(users.email, email),
+      });
+      if (byEmail && byEmail.password) {
+        return done(
+          Object.assign(new Error('ACCOUNT_EXISTS_NO_LINK'), {
+            name: 'AccountExistsNoLink',
+          }),
+          undefined,
+        );
+      }
+      // No collision OR existing account is Google-only without googleId
+      // (rare migration case) — allow creation / re-attach.
+      if (byEmail && !byEmail.password) {
+        await this.db
+          .update(users)
+          .set({ googleId, avatar: byEmail.avatar ?? avatar ?? null })
+          .where(eq(users.id, byEmail.id));
+        user = { ...byEmail, googleId };
       }
     }
 
     if (!user) {
-      // Create new user via Google OAuth
       const [created] = await this.db
         .insert(users)
         .values({ name, email, googleId, avatar: avatar ?? null })
         .returning();
       user = created;
-    } else if (!user.googleId) {
-      // Link google_id to existing account
-      await this.db
-        .update(users)
-        .set({ googleId, avatar: user.avatar ?? avatar ?? null })
-        .where(eq(users.id, user.id));
-      user = { ...user, googleId };
     }
 
     done(null, user);

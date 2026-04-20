@@ -49,7 +49,14 @@ export class TurnstileGuard implements CanActivate {
       }
     } catch (err) {
       if (err instanceof ForbiddenException) throw err;
-      // CF API unreachable — allow through to avoid blocking all auth
+      // H4: fail-closed in prod — CF outage is NOT a valid auth bypass.
+      // Dev/non-prod falls open so local work isn't blocked by transient network issues.
+      const isProd =
+        this.configService.get<string>('app.nodeEnv') === 'production';
+      if (isProd) {
+        this.logger.error('Turnstile verification errored in prod', err);
+        throw new ForbiddenException('Turnstile verification failed');
+      }
       this.logger.warn('Turnstile verification failed, allowing request', err);
     }
 

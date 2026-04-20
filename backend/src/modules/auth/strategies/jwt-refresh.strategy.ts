@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { users } from '../../../database/schema/index.js';
-import type { JwtPayload } from '../types/jwt-payload.type.js';
+import type { JwtRefreshPayload } from '../types/jwt-payload.type.js';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -26,7 +26,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     });
   }
 
-  async validate(req: Request, payload: JwtPayload) {
+  async validate(req: Request, payload: JwtRefreshPayload) {
     const refreshToken = req.body?.refreshToken as string | undefined;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token missing');
@@ -40,7 +40,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
       throw new UnauthorizedException('User not found');
     }
 
-    // Attach refreshToken to user object for rotation in service
-    return { ...user, refreshToken };
+    // Attach refreshToken + jti (for H3 reuse detection) to user object
+    return { ...user, refreshToken, jti: payload.jti };
   }
 }
