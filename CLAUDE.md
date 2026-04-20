@@ -42,7 +42,7 @@ No lint or test scripts configured in frontend yet.
 ### Backend (NestJS + Drizzle + PostgreSQL)
 
 - **API prefix**: `/api/v1` — all endpoints are under this prefix
-- **Global guards**: `ThrottlerGuard` (60 req/min) and `JwtAuthGuard` applied via `APP_GUARD`. All routes require auth by default; use `@Public()` decorator to opt out.
+- **Global guards**: `ThrottlerGuard` (300 req/min) and `JwtAuthGuard` applied via `APP_GUARD`. All routes require auth by default; use `@Public()` decorator to opt out.
 - **Response envelope**: `TransformInterceptor` wraps all responses in `{ success, data, message }` format
 - **Database**: PostgreSQL via Drizzle ORM with `postgres.js` driver. Inject DB with `@Inject(DRIZZLE)` using the `DrizzleDB` type from `drizzle.provider.ts`
 - **Schema**: Drizzle schema files in `src/database/schema/` — exported through barrel `index.ts`. Migrations output to `src/database/migrations/`

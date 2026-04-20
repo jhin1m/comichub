@@ -23,7 +23,13 @@ export const postgresClientProvider: Provider = {
   inject: [ConfigService],
   useFactory: (config: ConfigService): Sql => {
     const url = config.getOrThrow<string>('database.url');
-    return postgres(url);
+    const ssl = config.get<'require' | undefined>('database.ssl');
+    return postgres(url, {
+      ssl,
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
   },
 };
 
