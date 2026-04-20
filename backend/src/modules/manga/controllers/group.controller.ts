@@ -29,6 +29,7 @@ import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
 import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 
 @ApiTags('groups')
 @Controller('groups')
@@ -71,7 +72,7 @@ export class GroupController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @ApiOperation({ summary: 'Create group (admin only)' })
   @ApiResponse({ status: 201, description: 'Group created' })
@@ -81,7 +82,7 @@ export class GroupController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   @ApiOperation({ summary: 'Update group (admin only)' })
   @ApiParam({ name: 'id', type: Number })
@@ -95,7 +96,7 @@ export class GroupController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete group (admin only)' })

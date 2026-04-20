@@ -21,6 +21,7 @@ import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
 import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 
 @ApiTags('rankings')
@@ -72,7 +73,7 @@ export class RankingController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id/hot')
   @ApiOperation({ summary: 'Toggle is_hot flag on manga (admin only)' })
   @ApiParam({ name: 'id', type: Number })

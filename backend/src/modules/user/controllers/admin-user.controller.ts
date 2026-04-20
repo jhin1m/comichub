@@ -14,13 +14,14 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { UserService } from '../services/user.service.js';
 import { BanUserDto } from '../dto/ban-user.dto.js';
 import { UserQueryDto } from '../dto/user-query.dto.js';
 
 @ApiTags('admin-users')
 @Controller('admin/users')
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 @ApiBearerAuth()
 export class AdminUserController {

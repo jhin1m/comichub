@@ -27,6 +27,7 @@ import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
 import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 
 @ApiTags('artists')
 @Controller('artists')
@@ -58,7 +59,7 @@ export class ArtistController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @ApiOperation({ summary: 'Create artist (admin only)' })
   @ApiResponse({ status: 201, description: 'Artist created' })
@@ -68,7 +69,7 @@ export class ArtistController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   @ApiOperation({ summary: 'Update artist (admin only)' })
   @ApiParam({ name: 'id', type: Number })
@@ -82,7 +83,7 @@ export class ArtistController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete artist (admin only)' })

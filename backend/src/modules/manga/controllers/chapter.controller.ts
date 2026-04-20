@@ -33,6 +33,7 @@ import { UpdateChapterDto } from '../dto/update-chapter.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
@@ -83,7 +84,7 @@ export class ChapterController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('manga/:mangaId/chapters')
   @ApiOperation({ summary: 'Create chapter (admin only)' })
   @ApiParam({ name: 'mangaId', type: Number })
@@ -97,7 +98,7 @@ export class ChapterController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch('chapters/:id')
   @ApiOperation({ summary: 'Update chapter (admin only)' })
   @ApiParam({ name: 'id', type: Number })
@@ -108,7 +109,7 @@ export class ChapterController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('chapters/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft delete chapter (admin only)' })
@@ -120,7 +121,7 @@ export class ChapterController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('chapters/:id/images')
   @UseInterceptors(
     FilesInterceptor('images', 200, { limits: { fileSize: 10 * 1024 * 1024 } }),
@@ -149,7 +150,7 @@ export class ChapterController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete('chapters/:id/images')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Clear all chapter images (admin only)' })

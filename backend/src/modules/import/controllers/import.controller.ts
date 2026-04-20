@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { ImportService } from '../services/import.service.js';
 import { ImportSearchDto } from '../dto/import-search.dto.js';
 import { ImportMangaDto } from '../dto/import-manga.dto.js';
@@ -24,7 +25,7 @@ import { ImportMangaDto } from '../dto/import-manga.dto.js';
 @ApiTags('import')
 @ApiBearerAuth()
 @Roles('admin')
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('import')
 export class ImportController {
   constructor(private readonly importService: ImportService) {}

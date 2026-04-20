@@ -29,6 +29,7 @@ import { CacheTTL } from '../../../common/decorators/cache-ttl.decorator.js';
 import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.interceptor.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
@@ -68,7 +69,7 @@ export class MangaController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @ApiOperation({ summary: 'Create manga (admin only)' })
   @ApiResponse({ status: 201, description: 'Manga created' })
@@ -78,7 +79,7 @@ export class MangaController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   @ApiOperation({ summary: 'Update manga (admin only)' })
   @ApiParam({ name: 'id', type: Number })
@@ -90,7 +91,7 @@ export class MangaController {
 
   @ApiBearerAuth()
   @Roles('admin')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft delete manga (admin only)' })
