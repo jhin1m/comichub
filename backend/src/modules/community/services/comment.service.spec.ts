@@ -102,6 +102,52 @@ describe('CommentService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    // ─── C4 sanitize-html tightening ────────────────────────────────
+
+    const captureContent = async (input: string): Promise<string> => {
+      const chain = buildChain([{ ...baseComment, content: input }]);
+      mockDb.insert.mockReturnValue(chain);
+      await service.create(10, {
+        commentableType: 'manga' as any,
+        commentableId: 1,
+        content: input,
+      });
+      return chain.values.mock.calls[0][0].content;
+    };
+
+    it('keeps whitelisted span classes (spoiler/highlight/mention)', async () => {
+      const out = await captureContent(
+        '<span class="spoiler">hidden</span>',
+      );
+      expect(out).toContain('<span class="spoiler">hidden</span>');
+    });
+
+    it('strips non-whitelisted span classes (Tailwind hijack defense)', async () => {
+      const out = await captureContent(
+        '<span class="fixed inset-0 z-[9999]">evil</span>',
+      );
+      expect(out).not.toContain('fixed');
+      expect(out).not.toContain('z-[9999]');
+      expect(out).toContain('<span>evil</span>');
+    });
+
+    it('keeps only whitelisted classes when mixed', async () => {
+      const out = await captureContent(
+        '<span class="spoiler fixed inset-0">hidden</span>',
+      );
+      expect(out).toContain('class="spoiler"');
+      expect(out).not.toContain('fixed');
+    });
+
+    it('adds noreferrer to anchor rel (Referer leak defense)', async () => {
+      const out = await captureContent(
+        '<a href="https://example.com">link</a>',
+      );
+      expect(out).toContain('noreferrer');
+      expect(out).toContain('noopener');
+      expect(out).toContain('nofollow');
+    });
   });
 
   // ─── update ────────────────────────────────────────────────────────

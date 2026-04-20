@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users } from './user.schema.js';
 import { manga, chapters } from './manga.schema.js';
 
@@ -177,23 +178,32 @@ export const readingHistory = pgTable(
 );
 
 // chapter_reports — user reports broken/wrong chapters
-export const chapterReports = pgTable('chapter_reports', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id, {
-    onDelete: 'set null',
-  }),
-  chapterId: integer('chapter_id')
-    .notNull()
-    .references(() => chapters.id, { onDelete: 'cascade' }),
-  type: reportTypeEnum('type').notNull(),
-  description: text('description'),
-  status: reportStatusEnum('status').default('pending').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at')
-    .defaultNow()
-    .notNull()
-    .$onUpdateFn(() => new Date()),
-});
+export const chapterReports = pgTable(
+  'chapter_reports',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    chapterId: integer('chapter_id')
+      .notNull()
+      .references(() => chapters.id, { onDelete: 'cascade' }),
+    type: reportTypeEnum('type').notNull(),
+    description: text('description'),
+    status: reportStatusEnum('status').default('pending').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .notNull()
+      .$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    // C3 dedupe — only one pending report per (user, chapter, type).
+    uniqueIndex('report_unique_pending_idx')
+      .on(table.userId, table.chapterId, table.type)
+      .where(sql`status = 'pending'`),
+  ],
+);
 
 // sticker_sets + stickers — reaction stickers grouped in sets
 export const stickerSets = pgTable('sticker_sets', {

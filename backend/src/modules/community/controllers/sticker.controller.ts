@@ -21,6 +21,7 @@ import {
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 
 @ApiTags('stickers')
 @Controller('sticker-sets')
@@ -44,7 +45,7 @@ export class StickerController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Create sticker set (admin)' })
   createSet(@Body() dto: CreateStickerSetDto) {
@@ -53,7 +54,7 @@ export class StickerController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Update sticker set (admin)' })
   updateSet(
@@ -66,7 +67,7 @@ export class StickerController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Delete sticker set (admin)' })
   async removeSet(@Param('id', ParseIntPipe) id: number) {
@@ -76,7 +77,7 @@ export class StickerController {
   @Post(':id/stickers')
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Add sticker to set (admin)' })
   addSticker(
@@ -89,7 +90,7 @@ export class StickerController {
   @Delete('stickers/:stickerId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Remove sticker (admin)' })
   async removeSticker(@Param('stickerId', ParseIntPipe) stickerId: number) {

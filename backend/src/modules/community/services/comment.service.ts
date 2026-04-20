@@ -47,6 +47,10 @@ const ALLOWED_ATTRIBUTES: sanitizeHtml.IOptions['allowedAttributes'] = {
 
 const ALLOWED_IMG_SRC_PATTERN = /^https:\/\//i;
 
+// C4: explicit class whitelist — free-form class attr lets attackers inject
+// Tailwind utilities (e.g. `fixed inset-0 z-[9999]`) to hijack reader UI.
+const SPAN_CLASS_WHITELIST = new Set(['spoiler', 'highlight', 'mention']);
+
 function sanitizeContent(content: string): string {
   return sanitizeHtml(content, {
     allowedTags: ALLOWED_TAGS,
@@ -54,9 +58,10 @@ function sanitizeContent(content: string): string {
     allowedSchemes: ['https'],
     allowedSchemesAppliedToAttributes: ['src', 'href'],
     transformTags: {
+      // C4: add `noreferrer` → blocks Referer leak of current manga/chapter URL.
       a: sanitizeHtml.simpleTransform('a', {
         target: '_blank',
-        rel: 'noopener nofollow',
+        rel: 'noopener nofollow noreferrer',
       }),
       img: (tagName, attribs) => {
         const src = attribs.src ?? '';
@@ -64,6 +69,14 @@ function sanitizeContent(content: string): string {
           return { tagName: 'span', attribs: {} };
         }
         return { tagName, attribs };
+      },
+      span: (tagName, attribs) => {
+        const kept = (attribs.class ?? '')
+          .split(/\s+/)
+          .filter((c) => SPAN_CLASS_WHITELIST.has(c));
+        const newAttribs: Record<string, string> = {};
+        if (kept.length) newAttribs.class = kept.join(' ');
+        return { tagName, attribs: newAttribs };
       },
     },
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { ReportService } from './report.service.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
@@ -83,6 +83,34 @@ describe('ReportService', () => {
         type: 'missing_pages',
         status: 'pending',
       });
+    });
+
+    // C3 dedupe
+    it('throws ConflictException when pending dupe exists', async () => {
+      let call = 0;
+      mockDb.select.mockImplementation(() => {
+        call++;
+        if (call === 1) return buildChain([{ id: 1 }]); // chapter exists
+        return buildChain([{ id: 42 }]); // existing pending dupe
+      });
+
+      await expect(
+        service.submit(1, 10, { type: 'missing_pages' as any }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('maps Postgres 23505 unique violation to 409 ConflictException', async () => {
+      mockDb.select.mockImplementation(() => buildChain([{ id: 1 }]))
+        .mockImplementationOnce(() => buildChain([{ id: 1 }]))
+        .mockImplementationOnce(() => buildChain([])); // no pre-check dupe
+      const raceError = Object.assign(new Error('dup'), { code: '23505' });
+      const chain: any = buildChain();
+      chain.returning = vi.fn().mockRejectedValue(raceError);
+      mockDb.insert.mockReturnValue(chain);
+
+      await expect(
+        service.submit(1, 10, { type: 'missing_pages' as any }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

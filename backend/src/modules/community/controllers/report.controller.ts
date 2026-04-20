@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ReportService } from '../services/report.service.js';
 import { CreateReportDto } from '../dto/create-report.dto.js';
 import {
@@ -28,6 +29,7 @@ import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import type { User } from '../../../database/schema/index.js';
 
 @ApiTags('reports')
@@ -35,6 +37,8 @@ import type { User } from '../../../database/schema/index.js';
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
+  // C3: 3 reports/min/user — keeps moderator queue clean, blocks harassment spam.
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('chapters/:id/report')
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
@@ -49,7 +53,7 @@ export class ReportController {
 
   @Get('reports')
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'List all reports (admin)' })
   @ApiQuery({ name: 'status', enum: ReportStatus, required: false })
@@ -62,7 +66,7 @@ export class ReportController {
 
   @Patch('reports/:id')
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Update report status (admin)' })
   updateStatus(
@@ -75,7 +79,7 @@ export class ReportController {
   @Delete('reports/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Delete report (admin)' })
   async remove(@Param('id', ParseIntPipe) id: number) {
