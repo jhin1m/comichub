@@ -4,6 +4,10 @@ import { eq, sql } from 'drizzle-orm';
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../database/drizzle.provider.js';
 import type { DrizzleDB } from '../database/drizzle.provider.js';
+import {
+  REDIS_AVAILABLE,
+  type RedisStatus,
+} from '../common/providers/redis.provider.js';
 import { manga, chapters } from '../database/schema/index.js';
 
 @Injectable()
@@ -13,11 +17,16 @@ export class CounterFlushJob {
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
     @Inject('REDIS_CLIENT') private redis: Redis,
+    @Inject(REDIS_AVAILABLE) private redisStatus: RedisStatus,
   ) {}
 
-  /** Flush buffered Redis counters to DB every 5 minutes */
+  /** Flush buffered Redis counters to DB every 5 minutes. No-op when Redis down. */
   @Cron('*/5 * * * *')
   async flush(): Promise<void> {
+    if (!this.redisStatus.available) {
+      this.logger.debug('Counter flush skipped — Redis unavailable');
+      return;
+    }
     try {
       await Promise.all([
         this.flushChapterViews(),

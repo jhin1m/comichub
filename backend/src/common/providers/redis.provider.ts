@@ -60,7 +60,7 @@ export function createResilientRedis(
 }
 
 const STUBBED_METHODS = [
-  'get', 'set', 'setex', 'del', 'keys', 'incr', 'incrby',
+  'get', 'getdel', 'set', 'setex', 'del', 'keys', 'incr', 'incrby',
   'expire', 'ttl', 'exists', 'scan', 'pipeline',
 ] as const;
 
@@ -86,6 +86,7 @@ function restoreOriginalMethods(client: Redis, originals: MethodBackup): void {
 function stubRedisClient(client: Redis): void {
   const noop = () => Promise.resolve(null);
   client.get = noop as never;
+  client.getdel = noop as never;
   client.set = noop as never;
   client.setex = noop as never;
   client.del = noop as never;

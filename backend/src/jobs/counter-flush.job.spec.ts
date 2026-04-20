@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CounterFlushJob } from './counter-flush.job.js';
 import { DRIZZLE } from '../database/drizzle.provider.js';
+import { REDIS_AVAILABLE } from '../common/providers/redis.provider.js';
 
 describe('CounterFlushJob', () => {
   let job: CounterFlushJob;
   let mockDb: any;
   let mockRedis: any;
+  let redisStatus: { available: boolean };
 
   beforeEach(async () => {
     const updateChain: any = {};
@@ -22,11 +24,14 @@ describe('CounterFlushJob', () => {
       getdel: vi.fn(),
     };
 
+    redisStatus = { available: true };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CounterFlushJob,
         { provide: DRIZZLE, useValue: mockDb },
         { provide: 'REDIS_CLIENT', useValue: mockRedis },
+        { provide: REDIS_AVAILABLE, useValue: redisStatus },
       ],
     }).compile();
 
@@ -38,6 +43,16 @@ describe('CounterFlushJob', () => {
   });
 
   describe('flush()', () => {
+    it('should skip entire flush when Redis is unavailable (C6)', async () => {
+      redisStatus.available = false;
+
+      await job.flush();
+
+      expect(mockRedis.scan).not.toHaveBeenCalled();
+      expect(mockRedis.getdel).not.toHaveBeenCalled();
+      expect(mockDb.update).not.toHaveBeenCalled();
+    });
+
     it('should complete without error when no keys exist', async () => {
       // SCAN returns empty cursor immediately
       mockRedis.scan.mockResolvedValue(['0', []]);
