@@ -5,9 +5,10 @@
 # does not kill the others.
 #
 # Usage:
-#   ./deploy/import-campaign.sh phase1      # pages 1-100 (hot manga)
-#   ./deploy/import-campaign.sh phase2      # pages 101-700 (bulk)
-#   ./deploy/import-campaign.sh all         # phase1 then phase2
+#   ./deploy/import-campaign.sh phase1                # pages 1-100 (hot manga)
+#   ./deploy/import-campaign.sh phase2                # pages 101-700 (bulk)
+#   ./deploy/import-campaign.sh all                   # phase1 then phase2
+#   ./deploy/import-campaign.sh batch <from> <to>     # ad-hoc range, 3 shards
 #
 # Env (from .env.deploy): TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, USE_PROXY, PROXY_URL, PROXY_URLS
 set -u
@@ -164,8 +165,13 @@ case "$MODE" in
     run_phase_parallel "1" "$PHASE_1_FROM" "$PHASE_1_TO"
     run_phase_parallel "2" "$PHASE_2_FROM" "$PHASE_2_TO"
     ;;
+  batch)
+    FROM="${2:?missing from}"
+    TO="${3:?missing to}"
+    run_phase_parallel "batch-${FROM}-${TO}" "$FROM" "$TO"
+    ;;
   *)
-    echo "Usage: $0 {phase1|phase2|all}"
+    echo "Usage: $0 {phase1|phase2|all|batch <from> <to>}"
     exit 1
     ;;
 esac
