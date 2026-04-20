@@ -39,9 +39,6 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
-
 apiClient.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
@@ -51,28 +48,9 @@ apiClient.interceptors.response.use(
     }
     original._retry = true;
 
-    if (isRefreshing) {
-      return new Promise((resolve) => {
-        refreshQueue.push((token) => {
-          original.headers.Authorization = `Bearer ${token}`;
-          resolve(apiClient(original));
-        });
-      });
-    }
-
-    isRefreshing = true;
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) throw new Error('No refresh token');
-      const { data: envelope } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-      const tokens = envelope?.data ?? envelope;
-      if (!tokens?.accessToken || !tokens?.refreshToken) {
-        throw new Error('Invalid token response');
-      }
-      setAccessToken(tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-      refreshQueue.forEach((cb) => cb(tokens.accessToken));
-      refreshQueue = [];
+      const { refreshTokens } = await import('@/lib/auth-refresh');
+      const tokens = await refreshTokens();
       original.headers.Authorization = `Bearer ${tokens.accessToken}`;
       return apiClient(original);
     } catch {
@@ -81,8 +59,6 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
       }
       return Promise.reject(error);
-    } finally {
-      isRefreshing = false;
     }
   }
 );

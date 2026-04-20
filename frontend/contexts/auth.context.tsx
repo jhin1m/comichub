@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '@/lib/api/auth.api';
 import { setAccessToken, clearTokens } from '@/lib/api-client';
+import { refreshTokens } from '@/lib/auth-refresh';
 import type { AuthUser, LoginForm, RegisterForm } from '@/types/auth.types';
 
 interface AuthContextValue {
@@ -23,21 +24,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const restoreSession = useCallback(async () => {
     try {
-      const refreshToken = typeof window !== 'undefined'
-        ? localStorage.getItem('refreshToken')
-        : null;
-      if (!refreshToken) return;
+      if (typeof window === 'undefined') return;
+      if (!localStorage.getItem('refreshToken')) return;
 
-      const { default: axios } = await import('axios');
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1';
-      const { data: envelope } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-      const tokens = envelope?.data ?? envelope;
-      if (!tokens?.accessToken || !tokens?.refreshToken) {
-        throw new Error('Invalid token response');
-      }
-      setAccessToken(tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-
+      await refreshTokens();
       const me = await authApi.me();
       setUser(me);
     } catch {
@@ -48,6 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Skip on OAuth callback — exchangeGoogleCode will own auth. Running
+    // restoreSession here races with /auth/google/exchange (both rotate the
+    // single refresh-tokens row) and triggers H3 reuse detection.
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/callback')) {
+      setLoading(false);
+      return;
+    }
     restoreSession();
   }, [restoreSession]);
 
