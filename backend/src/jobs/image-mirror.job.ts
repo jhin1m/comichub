@@ -7,14 +7,13 @@ import { eq, and, isNotNull, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../database/drizzle.provider.js';
 import type { DrizzleDB } from '../database/drizzle.provider.js';
 import { chapterImages, chapters } from '../database/schema/index.js';
+import { safeHttpsFetch } from '../common/utils/safe-http.util.js';
 
 const BATCH_SIZE = 50;
 const CHAPTER_DELAY_MS = 2000;
 const MAX_WIDTH = 1200;
 const DOWNLOAD_TIMEOUT_MS = 30000;
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
-
-
 
 @Injectable()
 export class ImageMirrorJob {
@@ -30,8 +29,9 @@ export class ImageMirrorJob {
   ) {
     const region = this.config.getOrThrow<string>('s3.region');
     this.bucket = this.config.getOrThrow<string>('s3.bucket');
-    this.publicUrl = this.config.get<string>('s3.publicUrl', '')
-      || `https://${this.bucket}.s3.${region}.amazonaws.com`;
+    this.publicUrl =
+      this.config.get<string>('s3.publicUrl', '') ||
+      `https://${this.bucket}.s3.${region}.amazonaws.com`;
     this.s3 = new S3Client({
       region,
       endpoint: this.config.get<string>('s3.endpoint') || undefined,
@@ -44,7 +44,8 @@ export class ImageMirrorJob {
 
   @Cron('*/10 * * * *')
   async mirrorImages(): Promise<void> {
-    if (this.config.get<string>('IMAGE_MIRROR_JOB_ENABLED', 'false') !== 'true') return;
+    if (this.config.get<string>('IMAGE_MIRROR_JOB_ENABLED', 'false') !== 'true')
+      return;
     if (this.running) {
       this.logger.debug('Mirror job already running, skipping');
       return;
@@ -121,29 +122,50 @@ export class ImageMirrorJob {
   }
 
   private async downloadImage(url: string): Promise<Buffer> {
-    // SSRF protection: only allow HTTPS from known image hosts
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:') {
-      throw new Error(`Blocked non-HTTPS URL: ${url}`);
-    }
-
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
-      headers: { 'User-Agent': `${this.config.get<string>('app.name', 'ComicHub')}/1.0` },
-      redirect: 'follow',
+    // SSRF defense (H11): HTTPS-only + private-IP block + manual redirect cap,
+    // applied at every hop by safeHttpsFetch. See common/utils/safe-http.util.ts.
+    const res = await safeHttpsFetch(url, {
+      timeoutMs: DOWNLOAD_TIMEOUT_MS,
+      userAgent: `${this.config.get<string>('app.name', 'ComicHub')}/1.0`,
     });
     if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-
-    const contentLength = parseInt(res.headers.get('content-length') ?? '0', 10);
-    if (contentLength > MAX_DOWNLOAD_BYTES) {
-      throw new Error(`Image too large: ${contentLength} bytes`);
-    }
 
     const contentType = res.headers.get('content-type') ?? '';
     if (!contentType.startsWith('image/')) {
       throw new Error(`Not an image: ${contentType}`);
     }
-    return Buffer.from(await res.arrayBuffer());
+
+    // C-C2: enforce size during streaming. content-length header is advisory and
+    // may be absent (chunked) or spoofed — a malicious origin could omit it and
+    // stream multi-GB. Reject header-declared oversize early, and abort mid-stream
+    // if accumulated bytes exceed the cap.
+    const declared = parseInt(res.headers.get('content-length') ?? '0', 10);
+    if (declared > MAX_DOWNLOAD_BYTES) {
+      throw new Error(`Image too large: ${declared} bytes`);
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('Download failed: no response body');
+
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      received += value.byteLength;
+      if (received > MAX_DOWNLOAD_BYTES) {
+        await reader.cancel();
+        throw new Error(
+          `Image exceeds ${MAX_DOWNLOAD_BYTES} bytes during stream`,
+        );
+      }
+      chunks.push(value);
+    }
+    return Buffer.concat(
+      chunks.map((c) => Buffer.from(c)),
+      received,
+    );
   }
 
   private async optimizeImage(buffer: Buffer): Promise<Buffer> {
