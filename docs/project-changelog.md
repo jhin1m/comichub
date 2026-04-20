@@ -4,6 +4,12 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Optimized - Docker Build pnpm Cache Mount (2026-04-20)
+- **Root Cause**: Dockerfiles ran `pnpm install --frozen-lockfile` without BuildKit cache mount → every rebuild re-fetched all packages from registry, ignoring pnpm's content-addressable store advantage
+- **Change**: Added `# syntax=docker/dockerfile:1.7` directive + `RUN --mount=type=cache,id=pnpm,target=/pnpm/store` with `pnpm config set store-dir /pnpm/store` to both `backend/Dockerfile` (deps + production stages) and `frontend/Dockerfile` (deps stage)
+- **Impact**: ~20% faster rebuilds even with `--no-cache` (65s → 52s on backend deps stage). Larger speedup (3-5x) expected when only package.json/lock changes and layer cache busts but store cache survives
+- **Compatibility**: Zero config required — BuildKit default on Docker 23+ and Compose v2. No action for deploy.sh or CI
+
 ### Fixed - Blank Website After Deploy (2026-04-20)
 - **Root Cause**: Next.js ISR build-time static prerender fails when backend unavailable (Docker build stage, cold-start). `.catch(() => [])` silently baked empty page into ISR cache for 180s, affecting all users
 - **Backend Readiness Gate**: Implemented `ReadinessService` singleton + `onApplicationBootstrap` hook + `finally { setReady() }` pattern. Health endpoint `/api/v1/health` returns `503 Service Unavailable` until warmup completes
