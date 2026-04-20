@@ -4,6 +4,13 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Fixed - Blank Website After Deploy (2026-04-20)
+- **Root Cause**: Next.js ISR build-time static prerender fails when backend unavailable (Docker build stage, cold-start). `.catch(() => [])` silently baked empty page into ISR cache for 180s, affecting all users
+- **Backend Readiness Gate**: Implemented `ReadinessService` singleton + `onApplicationBootstrap` hook + `finally { setReady() }` pattern. Health endpoint `/api/v1/health` returns `503 Service Unavailable` until warmup completes
+- **Caddy Health Check**: Configured active health probing (5s interval, 30s fail_duration). Excludes unhealthy upstream during warmup window (~5-10s)
+- **Frontend Dynamic Rendering**: Removed `revalidate = 180` ISR from homepage; switched to `export const dynamic = 'force-dynamic'` to fetch live data each request. Removed `.catch(() => [])` from 5 critical APIs (rankings, manga lists) to fail-fast instead of hiding blank page. Kept catch for decoration APIs (comments, genres, stats)
+- **Docs**: Updated deployment-guide.md with zero-downtime pattern explanation; added code-standards.md rule about ISR vs dynamic rendering trade-offs
+
 ### Added - Comix.to Import Campaign Infrastructure (2026-04-15)
 - **Backend Scripts**: Created `scrapfly-fetch.ts` anti-scraping proxy wrapper (opt-in via USE_SCRAPFLY=1)
 - **Import Robustness**: Added configurable random jitter (400-1200ms) to `throttledFetch` and `signedFetch`, replacing fixed 250ms throttle. Backward compatible — other import sources default to 250ms

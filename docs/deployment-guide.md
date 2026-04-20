@@ -131,6 +131,19 @@ sudo ./deploy/deploy.sh
 
 Flow: tag rollback → git pull → build (no-cache) → migrate → swap containers → health check → auto-rollback if unhealthy → prune images.
 
+### Zero-Downtime Deploy Pattern
+
+Backend uses **readiness gates** to prevent blank pages during cold-start:
+
+1. **Readiness Signal**: `ReadinessService` singleton blocks HTTP requests until `onApplicationBootstrap` warmup completes
+2. **Health Probe**: `/api/v1/health` returns `503 Service Unavailable` (not `200`) while warming up
+3. **Caddy Routing**: Active health check (`health_interval: 5s`) detects 503 and excludes unhealthy upstream during warm window (~5-10s). Prevents traffic routing to warming-up backend
+4. **Warmup Window**: Cache warmup queries (rankings, genres) run once per boot. DB pool isolated from user requests during this window
+
+**Frontend protection**: Homepage and data-dependent pages use `export const dynamic = 'force-dynamic'` to avoid ISR static prerender at build time (when backend is unavailable). This prevents empty pages from being baked into ISR cache for 180s+ after deploy.
+
+**Why not ISR for homepage**: Docker build stage has no running backend service → fetch fails → `.catch(() => [])` would silently bake empty arrays into static cache, serving blank page to all users for minutes. Dynamic SSR instead; Redis cache layer keeps per-request cost low.
+
 ## Bulk Import Operations (Comix.to Campaign)
 
 For multi-week import campaigns (70k+ manga), orchestration scripts in `deploy/`:

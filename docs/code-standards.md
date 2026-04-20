@@ -110,6 +110,16 @@ Unified coding standards for ComicHub monorepo: NestJS backend + Next.js 16 fron
 - **JSON-LD**: Embed structured data (WebSite, Organization, CreativeWork, BreadcrumbList) via `<JsonLd>` component
 - **Zero Dependencies**: Uses Next.js built-in Metadata API — no external packages required
 
+### Page Rendering Strategy (ISR vs Dynamic)
+- **Pages with server-side API calls**: Use `export const dynamic = 'force-dynamic'` (avoid ISR)
+  - **Why**: ISR static prerender at build time may fail when backend unavailable (Docker build, cold-start deploy). Empty page gets baked into cache for 180s+
+  - **Example**: Homepage with rankings/manga lists. Dynamic SSR is safe because Redis cache layer keeps per-request cost acceptable
+  - **Exception**: Only use ISR for truly static data (design assets, documentation) or data fetched via external APIs (not dependent on own backend)
+- **Critical data fallback pattern**: Remove `.catch(() => [])` from APIs that should fail-fast (rankings, manga lists). Let errors propagate to `error.tsx` instead of rendering empty state
+  - **Why**: Readiness gate prevents traffic during cold-start, so 5xx errors should trigger `error.tsx` UI, not hide data
+  - **Acceptable catch use**: Decoration-only data (comments widget, genre sidebar, stats card). These can render empty without breaking page structure
+- **Summary**: Prefer dynamic rendering + fast errors over ISR + silent fallbacks for data-critical pages
+
 ### File Naming
 - **Components**: PascalCase file matching export (e.g., `LoginForm.tsx`)
 - **Utils/Hooks**: kebab-case (e.g., `use-auth.ts`, `format-date.ts`)
