@@ -22,15 +22,17 @@ export const metadata = buildMeta({
 });
 
 export default async function HomePage() {
-  const emptyPage = <T,>(limit: number): PaginatedResult<T> => ({ data: [] as T[], total: 0, page: 1, limit });
-
-  // Each fetch is individually resilient — one failure won't blank the whole page
+  // No per-fetch catch: during backend warmup all requests fail together and
+  // a catch-and-empty strategy would bake a blank page into ISR for 180s.
+  // Letting errors throw hits error.tsx (not cached), so the page self-heals
+  // as soon as the backend is ready. Optional decorations still tolerate
+  // single failures via individual catches below.
   const [daily, weekly, latestUpdates, recentlyAdded, completeSeries, recentComments, genres, platformStats] = await Promise.all([
-    mangaApi.rankings('daily', 1, 10).catch((): MangaListItem[] => []),
-    mangaApi.rankings('weekly', 1, 10).catch((): MangaListItem[] => []),
-    mangaApi.list({ page: 1, limit: 18, sort: 'updated_at', order: 'desc' }).catch(() => emptyPage<MangaListItem>(18)),
-    mangaApi.list({ page: 1, limit: 8, sort: 'created_at', order: 'desc' }).catch(() => emptyPage<MangaListItem>(8)),
-    mangaApi.list({ page: 1, limit: 8, status: 'completed', sort: 'updated_at', order: 'desc' }).catch(() => emptyPage<MangaListItem>(8)),
+    mangaApi.rankings('daily', 1, 10),
+    mangaApi.rankings('weekly', 1, 10),
+    mangaApi.list({ page: 1, limit: 18, sort: 'updated_at', order: 'desc' }),
+    mangaApi.list({ page: 1, limit: 8, sort: 'created_at', order: 'desc' }),
+    mangaApi.list({ page: 1, limit: 8, status: 'completed', sort: 'updated_at', order: 'desc' }),
     commentApi.recent(5).catch((): RecentComment[] => []),
     genreApi.list().catch((): TaxonomyItem[] => []),
     statsApi.overview().catch((): PlatformStats | null => null),

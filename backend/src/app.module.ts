@@ -4,6 +4,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppConfigModule } from './config/config.module.js';
+import { CommonModule } from './common/common.module.js';
 import { DrizzleModule } from './database/drizzle.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UserModule } from './modules/user/user.module.js';
@@ -21,6 +22,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 @Module({
   imports: [
     AppConfigModule,
+    CommonModule,
     DrizzleModule,
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),

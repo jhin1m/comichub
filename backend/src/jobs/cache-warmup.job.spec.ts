@@ -3,9 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CacheWarmupJob } from './cache-warmup.job.js';
 import { RankingService } from '../modules/manga/services/ranking.service.js';
 import { TaxonomyService } from '../modules/manga/services/taxonomy.service.js';
+import { ReadinessService } from '../common/services/readiness.service.js';
 
 describe('CacheWarmupJob', () => {
   let job: CacheWarmupJob;
+  let readiness: ReadinessService;
   let mockRankingService: any;
   let mockTaxonomyService: any;
 
@@ -16,12 +18,14 @@ describe('CacheWarmupJob', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CacheWarmupJob,
+        ReadinessService,
         { provide: RankingService, useValue: mockRankingService },
         { provide: TaxonomyService, useValue: mockTaxonomyService },
       ],
     }).compile();
 
     job = module.get<CacheWarmupJob>(CacheWarmupJob);
+    readiness = module.get<ReadinessService>(ReadinessService);
   });
 
   afterEach(() => {
@@ -37,6 +41,7 @@ describe('CacheWarmupJob', () => {
       expect(mockRankingService.getRanking).toHaveBeenCalledWith('alltime');
       expect(mockRankingService.getRanking).toHaveBeenCalledWith('toprated');
       expect(mockTaxonomyService.findAll).toHaveBeenCalledWith('genres');
+      expect(readiness.isReady).toBe(true);
     });
 
     it('should not throw when a dependency fails (non-blocking warmup)', async () => {
@@ -45,6 +50,7 @@ describe('CacheWarmupJob', () => {
       );
 
       await expect(job.onApplicationBootstrap()).resolves.not.toThrow();
+      expect(readiness.isReady).toBe(true);
     });
   });
 });

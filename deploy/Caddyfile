@@ -44,6 +44,12 @@
 		header_up X-Real-IP {remote_host}
 		header_up X-Forwarded-For {remote_host}
 		header_up X-Forwarded-Proto https
+
+		# Active health check — skip upstream while warming up (returns 503).
+		health_uri /api/v1/health
+		health_interval 5s
+		health_timeout 5s
+		fail_duration 30s
 	}
 	header {
 		-Server
