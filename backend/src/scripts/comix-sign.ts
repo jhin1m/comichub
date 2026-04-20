@@ -190,7 +190,11 @@ export async function signUrl(
 export async function signedFetch<T>(
   path: string,
   query: Record<string, string | number> = {},
-  opts?: { throttleMs?: number; jitter?: [number, number] },
+  opts?: {
+    throttleMs?: number;
+    jitter?: [number, number];
+    fetchTimeoutMs?: number;
+  },
 ): Promise<T> {
   const url = await signUrl(path, query);
   let ms: number;
@@ -213,7 +217,8 @@ export async function signedFetch<T>(
   if (process.env.USE_PROXY === '1')
     fetchFn = (await import('./proxy-fetch.js')).proxyFetch;
   else fetchFn = fetch;
-  const res = await fetchFn(url, { headers });
+  const signal = AbortSignal.timeout(opts?.fetchTimeoutMs ?? 30_000);
+  const res = await fetchFn(url, { headers, signal });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }

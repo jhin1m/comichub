@@ -29,7 +29,10 @@ export type ThrottleOpts = {
   throttleMs?: number;
   jitter?: [number, number];
   headers?: Record<string, string>;
+  fetchTimeoutMs?: number;
 };
+
+const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 
 function resolveThrottleMs(opts?: ThrottleOpts): number {
   if (opts?.jitter) {
@@ -54,7 +57,10 @@ export async function throttledFetch(
   if (elapsed < ms) await sleep(ms - elapsed);
   lastReq = Date.now();
   const fetchFn = await resolveFetchFn();
-  return fetchFn(url, { headers: opts?.headers });
+  const signal = AbortSignal.timeout(
+    opts?.fetchTimeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS,
+  );
+  return fetchFn(url, { headers: opts?.headers, signal });
 }
 
 export async function apiFetch<T>(
@@ -69,6 +75,82 @@ export async function apiFetch<T>(
 
 export function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+// ─── Retry helper ────────────────────────────────────────────────
+// Classify errors as retryable (transient) vs fatal. Transient: 5xx incl.
+// Cloudflare 521-524, 408, 429, plus common network errors / aborts.
+export function isRetryable(err: Error): boolean {
+  const msg = err?.message || '';
+  const m = msg.match(/^API (\d{3}):/);
+  if (m) {
+    const s = parseInt(m[1], 10);
+    return s >= 500 || s === 408 || s === 429;
+  }
+  return /ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|fetch failed|aborted|timeout|socket hang up/i.test(
+    msg,
+  );
+}
+
+export interface RetryOpts {
+  max: number;
+  backoffSec: number[];
+  label: string;
+  onAttempt?: (attempt: number, err: Error) => void;
+}
+
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts: RetryOpts,
+): Promise<T> {
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt <= opts.max; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastErr = err;
+      if (!isRetryable(err)) throw err;
+      if (attempt >= opts.max) break;
+      const delaySec =
+        opts.backoffSec[attempt] ??
+        opts.backoffSec[opts.backoffSec.length - 1] ??
+        5;
+      opts.onAttempt?.(attempt + 1, err);
+      console.warn(
+        `  ${opts.label} attempt ${attempt + 1}/${opts.max + 1} FAIL: ${err.message}. Retry in ${delaySec}s...`,
+      );
+      await sleep(delaySec * 1000);
+    }
+  }
+  throw lastErr!;
+}
+
+// ─── Shard dedupe ────────────────────────────────────────────────
+// Postgres advisory lock — session-scoped, so we pin one connection via
+// sqlClient.reserve() for both try_lock and unlock. Auto-released on
+// disconnect (crash-safe). Key is hashtext("{source}:{externalId}") which
+// Postgres auto-casts int4→bigint for pg_try_advisory_lock.
+export async function withSourceLock<T>(
+  source: string,
+  externalId: string,
+  fn: () => Promise<T>,
+): Promise<T | null> {
+  const key = `${source}:${externalId}`;
+  const reserved = await sqlClient.reserve();
+  try {
+    const rows = await reserved<{ locked: boolean }[]>`
+      SELECT pg_try_advisory_lock(hashtext(${key})) AS locked
+    `;
+    const locked = rows[0]?.locked === true;
+    if (!locked) return null;
+    try {
+      return await fn();
+    } finally {
+      await reserved`SELECT pg_advisory_unlock(hashtext(${key}))`;
+    }
+  } finally {
+    reserved.release();
+  }
 }
 
 // ─── Taxonomy resolvers ──────────────────────────────────────────

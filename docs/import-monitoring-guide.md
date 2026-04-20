@@ -26,6 +26,10 @@ docker stop <container_name>
 pkill -f import-campaign.sh
 ```
 
+### Multi-Shard Safety
+
+The campaign orchestrator spawns parallel shards (one per proxy endpoint, configured via `PARALLEL_SHARDS`). Each shard processes disjoint page ranges independently. Concurrent shards use advisory database locks (`withSourceLock`) to prevent duplicate manga processing if list order shifts during import — safe to run multiple shards simultaneously.
+
 ## Live Monitoring
 
 ```bash

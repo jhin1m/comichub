@@ -137,12 +137,12 @@ For multi-week import campaigns (70k+ manga), orchestration scripts in `deploy/`
 
 | Script | Purpose |
 |--------|---------|
-| `import-campaign.sh` | Main orchestrator: loops batch ranges with cooldown, Telegram notifications, health monitoring |
+| `import-campaign.sh` | Main orchestrator: spawns parallel shards (one per proxy), loops batch ranges with cooldown, advisory locks prevent duplicate manga processing across shards, Telegram notifications, health monitoring |
 | `import-daily-cron.sh` | Incremental daily import (pages 1-30), runs via cron after campaign |
 | `import-progress.sh` | DB progress query (manga/chapter/image counts), cache stats |
 | `import-health-check.sh` | Monitors log errors, stuck detection, disk usage, DB connectivity |
 | `telegram-notify.sh` | Sends Telegram alerts (requires TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) |
-| `comix-campaign.conf` | Phase config: batch ranges, step sizes, cooldowns |
+| `comix-campaign.conf` | Phase config: batch ranges, step sizes, cooldowns, shard count (PARALLEL_SHARDS) |
 
 ### Quick Start
 
@@ -177,6 +177,11 @@ When running via `run-import.sh comix [flags]`:
 - `--reset-checkpoint`: discard existing checkpoint
 - `--jitter-min MS --jitter-max MS`: random throttle (default 400-1200ms, backward compat with other import sources)
 - `--health-interval N`: re-check API health every N pages (default: off)
+- `--fetch-timeout-ms MS`: hard timeout per fetch (default 30000ms, prevents TCP hangs)
+- `--chapter-retry-max N`: max retries per chapter list fetch (default 3)
+- `--chapter-retry-backoff SEC[,...]`: backoff seconds (default 3,10,30)
+- `--image-retry-max N`: max retries per image fetch (default 3)
+- `--image-retry-backoff SEC[,...]`: backoff seconds (default 3,10,30)
 - `--dry`: test mode (no DB writes)
 
 ## Common Operations

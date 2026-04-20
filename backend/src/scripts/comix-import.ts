@@ -22,6 +22,8 @@ import {
   upsertManga,
   resolveByName,
   sleep,
+  withRetry,
+  withSourceLock,
   eq,
   and,
   desc,
@@ -56,6 +58,26 @@ const PAGE_RETRY_BACKOFF = flag('page-retry-backoff', '5,15,45')
   .split(',')
   .map((s) => parseInt(s.trim(), 10))
   .filter((n) => Number.isFinite(n) && n >= 0);
+
+// Per-fetch hard timeout — prevents TCP hangs (Cloudflare challenge, dead proxy)
+const FETCH_TIMEOUT_MS = parseInt(flag('fetch-timeout-ms', '30000'), 10);
+
+// Per-call retry for chapter-list and chapter-images fetches.
+// Resists transient 5xx (incl. Cloudflare 521-524) without aborting the run.
+const CHAPTER_RETRY_MAX = parseInt(flag('chapter-retry-max', '3'), 10);
+const IMAGE_RETRY_MAX = parseInt(flag('image-retry-max', '3'), 10);
+function parseBackoff(spec: string): number[] {
+  return spec
+    .split(',')
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n) && n >= 0);
+}
+const CHAPTER_RETRY_BACKOFF = parseBackoff(
+  flag('chapter-retry-backoff', '3,10,30'),
+);
+const IMAGE_RETRY_BACKOFF = parseBackoff(
+  flag('image-retry-backoff', '3,10,30'),
+);
 
 const BASE = 'https://comix.to/api/v2';
 const SOURCE = 'comix';
@@ -191,7 +213,10 @@ function resolveTermIds(termIds: number[]): {
 }
 
 function api<T>(path: string) {
-  return apiFetch<T>(BASE, path, { jitter: JITTER });
+  return apiFetch<T>(BASE, path, {
+    jitter: JITTER,
+    fetchTimeoutMs: FETCH_TIMEOUT_MS,
+  });
 }
 
 async function fetchPageWithRetry(path: string): Promise<any> {
@@ -320,10 +345,20 @@ async function importChapters(
 
   while (hasMore) {
     // Chapters endpoint requires signed URL (Comix.to anti-bot protection)
-    const data = await signedFetch<any>(
-      `/manga/${hashId}/chapters`,
-      { limit: 100, page },
-      { jitter: JITTER },
+    // Retry wraps the WHOLE signedFetch — signing runs fresh each attempt,
+    // so re-sign on retry is automatic (signUrl is called inside signedFetch).
+    const data = await withRetry(
+      () =>
+        signedFetch<any>(
+          `/manga/${hashId}/chapters`,
+          { limit: 100, page },
+          { jitter: JITTER, fetchTimeoutMs: FETCH_TIMEOUT_MS },
+        ),
+      {
+        max: CHAPTER_RETRY_MAX,
+        backoffSec: CHAPTER_RETRY_BACKOFF,
+        label: `chapter-list ${hashId} p${page}`,
+      },
     );
     const items = data.result?.items ?? [];
 
@@ -381,17 +416,6 @@ async function importChapters(
         chapterId = found.id;
       }
 
-      // Source mapping
-      await db
-        .insert(schema.chapterSources)
-        .values({
-          chapterId,
-          source: SOURCE,
-          externalId: extId,
-          lastSyncedAt: new Date(),
-        })
-        .onConflictDoNothing();
-
       // Resolve scanlation group
       let groupId: number | null = null;
       if (group?.name) {
@@ -405,9 +429,20 @@ async function importChapters(
         }
       }
 
-      // Fetch chapter images with groupId — allows multiple image sets per chapter
+      // Fetch chapter images with groupId — allows multiple image sets per chapter.
+      // chapter_sources insert is DEFERRED until after images land so a mid-step
+      // failure leaves the chapter unclaimed; re-runs will retry instead of
+      // skipping (prevents "chapter ma": chapter_sources present but 0 images).
+      let imagesInserted = false;
       try {
-        const chDetail = await api<any>(`/chapters/${raw.chapter_id}`);
+        const chDetail = await withRetry(
+          () => api<any>(`/chapters/${raw.chapter_id}`),
+          {
+            max: IMAGE_RETRY_MAX,
+            backoffSec: IMAGE_RETRY_BACKOFF,
+            label: `chapter-images ${raw.chapter_id}`,
+          },
+        );
         const images = chDetail.result?.images ?? [];
         if (images.length) {
           await db
@@ -426,9 +461,23 @@ async function importChapters(
             )
             .onConflictDoNothing();
           totalImages += images.length;
+          imagesInserted = true;
         }
       } catch (err: any) {
         console.error(`    Image error ch${num}: ${err.message}`);
+      }
+
+      // Only mark this external chapter as "imported" after images succeeded.
+      if (imagesInserted) {
+        await db
+          .insert(schema.chapterSources)
+          .values({
+            chapterId,
+            source: SOURCE,
+            externalId: extId,
+            lastSyncedAt: new Date(),
+          })
+          .onConflictDoNothing();
       }
     }
 
@@ -637,45 +686,64 @@ async function main() {
         const tag = `    [p${page} ${i + 1}/${items.length}]`;
 
         try {
-          const { mangaId, isNew } = await importOneManga(raw);
+          // Advisory lock — prevents two shards from processing the same
+          // manga when the source's list order shifts mid-run. Returns a
+          // sentinel object when fn ran, or null if another shard owns it.
+          const result = await withSourceLock<'done'>(
+            SOURCE,
+            raw.hash_id,
+            async () => {
+              const { mangaId, isNew } = await importOneManga(raw);
 
-          if (!raw.has_chapters) {
-            if (isNew) cp.stats.imported++;
-            else cp.stats.skipped++;
-            console.log(`${tag} ${raw.title} → id:${mangaId} (no chapters)`);
-            if (!DRY_RUN) saveCheckpoint(cp);
-            continue;
-          }
+              if (!raw.has_chapters) {
+                if (isNew) cp.stats.imported++;
+                else cp.stats.skipped++;
+                console.log(
+                  `${tag} ${raw.title} → id:${mangaId} (no chapters)`,
+                );
+                return 'done';
+              }
 
-          // --resume: skip manga whose source hasn't updated since last import
-          if (RESUME && !isNew) {
-            const [local] = await db
-              .select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
-              .from(schema.manga)
-              .where(eq(schema.manga.id, mangaId))
-              .limit(1);
-            const sourceUpdated = unixToDate(raw.chapter_updated_at);
-            if (
-              local?.chapterUpdatedAt &&
-              sourceUpdated &&
-              local.chapterUpdatedAt >= sourceUpdated
-            ) {
-              cp.stats.skipped++;
-              console.log(`${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`);
-              if (!DRY_RUN) saveCheckpoint(cp);
-              continue;
-            }
-          }
+              // --resume: skip manga whose source hasn't updated since last import
+              if (RESUME && !isNew) {
+                const [local] = await db
+                  .select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
+                  .from(schema.manga)
+                  .where(eq(schema.manga.id, mangaId))
+                  .limit(1);
+                const sourceUpdated = unixToDate(raw.chapter_updated_at);
+                if (
+                  local?.chapterUpdatedAt &&
+                  sourceUpdated &&
+                  local.chapterUpdatedAt >= sourceUpdated
+                ) {
+                  cp.stats.skipped++;
+                  console.log(
+                    `${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`,
+                  );
+                  return 'done';
+                }
+              }
 
-          const r = await importChapters(mangaId, raw.hash_id);
-          if (isNew) cp.stats.imported++;
-          else cp.stats.skipped++;
-          cp.stats.chapters += r.chapters;
-          cp.stats.images += r.images;
-          const label = isNew ? '→' : '↻';
-          console.log(
-            `${tag} ${raw.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`,
+              const r = await importChapters(mangaId, raw.hash_id);
+              if (isNew) cp.stats.imported++;
+              else cp.stats.skipped++;
+              cp.stats.chapters += r.chapters;
+              cp.stats.images += r.images;
+              const label = isNew ? '→' : '↻';
+              console.log(
+                `${tag} ${raw.title} ${label} id:${mangaId}, +${r.chapters} ch, +${r.images} img`,
+              );
+              return 'done';
+            },
           );
+
+          if (result === null) {
+            cp.stats.skipped++;
+            console.log(
+              `${tag} ${raw.title} ⏭ (locked by another shard)`,
+            );
+          }
         } catch (err: any) {
           cp.stats.failed++;
           console.error(`${tag} FAIL ${raw.title}: ${err.message}`);

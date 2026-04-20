@@ -26,6 +26,11 @@ export async function proxyFetch(
         ? url.toString()
         : url.url;
   const headers = init?.headers as Record<string, string> | undefined;
-  const res = await undiFetch(urlStr, { dispatcher: getAgent(), headers });
+  const signal = init?.signal as AbortSignal | undefined;
+  const res = await undiFetch(urlStr, {
+    dispatcher: getAgent(),
+    headers,
+    signal,
+  });
   return res as unknown as Response;
 }
