@@ -11,6 +11,8 @@ export interface AuthUser {
   name: string;
   avatar: string | null;
   role: 'admin' | 'user';
+  hasHistory?: boolean;
+  hasBookmark?: boolean;
 }
 
 export interface LoginForm {

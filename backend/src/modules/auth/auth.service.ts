@@ -17,6 +17,7 @@ import * as crypto from 'node:crypto';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { users, refreshTokens, type User } from '../../database/schema/index.js';
+import { readingHistory, follows } from '../../database/schema/community.schema.js';
 import { MailService } from '../../common/services/mail.service.js';
 import {
   REDIS_AVAILABLE,
@@ -149,12 +150,30 @@ export class AuthService {
   }
 
   async getMe(userId: number) {
-    const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
-      columns: { password: false },
-    });
+    // Parallel EXISTS checks on indexed (user_id, manga_id) — sub-ms, short-circuit.
+    // Flags let FE skip rendering empty-state skeleton for new users.
+    const [user, historyRows, bookmarkRows] = await Promise.all([
+      this.db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: { password: false },
+      }),
+      this.db
+        .select({ id: readingHistory.id })
+        .from(readingHistory)
+        .where(eq(readingHistory.userId, userId))
+        .limit(1),
+      this.db
+        .select({ id: follows.id })
+        .from(follows)
+        .where(eq(follows.userId, userId))
+        .limit(1),
+    ]);
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return {
+      ...user,
+      hasHistory: historyRows.length > 0,
+      hasBookmark: bookmarkRows.length > 0,
+    };
   }
 
   private get refreshTtl(): number {

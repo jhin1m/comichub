@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service.js';
@@ -402,6 +406,100 @@ describe('AuthService', () => {
         60 * 60 * 24 * 7, // 7 days in seconds
         'new-refresh-token',
       );
+    });
+  });
+
+  describe('getMe()', () => {
+    // Helpers build select-chain mocks where each call to db.select() returns
+    // a fresh chain resolving to a given array. Mirrors drizzle fluent API.
+    const buildSelectChain = (result: unknown[]) => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue(result),
+        }),
+      }),
+    });
+
+    it('throws NotFoundException if user not found', async () => {
+      mockDb.query.users.findFirst.mockResolvedValue(null);
+      mockDb.select = vi
+        .fn()
+        .mockReturnValueOnce(buildSelectChain([]))
+        .mockReturnValueOnce(buildSelectChain([]));
+
+      await expect(service.getMe(999)).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns hasHistory=false, hasBookmark=false for new user', async () => {
+      mockDb.query.users.findFirst.mockResolvedValue({
+        id: 1,
+        uuid: 'u-1',
+        email: 'new@x.com',
+        role: 'user',
+      });
+      mockDb.select = vi
+        .fn()
+        .mockReturnValueOnce(buildSelectChain([])) // readingHistory
+        .mockReturnValueOnce(buildSelectChain([])); // follows
+
+      const result = await service.getMe(1);
+
+      expect(result.hasHistory).toBe(false);
+      expect(result.hasBookmark).toBe(false);
+    });
+
+    it('returns hasHistory=true when reading_history exists', async () => {
+      mockDb.query.users.findFirst.mockResolvedValue({
+        id: 1,
+        uuid: 'u-1',
+        email: 'h@x.com',
+        role: 'user',
+      });
+      mockDb.select = vi
+        .fn()
+        .mockReturnValueOnce(buildSelectChain([{ id: 42 }]))
+        .mockReturnValueOnce(buildSelectChain([]));
+
+      const result = await service.getMe(1);
+
+      expect(result.hasHistory).toBe(true);
+      expect(result.hasBookmark).toBe(false);
+    });
+
+    it('returns hasBookmark=true when follows exists', async () => {
+      mockDb.query.users.findFirst.mockResolvedValue({
+        id: 1,
+        uuid: 'u-1',
+        email: 'b@x.com',
+        role: 'user',
+      });
+      mockDb.select = vi
+        .fn()
+        .mockReturnValueOnce(buildSelectChain([]))
+        .mockReturnValueOnce(buildSelectChain([{ id: 7 }]));
+
+      const result = await service.getMe(1);
+
+      expect(result.hasHistory).toBe(false);
+      expect(result.hasBookmark).toBe(true);
+    });
+
+    it('returns both flags true when user has history and bookmarks', async () => {
+      mockDb.query.users.findFirst.mockResolvedValue({
+        id: 1,
+        uuid: 'u-1',
+        email: 'both@x.com',
+        role: 'user',
+      });
+      mockDb.select = vi
+        .fn()
+        .mockReturnValueOnce(buildSelectChain([{ id: 99 }]))
+        .mockReturnValueOnce(buildSelectChain([{ id: 100 }]));
+
+      const result = await service.getMe(1);
+
+      expect(result.hasHistory).toBe(true);
+      expect(result.hasBookmark).toBe(true);
     });
   });
 
