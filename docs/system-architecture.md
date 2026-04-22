@@ -146,7 +146,8 @@ Request → [L1 HTTP interceptor] → [L2 Redis service cache] → [L3 in-memory
 - Forms: zod + react-hook-form
 - API client: `lib/api-client.ts` — axios with auto JWT refresh queue + envelope unwrap
 - Auth state: Context + `useAuth` hook
-- **Readiness gate:** homepage and data pages use `export const dynamic = 'force-dynamic'` to skip build-time prerender (backend absent at build) — prevents blank ISR cache after deploy. Caddy active health check (5s interval) excludes warming-up backend from upstream pool.
+- **Readiness gate:** Caddy active health check (5s interval) excludes warming-up backend from upstream pool during cold-start.
+- **ISR safety:** homepage `revalidate=180`, detail `revalidate=300`. Build-time prerender reaches backend via public `NEXT_PUBLIC_API_URL` (build stage doesn't join compose network). Critical fetches throw on error so outages never bake a blank page into ISR cache; decoration fetches (`.catch(() => [])`) tolerate partial failures. See `docs/deployment-guide.md` → "ISR build-time prerender".
 
 ## Deployment
 

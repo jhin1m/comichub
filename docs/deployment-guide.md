@@ -141,9 +141,14 @@ Backend uses **readiness gates** to prevent blank pages during cold-start:
 3. **Caddy Routing**: Active health check (`health_interval: 5s`) detects 503 and excludes unhealthy upstream during warm window (~5-10s). Prevents traffic routing to warming-up backend
 4. **Warmup Window**: Cache warmup queries (rankings, genres) run once per boot. DB pool isolated from user requests during this window
 
-**Frontend protection**: Homepage and data-dependent pages use `export const dynamic = 'force-dynamic'` to avoid ISR static prerender at build time (when backend is unavailable). This prevents empty pages from being baked into ISR cache for 180s+ after deploy.
+**Frontend — ISR build-time prerender**: Homepage uses `export const revalidate = 180`. Two preconditions must hold for this to be safe; both are enforced:
 
-**Why not ISR for homepage**: Docker build stage has no running backend service → fetch fails → `.catch(() => [])` would silently bake empty arrays into static cache, serving blank page to all users for minutes. Dynamic SSR instead; Redis cache layer keeps per-request cost low.
+1. **Fail-fast on critical fetches** (commit `1a8ff960`): rankings and manga lists re-throw on error so a backend outage hits `error.tsx` instead of baking an empty page into the ISR cache. Only decoration APIs (comments, genres, stats) still use `.catch(() => [])`.
+2. **Backend reachable during Docker build**: `frontend/Dockerfile` does **not** set `INTERNAL_API_URL` at build stage — `docker compose build` doesn't join the compose network, so `backend:3001` can't resolve. `api-client` falls back to `NEXT_PUBLIC_API_URL` (public Caddy URL), which is reachable because `deploy.sh` builds while the **old** backend container is still running. Runtime SSR still uses `INTERNAL_API_URL` via `docker-compose.yml` `environment:`.
+
+**Historical bug** (resolved 2026-04-23): pre-`1a8ff960` homepage combined `.catch(() => [])` on critical fetches with a build stage that couldn't reach backend — silently baked a blank page into the ISR cache for 180s after every deploy. The combo is why each fix alone was insufficient; both pieces are needed.
+
+Other data-heavy pages (`/browse`, `/manga/[slug]/[chapterId]`, `/groups/[slug]`) still use `force-dynamic` — they take query params or per-request state where ISR provides less benefit.
 
 ## Bulk Import Operations (Comix.to Campaign)
 

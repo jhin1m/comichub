@@ -4,6 +4,13 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Restored - Homepage ISR after Blank-Page Hardening (2026-04-23)
+- **Change**: `frontend/app/page.tsx` switched from `export const dynamic = 'force-dynamic'` back to `export const revalidate = 180`. Not a revert — all safety nets from 2026-04-20 remain in place.
+- **Safety Net #1 (already in place, commit `1a8ff960`)**: Critical fetches (rankings, manga lists) re-throw on error and hit `error.tsx`. Only decoration fetches (comments, genres, stats) still use `.catch(() => [])`.
+- **Safety Net #2 (new)**: `frontend/Dockerfile` no longer sets `INTERNAL_API_URL` at build time — `backend:3001` doesn't resolve outside the compose network. Build falls back to public `NEXT_PUBLIC_API_URL` (Caddy), reachable because `deploy.sh` builds while the old backend container is still running. Runtime SSR still uses `INTERNAL_API_URL` via compose `environment:`.
+- **Impact**: First-byte TTFB for cached responses back to ~60-100ms (vs ~800ms dynamic). Response headers carry `cache-control: s-maxage=180, stale-while-revalidate=...` again. `next build` output shows `○ /` with `Revalidate 3m`.
+- **Docs**: `deployment-guide.md` + `code-standards.md` + `system-architecture.md` updated — old ISR bug now documented as historical context explaining why both invariants are required together.
+
 ### Fixed - Homepage Skeleton Flash for Logged-In Users (2026-04-22)
 - **Backend**: `/auth/me` now returns `hasHistory` and `hasBookmark` boolean flags via efficient EXISTS-style lookups (sub-millisecond cost)
 - **Frontend SWR Layer**: Added sessionStorage persistence scoped by userId with SWR 2.4.1. `continue-reading-strip` and `follow-list-strip` refactored into shared `MediaStrip` component using SWR; new users render nothing (no skeleton), returning users render instantly from cache

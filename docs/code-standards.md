@@ -111,14 +111,12 @@ Unified coding standards for ComicHub monorepo: NestJS backend + Next.js 16 fron
 - **Zero Dependencies**: Uses Next.js built-in Metadata API — no external packages required
 
 ### Page Rendering Strategy (ISR vs Dynamic)
-- **Pages with server-side API calls**: Use `export const dynamic = 'force-dynamic'` (avoid ISR)
-  - **Why**: ISR static prerender at build time may fail when backend unavailable (Docker build, cold-start deploy). Empty page gets baked into cache for 180s+
-  - **Example**: Homepage with rankings/manga lists. Dynamic SSR is safe because Redis cache layer keeps per-request cost acceptable
-  - **Exception**: Only use ISR for truly static data (design assets, documentation) or data fetched via external APIs (not dependent on own backend)
-- **Critical data fallback pattern**: Remove `.catch(() => [])` from APIs that should fail-fast (rankings, manga lists). Let errors propagate to `error.tsx` instead of rendering empty state
-  - **Why**: Readiness gate prevents traffic during cold-start, so 5xx errors should trigger `error.tsx` UI, not hide data
-  - **Acceptable catch use**: Decoration-only data (comments widget, genre sidebar, stats card). These can render empty without breaking page structure
-- **Summary**: Prefer dynamic rendering + fast errors over ISR + silent fallbacks for data-critical pages
+- **ISR is allowed** for pages whose data isn't query-param-driven (homepage `revalidate=180`, detail page `revalidate=300`). Two invariants make it safe:
+  1. **Critical fetches throw** — no `.catch(() => [])` on data that would leave the page empty (rankings, manga lists). Errors hit `error.tsx` instead of baking a blank page into the ISR cache
+  2. **Build stage reaches backend** — `frontend/Dockerfile` must NOT set `INTERNAL_API_URL` (it won't resolve outside the compose network). The build falls back to `NEXT_PUBLIC_API_URL` (public Caddy URL), reachable via the running old backend during `deploy.sh`
+- **Acceptable `.catch()` use**: Decoration-only data (comments widget, genre sidebar, stats card). These can render empty without making the page look broken
+- **Use `force-dynamic`** for pages with query params or per-request state (`/browse`, `/groups/[slug]`, chapter reader)
+- **Historical note**: Pre-2026-04-23, homepage combined `.catch()` + unreachable build-stage backend → silently baked blank ISR pages. Fixed by commits `1a8ff960` (fail-fast) + Docker build-arg cleanup
 
 ### File Naming
 - **Components**: PascalCase file matching export (e.g., `LoginForm.tsx`)
