@@ -1,8 +1,6 @@
-// Dynamic rendering: homepage fetches live data every request.
-// Why not ISR: build-time prerender would fail/bake an empty page if backend
-// is down (Docker build stage, cold-start deploys). Backend Redis cache keeps
-// the data fetch cheap, so SSR-per-request is an acceptable trade-off.
-export const dynamic = 'force-dynamic';
+// ISR 180s: critical fetches throw (fail-fast, no blank-page cache) and
+// build-time prerender reaches backend via public NEXT_PUBLIC_API_URL.
+export const revalidate = 180;
 
 import { buildMeta, SITE_NAME } from '@/lib/seo';
 import { mangaApi } from '@/lib/api/manga.api';
