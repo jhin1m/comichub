@@ -5,6 +5,6 @@ export const HOMEPAGE_STRIP_LIMIT = 12;
 
 export const SWR_KEYS = {
   AUTH_ME: '/auth/me',
-  USER_HISTORY_STRIP: `/user/history?page=1&limit=${HOMEPAGE_STRIP_LIMIT}`,
+  USER_HISTORY_STRIP: `/users/me/history?page=1&limit=${HOMEPAGE_STRIP_LIMIT}`,
   USER_BOOKMARK_STRIP: `/bookmarks?page=1&limit=${HOMEPAGE_STRIP_LIMIT}&sortBy=updated&sortOrder=desc`,
 } as const;
