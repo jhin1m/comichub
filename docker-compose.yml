@@ -60,7 +60,6 @@ services:
         NEXT_PUBLIC_SITE_LOGO: ${NEXT_PUBLIC_SITE_LOGO:-}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://example.com}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
-        INTERNAL_API_URL: http://backend:3001/api/v1
     restart: unless-stopped
     environment:
       HOSTNAME: "0.0.0.0"
