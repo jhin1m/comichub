@@ -11,20 +11,16 @@ describe('OAuthButton', () => {
   });
 
   it('redirects to Google OAuth URL on click', async () => {
-    const originalLocation = window.location;
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      configurable: true,
-      value: { ...originalLocation, href: '' },
-    });
+    const mockLocation = { href: '', pathname: '/', origin: 'http://localhost' };
+    vi.stubGlobal('location', mockLocation);
 
     const user = userEvent.setup();
     render(<OAuthButton />);
 
     await user.click(screen.getByRole('button', { name: /continue with google/i }));
 
-    expect(window.location.href).toContain('/auth/google');
+    expect(mockLocation.href).toContain('/auth/google');
 
-    Object.defineProperty(window, 'location', { writable: true, configurable: true, value: originalLocation });
+    vi.unstubAllGlobals();
   });
 });

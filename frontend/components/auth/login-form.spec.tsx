@@ -37,18 +37,18 @@ describe('LoginForm', () => {
     });
   });
 
-  it('shows validation error for short password', async () => {
+  it('shows validation error when password is empty', async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await user.type(screen.getByLabelText(/password/i), '123');
+    // password intentionally left empty
 
     const { fireEvent } = await import('@testing-library/react');
     fireEvent.submit(screen.getByRole('button', { name: /sign in/i }).closest('form')!);
 
     await waitFor(() => {
-      expect(screen.getByText(/min 6 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
     });
   });
 

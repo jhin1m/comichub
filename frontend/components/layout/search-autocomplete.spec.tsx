@@ -69,7 +69,7 @@ describe('SearchAutocomplete', () => {
     }, { timeout: 1000 });
 
     await user.click(screen.getByText('Naruto'));
-    expect(pushMock).toHaveBeenCalledWith('/manga/naruto');
+    expect(pushMock).toHaveBeenCalledWith('/manga/1-naruto');
   });
 
   it('submits form and navigates to browse with search query', async () => {

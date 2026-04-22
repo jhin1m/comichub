@@ -49,16 +49,16 @@ describe('Navbar', () => {
     localStorage.removeItem('refreshToken');
   });
 
-  it('opens mobile menu when hamburger is clicked', async () => {
+  it('opens browse dropdown when Browse button is clicked', async () => {
     const user = userEvent.setup();
     render(<Navbar />);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /toggle menu/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /browse menu/i })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: /toggle menu/i }));
-    expect(screen.getByRole('link', { name: /browse/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /browse menu/i }));
+    expect(screen.getByRole('link', { name: /trending manga/i })).toBeInTheDocument();
   });
 
   it('navigates to /login when LOGIN button is clicked', async () => {

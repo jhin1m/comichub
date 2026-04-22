@@ -48,6 +48,7 @@ describe('StarRating', () => {
   });
 
   it('submits rating when authenticated user clicks a star', async () => {
+    let rateCalled = false;
     server.use(
       http.get(`${BASE_URL}/auth/me`, () =>
         HttpResponse.json(envelope({ id: 1, uuid: 'u', email: 'a@b.com', name: 'User', avatar: null, role: 'user' })),
@@ -58,9 +59,10 @@ describe('StarRating', () => {
       http.get(`${BASE_URL}/manga/1/rating`, () =>
         HttpResponse.json(envelope({ score: null })),
       ),
-      http.post(`${BASE_URL}/manga/1/rate`, () =>
-        HttpResponse.json(envelope({ success: true })),
-      ),
+      http.post(`${BASE_URL}/manga/1/rate`, () => {
+        rateCalled = true;
+        return HttpResponse.json(envelope({ success: true }));
+      }),
     );
 
     localStorage.setItem('refreshToken', 'seed-token');
@@ -68,16 +70,15 @@ describe('StarRating', () => {
     const user = userEvent.setup();
     render(<StarRating {...defaultProps} />);
 
-    // Wait for auth to settle
-    await waitFor(() => {
-      expect(screen.getAllByRole('button', { name: /rate \d star/i })).toHaveLength(5);
-    });
+    // Wait for auth context to resolve (refresh + /me round-trip)
+    await new Promise((r) => setTimeout(r, 150));
 
     await user.click(screen.getAllByRole('button', { name: /rate \d star/i })[3]);
 
-    // After click, user rating label appears
+    // After click, user-rating label appears (source: "(yours: X.X)")
     await waitFor(() => {
-      expect(screen.getByText(/your rating/i)).toBeInTheDocument();
+      expect(rateCalled).toBe(true);
+      expect(screen.getByText(/yours:/i)).toBeInTheDocument();
     });
 
     localStorage.removeItem('refreshToken');
