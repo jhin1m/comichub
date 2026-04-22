@@ -12,9 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { useSWRConfig } from 'swr';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
 import { useAuth } from '@/contexts/auth.context';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { BookmarkFolder, BookmarkStatus } from '@/types/bookmark.types';
+import type { AuthUser } from '@/types/auth.types';
 
 interface Props {
   mangaId: number;
@@ -23,6 +26,7 @@ interface Props {
 
 export function FollowButton({ mangaId, followersCount }: Props) {
   const { user } = useAuth();
+  const { mutate } = useSWRConfig();
   const router = useRouter();
   const [status, setStatus] = useState<BookmarkStatus>({
     bookmarked: false,
@@ -72,6 +76,14 @@ export function FollowButton({ mangaId, followersCount }: Props) {
         setStatus({ bookmarked: true, folderId: folder.id, folderName: folder.name, folderSlug: folder.slug });
         toast.success(`Moved to "${folder.name}"`);
       }
+      // Invalidate homepage strip so next nav home shows this manga.
+      mutate(SWR_KEYS.USER_BOOKMARK_STRIP);
+      // Flip flag locally — no refetch. Server stays source of truth on next /auth/me revalidate.
+      mutate(
+        SWR_KEYS.AUTH_ME,
+        (u: AuthUser | undefined) => (u ? { ...u, hasBookmark: true } : u),
+        false,
+      );
     } catch {
       toast.error('Failed to update bookmark');
     } finally {
@@ -87,6 +99,10 @@ export function FollowButton({ mangaId, followersCount }: Props) {
       setStatus({ bookmarked: false, folderId: null, folderName: null, folderSlug: null });
       setCount((c) => Math.max(0, c - 1));
       toast.success('Removed from bookmarks');
+      // Invalidate homepage strip — unbookmarking removes from Follow List. We don't
+      // flip hasBookmark=false because this may not be the user's last bookmark;
+      // SWR's revalidateOnFocus will pull the canonical value from /auth/me.
+      mutate(SWR_KEYS.USER_BOOKMARK_STRIP);
     } catch {
       toast.error('Failed to remove bookmark');
     } finally {

@@ -8,11 +8,14 @@ import {
   GlobeIcon,
   UsersThreeIcon,
 } from '@phosphor-icons/react';
+import { useSWRConfig } from 'swr';
 import { ChapterListItemRow } from './chapter-list-item';
 import { Pagination } from '@/components/ui/pagination';
 import { useAuth } from '@/contexts/auth.context';
 import { userApi } from '@/lib/api/user.api';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { ChapterListItem } from '@/types/manga.types';
+import type { AuthUser } from '@/types/auth.types';
 
 interface Props {
   chapters: ChapterListItem[];
@@ -74,6 +77,7 @@ function matchChapter(chapterNumber: string, query: string): boolean {
 
 export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
   const { user } = useAuth();
+  const { mutate } = useSWRConfig();
   const [query, setQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('number');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -97,6 +101,12 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
     if (!user) return;
     setLastReadChapterId(chapterId);
     userApi.upsertHistory(mangaId, chapterId).catch(() => {});
+    mutate(SWR_KEYS.USER_HISTORY_STRIP);
+    mutate(
+      SWR_KEYS.AUTH_ME,
+      (u: AuthUser | undefined) => (u ? { ...u, hasHistory: true } : u),
+      false,
+    );
   };
 
   // Extract unique languages from chapters

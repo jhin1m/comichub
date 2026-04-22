@@ -2,9 +2,12 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSWRConfig } from 'swr';
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { userApi } from '@/lib/api/user.api';
 import { useAuth } from '@/contexts/auth.context';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
+import type { AuthUser } from '@/types/auth.types';
 import { useReaderSettings } from '@/hooks/use-reader-settings';
 import { useReaderKeyboard } from '@/hooks/use-reader-keyboard';
 import { usePageTracker } from '@/hooks/use-page-tracker';
@@ -29,6 +32,7 @@ interface Props {
 export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const router = useRouter();
   const { user } = useAuth();
+  const { mutate } = useSWRConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { settings, update, imageFilterStyle } = useReaderSettings();
@@ -90,9 +94,19 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const topBarHidden = useAutoHide(scrollRef, !isManualMode);
 
   // ─── Track reading history ─────────────────────────────
+  // Key on user?.id (not user obj) so auth context re-renders with a fresh user
+  // object of same id don't re-fire this — would cause duplicate upsertHistory.
+  const userId = user?.id;
   useEffect(() => {
-    if (user) userApi.upsertHistory(chapter.mangaId, chapter.id).catch(() => {});
-  }, [chapter.id, chapter.mangaId, user]);
+    if (!userId) return;
+    userApi.upsertHistory(chapter.mangaId, chapter.id).catch(() => {});
+    mutate(SWR_KEYS.USER_HISTORY_STRIP);
+    mutate(
+      SWR_KEYS.AUTH_ME,
+      (u: AuthUser | undefined) => (u ? { ...u, hasHistory: true } : u),
+      false,
+    );
+  }, [chapter.id, chapter.mangaId, userId, mutate]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);

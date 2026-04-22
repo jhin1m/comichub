@@ -7,8 +7,10 @@ import { XIcon, SpinnerIcon, CheckIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { useSWRConfig } from 'swr';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
 import { getMangaUrl } from '@/lib/utils/manga-url';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { BookmarkItem, BookmarkFolder } from '@/types/bookmark.types';
 
 function timeAgo(date: string | null): string {
@@ -71,6 +73,7 @@ export function BookmarkTable({
   onToggleSelect,
 }: BookmarkTableProps) {
   const [removing, setRemoving] = useState<number | null>(null);
+  const { mutate } = useSWRConfig();
 
   if (items.length === 0) {
     return <div className="py-16 text-center text-muted text-sm">No bookmarks found.</div>;
@@ -95,6 +98,7 @@ export function BookmarkTable({
       await bookmarkApi.removeBookmark(mangaId);
       toast.success('Removed from bookmarks');
       onRemoved([mangaId]);
+      mutate(SWR_KEYS.USER_BOOKMARK_STRIP);
     } catch {
       toast.error('Failed to remove');
     } finally {

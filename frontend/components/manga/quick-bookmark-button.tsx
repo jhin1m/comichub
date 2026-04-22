@@ -18,9 +18,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { useSWRConfig } from 'swr';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
 import { useAuth } from '@/contexts/auth.context';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { BookmarkFolder, BookmarkStatus } from '@/types/bookmark.types';
+import type { AuthUser } from '@/types/auth.types';
 
 interface Props {
   mangaId: number;
@@ -28,6 +31,7 @@ interface Props {
 
 export function QuickBookmarkButton({ mangaId }: Props) {
   const { user } = useAuth();
+  const { mutate } = useSWRConfig();
   const router = useRouter();
   const [status, setStatus] = useState<BookmarkStatus>({
     bookmarked: false,
@@ -82,6 +86,12 @@ export function QuickBookmarkButton({ mangaId }: Props) {
         setStatus({ bookmarked: true, folderId: folder.id, folderName: folder.name, folderSlug: folder.slug });
         toast.success(`Moved to "${folder.name}"`);
       }
+      mutate(SWR_KEYS.USER_BOOKMARK_STRIP);
+      mutate(
+        SWR_KEYS.AUTH_ME,
+        (u: AuthUser | undefined) => (u ? { ...u, hasBookmark: true } : u),
+        false,
+      );
     } catch {
       toast.error('Failed to update bookmark');
     } finally {
@@ -96,6 +106,7 @@ export function QuickBookmarkButton({ mangaId }: Props) {
       await bookmarkApi.removeBookmark(mangaId);
       setStatus({ bookmarked: false, folderId: null, folderName: null, folderSlug: null });
       toast.success('Removed from bookmarks');
+      mutate(SWR_KEYS.USER_BOOKMARK_STRIP);
     } catch {
       toast.error('Failed to remove bookmark');
     } finally {

@@ -12,9 +12,11 @@ import {
   CheckSquareIcon,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { formatRelativeDate } from '@/lib/utils';
 import { userApi } from '@/lib/api/user.api';
 import { getMangaUrl } from '@/lib/utils/manga-url';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { HistoryItem } from '@/types/user.types';
 
 interface HistoryTabProps {
@@ -23,6 +25,7 @@ interface HistoryTabProps {
 }
 
 export function HistoryTab({ items, onRemoved }: HistoryTabProps) {
+  const { mutate } = useSWRConfig();
   const [search, setSearch] = useState('');
   const [removing, setRemoving] = useState<number | null>(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -81,6 +84,7 @@ export function HistoryTab({ items, onRemoved }: HistoryTabProps) {
       await userApi.removeHistory(mangaId);
       toast.success('Removed from history');
       onRemoved?.([mangaId]);
+      mutate(SWR_KEYS.USER_HISTORY_STRIP);
     } catch {
       toast.error('Failed to remove');
     } finally {
@@ -98,6 +102,7 @@ export function HistoryTab({ items, onRemoved }: HistoryTabProps) {
       onRemoved?.(ids);
       setSelected(new Set());
       setSelectMode(false);
+      mutate(SWR_KEYS.USER_HISTORY_STRIP);
     } catch {
       toast.error('Failed to remove');
     } finally {

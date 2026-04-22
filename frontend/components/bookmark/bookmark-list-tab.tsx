@@ -15,10 +15,12 @@ import {
   FolderIcon,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { bookmarkApi } from '@/lib/api/bookmark.api';
 import { BookmarkTable } from './bookmark-table';
 import { Pagination } from '@/components/ui/pagination';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { BookmarkItem, BookmarkFolder } from '@/types/bookmark.types';
 
 interface PaginatedBookmarks {
@@ -44,6 +46,7 @@ export function BookmarkListTab({ folders, onFolderChanged }: BookmarkListTabPro
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { mutate } = useSWRConfig();
   const [result, setResult] = useState<PaginatedBookmarks | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,6 +167,7 @@ export function BookmarkListTab({ folders, onFolderChanged }: BookmarkListTabPro
       setSelectMode(false);
       onFolderChanged();
       fetchBookmarks();
+      mutate(SWR_KEYS.USER_BOOKMARK_STRIP);
     } catch {
       toast.error('Failed to remove bookmarks');
     } finally {
