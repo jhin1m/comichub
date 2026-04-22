@@ -4,6 +4,12 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Fixed - Homepage Skeleton Flash for Logged-In Users (2026-04-22)
+- **Backend**: `/auth/me` now returns `hasHistory` and `hasBookmark` boolean flags via efficient EXISTS-style lookups (sub-millisecond cost)
+- **Frontend SWR Layer**: Added sessionStorage persistence scoped by userId with SWR 2.4.1. `continue-reading-strip` and `follow-list-strip` refactored into shared `MediaStrip` component using SWR; new users render nothing (no skeleton), returning users render instantly from cache
+- **Cache Invalidation**: Wired centralized `SWR_KEYS` across 7 mutation sites (follow-button, quick-bookmark-button, bookmark-table/list, history-tab, chapter-list, chapter-reader) with client-side flag flip on first read/bookmark (no refetch required)
+- **Impact**: Zero skeleton blink on nav or initial page load for users with reading history or bookmarks
+
 ### Optimized - Docker Build pnpm Cache Mount (2026-04-20)
 - **Root Cause**: Dockerfiles ran `pnpm install --frozen-lockfile` without BuildKit cache mount → every rebuild re-fetched all packages from registry, ignoring pnpm's content-addressable store advantage
 - **Change**: Added `# syntax=docker/dockerfile:1.7` directive + `RUN --mount=type=cache,id=pnpm,target=/pnpm/store` with `pnpm config set store-dir /pnpm/store` to both `backend/Dockerfile` (deps + production stages) and `frontend/Dockerfile` (deps stage)
