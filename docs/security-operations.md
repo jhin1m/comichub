@@ -41,8 +41,9 @@ openssl rand -hex 32  # 64 hex chars = 32 bytes
 | `DATABASE_SSL=require` | DB is on different host than app (default off — same-VPS) |
 | `REDIS_URL` | Redis enabled (optional; app degrades gracefully if absent) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL` | Google OAuth enabled |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile enabled |
-| `TURNSTILE_FAIL_OPEN=true` | **Emergency only** — disables fail-closed behavior during CF outage |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile enabled (backend verify). Pairs with FE `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — setting one without the other breaks auth in prod (fail-closed guard rejects every request missing a token). |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | CF Turnstile public site key. **Build-time only** — baked into FE bundle at `docker build` (see `frontend/Dockerfile` ARG + `docker-compose.yml` build args + `deploy/deploy.sh` export). Changing value requires FE rebuild; setting it in runtime env has no effect. |
+| `TURNSTILE_FAIL_OPEN=true` | **Emergency only** — disables fail-closed backend verify during CF outage. Does not affect the FE widget. |
 | `OAUTH_LEGACY_FRAGMENT=1` | During FE rollout window; remove after FE ships code-exchange flow |
 | `ALLOW_PRIVATE_IMAGE_HOSTS=1` | Dev only — allows private-IP image sources |
 

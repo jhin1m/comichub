@@ -88,6 +88,7 @@ nano deploy/.env.deploy
 | `NEXT_PUBLIC_API_URL` | `https://api.zetsu.moe/api/v1` |
 | `NEXT_PUBLIC_SITE_NAME` | `Zetsu` |
 | `NEXT_PUBLIC_SITE_URL` | `https://zetsu.moe` |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `0x4AAA...` (CF Turnstile public site key — baked into FE bundle at `docker build`; rebuild required after change) |
 | `FRONTEND_URL` | `https://zetsu.moe` |
 | `GIT_REPO` | `git@github.com:user/repo.git` |
 | `GIT_BRANCH` | `main` |
@@ -202,7 +203,7 @@ When running via `run-import.sh comix [flags]`:
 ```bash
 cd /var/www/comichub
 source deploy/.env.deploy
-export DB_PASSWORD NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_NAME NEXT_PUBLIC_SITE_LOGO NEXT_PUBLIC_SITE_URL FRONTEND_URL DOMAIN API_SUBDOMAIN COMPOSE_PROJECT_NAME
+export DB_PASSWORD NEXT_PUBLIC_API_URL NEXT_PUBLIC_SITE_NAME NEXT_PUBLIC_SITE_LOGO NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_TURNSTILE_SITE_KEY FRONTEND_URL DOMAIN API_SUBDOMAIN COMPOSE_PROJECT_NAME
 
 # Status
 docker compose ps
