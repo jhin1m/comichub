@@ -22,6 +22,7 @@ function buildChain(resolvedValue: any = []) {
   ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
+  chain.onConflictDoUpdate = vi.fn().mockReturnValue(chain);
   chain.returning = vi.fn().mockResolvedValue(resolvedValue);
   chain.then = (resolve: any) => resolve(resolvedValue);
   return chain;
@@ -65,23 +66,19 @@ describe('HistoryService', () => {
       expect(mockDb.insert).toHaveBeenCalled();
     });
 
-    it('should update existing history entry', async () => {
-      const existing = { id: 1, userId: 10, mangaId: 1, chapterId: 3 };
-      mockDb.query.readingHistory.findFirst.mockResolvedValue(existing);
-      mockDb.update.mockReturnValue(buildChain([]));
+    it('should upsert via onConflictDoUpdate when entry exists', async () => {
+      mockDb.insert.mockReturnValue(buildChain([]));
 
       const result = await service.upsert(10, { mangaId: 1, chapterId: 5 });
       expect(result.message).toBe('History updated');
-      expect(mockDb.update).toHaveBeenCalled();
+      expect(mockDb.insert).toHaveBeenCalled();
     });
 
-    it('should preserve existing chapterId when dto.chapterId is null', async () => {
-      const existing = { id: 1, userId: 10, mangaId: 1, chapterId: 3 };
-      mockDb.query.readingHistory.findFirst.mockResolvedValue(existing);
-      mockDb.update.mockReturnValue(buildChain([]));
+    it('should handle null chapterId via onConflictDoUpdate', async () => {
+      mockDb.insert.mockReturnValue(buildChain([]));
 
       await service.upsert(10, { mangaId: 1 });
-      expect(mockDb.update).toHaveBeenCalled();
+      expect(mockDb.insert).toHaveBeenCalled();
     });
   });
 

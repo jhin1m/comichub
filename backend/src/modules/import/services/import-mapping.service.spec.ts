@@ -69,11 +69,15 @@ describe('ImportMappingService', () => {
     it('should create new record when not found', async () => {
       const mockTable = { id: 'id', slug: 'slug' };
 
-      // Batch lookup returns empty (none found)
-      mockDb.select.mockReturnValue(buildChain([]));
+      // First select: empty (missing slug); Second select (re-query): new record
+      let call = 0;
+      mockDb.select.mockImplementation(() => {
+        call++;
+        if (call === 1) return buildChain([]);
+        return buildChain([{ id: 2, slug: 'newgenre' }]);
+      });
 
-      const insertChain = buildChain([{ id: 2 }]);
-      mockDb.insert.mockReturnValue(insertChain);
+      mockDb.insert.mockReturnValue(buildChain([]));
 
       const result = await service['resolveByName'](mockTable as any, [
         'NewGenre',
@@ -86,11 +90,15 @@ describe('ImportMappingService', () => {
     it('should handle multiple names', async () => {
       const mockTable = { id: 'id', slug: 'slug' };
 
-      // Batch lookup: 'action' found, 'comedy' not found
-      mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'action' }]));
+      // First select: 'action' found; Second select (re-query): 'comedy' inserted
+      let call = 0;
+      mockDb.select.mockImplementation(() => {
+        call++;
+        if (call === 1) return buildChain([{ id: 1, slug: 'action' }]);
+        return buildChain([{ id: 2, slug: 'comedy' }]);
+      });
 
-      const insertChain = buildChain([{ id: 2 }]);
-      mockDb.insert.mockReturnValue(insertChain);
+      mockDb.insert.mockReturnValue(buildChain([]));
 
       const result = await service['resolveByName'](mockTable as any, [
         'Action',
@@ -113,10 +121,15 @@ describe('ImportMappingService', () => {
     });
 
     it('should create new genre when not found', async () => {
-      mockDb.select.mockReturnValue(buildChain([]));
+      // First select: empty; Second select (re-query): new genre
+      let call = 0;
+      mockDb.select.mockImplementation(() => {
+        call++;
+        if (call === 1) return buildChain([]);
+        return buildChain([{ id: 2, slug: 'action' }]);
+      });
 
-      const insertChain = buildChain([{ id: 2 }]);
-      mockDb.insert.mockReturnValue(insertChain);
+      mockDb.insert.mockReturnValue(buildChain([]));
 
       const result = await service.resolveGenres(['Action']);
 

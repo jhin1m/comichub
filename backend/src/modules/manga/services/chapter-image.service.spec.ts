@@ -80,6 +80,11 @@ describe('ChapterImageService', () => {
         };
         return map[key] ?? '';
       }),
+      get: vi.fn().mockImplementation((key: string, fallback?: string) => {
+        if (key === 's3.publicUrl') return fallback ?? '';
+        if (key === 's3.endpoint') return undefined;
+        return fallback;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

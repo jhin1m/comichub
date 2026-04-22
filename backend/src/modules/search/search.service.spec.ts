@@ -13,6 +13,7 @@ function buildSelectChain(resolvedValue: any = []) {
     'limit',
     'offset',
     'innerJoin',
+    'leftJoin',
   ].forEach((m) => {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
