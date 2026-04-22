@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { authApi } from '@/lib/api/auth.api';
 import { setAccessToken, clearTokens } from '@/lib/api-client';
 import { refreshTokens } from '@/lib/auth-refresh';
+import { clearSessionCache } from '@/lib/swr/session-cache';
 import type { AuthUser, LoginForm, RegisterForm } from '@/types/auth.types';
 
 interface AuthContextValue {
@@ -65,13 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    const currentUserId = user?.id;
     try {
       await authApi.logout();
     } finally {
+      if (currentUserId) clearSessionCache(currentUserId);
       clearTokens();
       setUser(null);
     }
-  }, []);
+  }, [user]);
 
   const setTokensFromOAuth = useCallback(async (accessToken: string, refreshToken: string) => {
     setAccessToken(accessToken);
