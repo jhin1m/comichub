@@ -16,14 +16,16 @@ ARG NEXT_PUBLIC_SITE_NAME
 ARG NEXT_PUBLIC_SITE_LOGO
 ARG NEXT_PUBLIC_SITE_URL
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ARG INTERNAL_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_SITE_NAME=${NEXT_PUBLIC_SITE_NAME}
 ENV NEXT_PUBLIC_SITE_LOGO=${NEXT_PUBLIC_SITE_LOGO}
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-# INTERNAL_API_URL intentionally NOT set at build time — backend:3001 doesn't
-# resolve outside compose network. api-client falls back to NEXT_PUBLIC_API_URL
-# (public Caddy URL, reachable via old backend container during deploy build).
+ENV INTERNAL_API_URL=${INTERNAL_API_URL}
+# INTERNAL_API_URL at BUILD points at host-gateway (old backend's host port)
+# to bypass Cloudflare; RUNTIME value comes from compose environment (backend:3001
+# via compose network). Stage 3 starts fresh so no cross-contamination.
 RUN pnpm run build
 
 # Stage 3: Production

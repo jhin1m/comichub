@@ -54,12 +54,17 @@ services:
   frontend:
     build:
       context: ./frontend
+      # host-gateway lets build container reach the running old backend via
+      # host-port-mapped 127.0.0.1:3001 → bypasses Cloudflare bot challenge.
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.example.com/api/v1}
         NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-ComicHub}
         NEXT_PUBLIC_SITE_LOGO: ${NEXT_PUBLIC_SITE_LOGO:-}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://example.com}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+        INTERNAL_API_URL: http://host.docker.internal:3001/api/v1
     restart: unless-stopped
     environment:
       HOSTNAME: "0.0.0.0"
