@@ -21,6 +21,6 @@ export function buildPreferenceParams(prefs: ContentPreferences) {
     excludeTypes: prefs.excludedTypes.length ? prefs.excludedTypes.join(',') : undefined,
     excludeDemographics: prefs.excludedDemographics.length ? prefs.excludedDemographics.join(',') : undefined,
     excludeGenres: prefs.excludedGenreSlugs.length ? prefs.excludedGenreSlugs.join(',') : undefined,
-    nsfw: prefs.hideNsfw ? false : undefined,
+    nsfw: prefs.hideNsfw ? undefined : true,
   };
 }

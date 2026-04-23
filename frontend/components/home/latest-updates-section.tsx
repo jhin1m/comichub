@@ -51,7 +51,7 @@ function LatestUpdatesSectionInner({ initialData }: Props) {
     if (prefParams.excludeTypes) params.excludeTypes = prefParams.excludeTypes;
     if (prefParams.excludeDemographics) params.excludeDemographics = prefParams.excludeDemographics;
     if (prefParams.excludeGenres) params.excludeGenres = prefParams.excludeGenres;
-    if (prefParams.nsfw === false) params.nsfw = 'false';
+    if (prefParams.nsfw === true) params.nsfw = 'true';
 
     const res = await apiClient.get<PaginatedResult<MangaListItem>>('/manga', { params });
     return res.data;
@@ -77,7 +77,7 @@ function LatestUpdatesSectionInner({ initialData }: Props) {
   useEffect(() => {
     if (!prefsLoaded || hasRefetched.current) return;
     const hasFilters = prefParams.excludeTypes || prefParams.excludeDemographics
-      || prefParams.excludeGenres || prefParams.nsfw === false;
+      || prefParams.excludeGenres || prefParams.nsfw === true;
     if (!hasFilters) return;
     hasRefetched.current = true;
     fetchData(urlPage, typeFilter).then((result) => {

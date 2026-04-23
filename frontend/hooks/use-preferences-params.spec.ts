@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { AuthProvider } from '@/contexts/auth.context';
 import { PreferencesProvider } from '@/contexts/preferences.context';
+import { DEFAULT_PREFERENCES } from '@/types/preferences.types';
 import { usePreferencesParams } from './use-preferences-params';
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,10 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('usePreferencesParams', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('returns isLoaded and params object', () => {
     const { result } = renderHook(() => usePreferencesParams(), { wrapper });
     expect(result.current).toHaveProperty('params');
@@ -22,7 +27,6 @@ describe('usePreferencesParams', () => {
 
   it('excludeTypes is undefined when excludedTypes is empty', () => {
     const { result } = renderHook(() => usePreferencesParams(), { wrapper });
-    // Default preferences have empty arrays — params fields should be undefined
     expect(result.current.params.excludeTypes).toBeUndefined();
   });
 
@@ -31,19 +35,23 @@ describe('usePreferencesParams', () => {
     expect(result.current.params.excludeDemographics).toBeUndefined();
   });
 
-  it('nsfw is false when hideNsfw is true (default)', () => {
+  it('nsfw is undefined when hideNsfw is true (default)', async () => {
     const { result } = renderHook(() => usePreferencesParams(), { wrapper });
-    // Default hideNsfw=true => nsfw param should be false
-    expect(result.current.params.nsfw).toBe(false);
+    // Wait for provider mount effect to run
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+    // Default hideNsfw=true => omit nsfw so BE default-deny applies
+    expect(result.current.params.nsfw).toBeUndefined();
   });
 
-  it('nsfw is undefined when hideNsfw is false', async () => {
-    // Test that when hideNsfw=false, nsfw param is undefined
-    // We verify the logic: preferences.hideNsfw ? false : undefined
-    // With default preferences hideNsfw=true so nsfw=false
-    // This test verifies the mapping logic is correct
+  it('nsfw is true when hideNsfw is false', async () => {
+    // Seed localStorage BEFORE provider mounts — provider reads on mount
+    localStorage.setItem(
+      'content-preferences',
+      JSON.stringify({ ...DEFAULT_PREFERENCES, hideNsfw: false }),
+    );
     const { result } = renderHook(() => usePreferencesParams(), { wrapper });
-    // Default state: hideNsfw true => nsfw false (not undefined)
-    expect(typeof result.current.params.nsfw === 'boolean' || result.current.params.nsfw === undefined).toBe(true);
+    await waitFor(() => expect(result.current.isLoaded).toBe(true));
+    // User opted in => nsfw must be explicit true so BE bypasses filter
+    expect(result.current.params.nsfw).toBe(true);
   });
 });

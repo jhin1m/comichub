@@ -18,7 +18,8 @@ export function usePreferencesParams(): { params: PreferencesParams; isLoaded: b
       ? preferences.excludedDemographics.join(',') : undefined,
     excludeGenres: preferences.excludedGenreSlugs.length
       ? preferences.excludedGenreSlugs.join(',') : undefined,
-    nsfw: preferences.hideNsfw ? false : undefined,
+    // Only opt-in when user wants NSFW; omit (undefined) lets BE default-deny apply
+    nsfw: preferences.hideNsfw ? undefined : true,
   }), [preferences]);
 
   return { params, isLoaded };
