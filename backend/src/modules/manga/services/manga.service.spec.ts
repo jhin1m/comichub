@@ -222,6 +222,30 @@ describe('MangaService', () => {
       expect(result).toMatchObject({ id: 1, title: 'One Piece', shortId: '1' });
       expect(result.genres).toEqual([]);
     });
+
+    it('returns NSFW-rated manga regardless of auth (no gate on detail lookup)', async () => {
+      const mangaRow = {
+        id: 42,
+        title: 'Adult Title',
+        slug: 'adult-title',
+        contentRating: 'pornographic',
+        deletedAt: null,
+      };
+      let callCount = 0;
+      mockDb.select.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return buildChain([mangaRow]);
+        return buildChain([]);
+      });
+
+      const result = await service.findByIdentifier('adult-title');
+
+      expect(result).toMatchObject({
+        id: 42,
+        title: 'Adult Title',
+        contentRating: 'pornographic',
+      });
+    });
   });
 
   // ─── create ────────────────────────────────────────────────────────

@@ -85,6 +85,12 @@ API prefix: `/api/v1`. All routes require auth by default.
 - **Report rate limit (C3):** `@Throttle({ limit: 3, ttl: 60000 })` per-user on `POST /chapters/:id/report`.
 - **Report dedupe:** partial unique index `(user_id, chapter_id, type) WHERE status='pending'` + app-level pre-check → 409 on retry.
 
+### Content-Rating Filters: Preference ≠ Access Control
+Invariant: the `NSFW_RATINGS` filter is a **discovery preference**, not an access gate.
+- Applies to list/discovery endpoints (`GET /manga` default, `GET /manga/random`) so unauthenticated browsing doesn't surface adult covers.
+- **Never** applied to direct-intent detail lookups (`GET /manga/:slug`). A direct URL is explicit intent — blocking it with a silent 404 confused users and broke SSR/share links.
+- Real adult-content access control (age verification, etc.) is a separate future initiative and must live behind an explicit gate, not a discovery filter.
+
 ### SSRF Defense (H11)
 Shared utility `common/utils/safe-http.util.ts`:
 - Scheme allowlist: `https:` only
@@ -114,6 +120,19 @@ Request → [L1 HTTP interceptor] → [L2 Redis service cache] → [L3 in-memory
 - Cron: `rankings:*` flushed every 5 min
 - Counter flush: view buffers flushed to DB every 5 min via `CounterFlushJob` (guarded by `redisStatus.available` — no-ops when Redis down)
 
+## Search (pg_trgm)
+
+Typo-tolerant, diacritic-insensitive full-text search powered by PostgreSQL trigram indexes.
+
+- **Extensions:** `pg_trgm` (trigram similarity), `unaccent` (diacritic folding).
+- **Normalized columns:** `manga.search_title`, `manga.search_alt` — `GENERATED ALWAYS AS (...) STORED` via `normalize_title(text) → lower(unaccent(...))` (IMMUTABLE SQL wrapper; stock `unaccent()` is STABLE and cannot be used in generated columns).
+- **Indexes:** GIN `gin_trgm_ops` on both columns, built `CREATE INDEX CONCURRENTLY` (non-blocking, in a separate no-transaction migration `0021`).
+- **Query (fuzzy path, `q` > 3 chars):** `search_title %> :q OR search_alt %> :q` with per-query `SET LOCAL pg_trgm.word_similarity_threshold` (env-tunable `SEARCH_WORD_SIM_THRESHOLD`, default `0.25`, range `[0.1, 1.0]`). Wrapped in `db.transaction()` so `SET LOCAL` scope is per-request.
+- **Short-query fallback (`q` ≤ 3 chars):** ILIKE on the same normalized columns — GIN trigram still accelerates substring match; `%>` unreliable at this length.
+- **Ranking (blended):** `word_similarity(q, title)*2 + word_similarity(q, alt)*1.5 + ln(1+views)*0.1 + freshness_bonus` (30-day window). Relevance wins over user-selected sort when `q` present.
+- **Suggest cache:** Redis TTL `90s` (down from `300s` — trading staleness for freshness now that DB is fast).
+- **Out of scope (future):** `manga_aliases` child table with per-alias weighting; CJK tokenizer (zhparser / pgroonga); synonyms / query expansion; pgvector semantic search.
+
 ## Graceful Degradation (Redis Optional)
 
 - `REDIS_AVAILABLE` token (`RedisStatus`) injected where Redis-dependent behavior must degrade
@@ -132,7 +151,7 @@ Request → [L1 HTTP interceptor] → [L2 Redis service cache] → [L3 in-memory
 | `user` | Profiles, admin CRUD, reading history |
 | `manga` | Manga/chapters/images, artists/authors/genres/groups, view tracking, rankings |
 | `community` | Comments, ratings, follows, reports, stickers |
-| `search` | Full-text search (Postgres tsvector) |
+| `search` | Fuzzy search via pg_trgm GIN on normalized generated columns (typo + diacritic tolerant, CJK substring) |
 | `notification` | In-app notification events |
 | `sitemap` | Static sitemap generation |
 | `jobs` | Cron: counter-flush, cache-invalidation, cache-warmup, view-counter-reset |
@@ -164,4 +183,5 @@ See `docs/deployment-guide.md` for step-by-step. Summary: `sudo ./deploy/deploy.
 
 | Date | Change |
 |---|---|
+| 2026-04-23 | Fuzzy search (pg_trgm): replaced ILIKE `%q%` with trigram word_similarity on generated normalized columns (`search_title`, `search_alt`). Diacritic-insensitive via `unaccent`, CJK substring via trigram n-grams. Env: `SEARCH_WORD_SIM_THRESHOLD` (default 0.25). Suggest Redis TTL 300s → 90s. |
 | 2026-04-20 | Sprint B security baseline: Helmet, CORS allowlist, trust-proxy=2, JWT fail-fast, OAuth code exchange, refresh-family, lockout, Turnstile fail-closed, SSRF util, sanitize-html whitelist, Redis graceful degradation |

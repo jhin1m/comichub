@@ -358,19 +358,19 @@ export class MangaService {
     return { id: row.id, slug: row.slug };
   }
 
-  async findByIdentifier(
-    param: string,
-    isAuthenticated = false,
-  ): Promise<MangaDetail> {
+  async findByIdentifier(param: string): Promise<MangaDetail> {
     const parsed = parseIdentifier(param);
 
     // Try ID-based lookup first (shortId path)
     if (parsed.type === 'id') {
-      const cacheKey = `id:${parsed.value}:${isAuthenticated}`;
+      // Trailing ':' is a delimiter so prefix-based invalidation in
+      // `handleMangaUpdated` / `invalidateCaches` cannot match wider IDs
+      // (e.g. `id:1:` must not be a prefix of `id:10:`).
+      const cacheKey = `id:${parsed.value}:`;
       const cached = this.slugCache.get(cacheKey);
       if (cached) return cached;
 
-      const m = await this.findMangaRow({ type: 'id', value: parsed.value }, isAuthenticated);
+      const m = await this.findMangaRow({ type: 'id', value: parsed.value });
       if (m) {
         const detail = await this.loadMangaRelations(m);
         this.slugCache.set(cacheKey, detail);
@@ -382,36 +382,35 @@ export class MangaService {
 
     // Slug-based lookup (legacy or fallback)
     const slugValue = parsed.type === 'slug' ? parsed.value : param;
-    const cacheKey = `slug:${slugValue}:${isAuthenticated}`;
+    const cacheKey = `slug:${slugValue}:`;
     const cached = this.slugCache.get(cacheKey);
     if (cached) return cached;
 
-    const m = await this.findMangaRow({ type: 'slug', value: slugValue }, isAuthenticated);
+    const m = await this.findMangaRow({ type: 'slug', value: slugValue });
     if (!m) throw new NotFoundException('Manga not found');
 
     const detail = await this.loadMangaRelations(m);
     this.slugCache.set(cacheKey, detail);
     // Also cache by id to prevent duplicate entries
-    this.slugCache.set(`id:${m.id}:${isAuthenticated}`, detail);
+    this.slugCache.set(`id:${m.id}:`, detail);
     return detail;
   }
 
   /** Find a manga row by id or slug */
   private async findMangaRow(
     lookup: { type: 'id'; value: number } | { type: 'slug'; value: string },
-    isAuthenticated: boolean,
   ) {
-    const conditions = [
-      lookup.type === 'id' ? eq(manga.id, lookup.value) : eq(manga.slug, lookup.value),
-      isNull(manga.deletedAt),
-    ];
-    if (!isAuthenticated) {
-      conditions.push(notInArray(manga.contentRating, NSFW_RATINGS));
-    }
     const [m] = await this.db
       .select()
       .from(manga)
-      .where(and(...conditions))
+      .where(
+        and(
+          lookup.type === 'id'
+            ? eq(manga.id, lookup.value)
+            : eq(manga.slug, lookup.value),
+          isNull(manga.deletedAt),
+        ),
+      )
       .limit(1);
     return m ?? null;
   }

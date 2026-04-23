@@ -30,8 +30,6 @@ import { RedisCacheInterceptor } from '../../../common/interceptors/redis-cache.
 import { Roles } from '../../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
-import type { JwtPayload } from '../../auth/types/jwt-payload.type.js';
 
 @ApiTags('manga')
 @Controller('manga')
@@ -63,8 +61,8 @@ export class MangaController {
   @ApiParam({ name: 'slug', example: 'ZLYs-one-piece', description: 'ShortId-slug identifier or legacy slug' })
   @ApiResponse({ status: 200, description: 'Manga detail with chapters' })
   @ApiResponse({ status: 404, description: 'Manga not found' })
-  findOne(@Param('slug') slug: string, @CurrentUser() user?: JwtPayload) {
-    return this.mangaService.findByIdentifier(slug, !!user);
+  findOne(@Param('slug') slug: string) {
+    return this.mangaService.findByIdentifier(slug);
   }
 
   @ApiBearerAuth()
