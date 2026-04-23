@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { config as loadEnv } from 'dotenv';
+
+// Load test-only credentials (E2E_TEST_EMAIL, E2E_TEST_PASSWORD, etc.)
+// from `.env.test.local` — gitignored, see `.env.test.example`.
+loadEnv({ path: '.env.test.local' });
 
 export default defineConfig({
   testDir: './tests/e2e',
