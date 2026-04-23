@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   jsonb,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users } from './user.schema.js';
 
 // Enums
@@ -114,12 +115,23 @@ export const manga = pgTable(
     // Do NOT let ORM auto-bump this — explicit bump in chapter insert flows only.
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),
+    // Generated normalized columns (see migration 0020): lowercase + unaccent.
+    // Maintained by Postgres, read-only from app side. Used for pg_trgm fuzzy search.
+    searchTitle: text('search_title').generatedAlwaysAs(
+      sql`normalize_title("title")`,
+    ),
+    searchAlt: text('search_alt').generatedAlwaysAs(
+      sql`normalize_alt_titles("alt_titles")`,
+    ),
   },
   (table) => [
     index('manga_status_type_idx').on(table.status, table.type),
     index('manga_created_at_idx').on(table.createdAt),
     index('manga_updated_at_idx').on(table.updatedAt),
     index('manga_views_idx').on(table.views),
+    // GIN trigram indexes — declared in migration 0021 (CONCURRENTLY).
+    // Drizzle's `.using('gin', ...)` cannot express gin_trgm_ops operator class cleanly,
+    // so indexes live in migration only; schema declaration is documentation.
   ],
 );
 

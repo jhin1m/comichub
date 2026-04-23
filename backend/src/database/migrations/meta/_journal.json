@@ -141,6 +141,20 @@
       "when": 1776600001000,
       "tag": "0019_add_refresh_token_jti",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1777334400000,
+      "tag": "0020_add_fuzzy_search_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1777334401000,
+      "tag": "0021_add_fuzzy_search_indexes",
+      "breakpoints": true
     }
   ]
 }
