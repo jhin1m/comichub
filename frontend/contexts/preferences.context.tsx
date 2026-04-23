@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth.context';
 import { preferencesApi } from '@/lib/api/preferences.api';
 import { DEFAULT_PREFERENCES } from '@/types/preferences.types';
@@ -58,7 +59,6 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [preferences, setPreferences] = useState<ContentPreferences>(DEFAULT_PREFERENCES);
   const [isLoaded, setIsLoaded] = useState(false);
   const prevUserRef = useRef<typeof user>(undefined);
-  const prevLoadingRef = useRef(loading);
 
   // Mount: read from localStorage and sync to cookie for RSC access
   useEffect(() => {
@@ -71,38 +71,28 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     setIsLoaded(true);
   }, []);
 
-  // Auth change: sync on login/logout
+  // Auth change: DB-wins on login + auth-restore; keep local as guest prefs on logout.
   useEffect(() => {
     if (!isLoaded || loading) return;
 
-    const wasLoading = prevLoadingRef.current;
     const prevUser = prevUserRef.current;
-    prevLoadingRef.current = loading;
     prevUserRef.current = user;
 
-    // Auth just finished initial load (page reload) — use localStorage, skip API calls
-    if (wasLoading) return;
-
-    // Real login: user was null while app was active, now has value
+    // Login OR auth-restore (undefined/null → user): DB is source of truth.
     if (!prevUser && user) {
-      const localPrefs = readLocalStorage();
-      const syncAndFetch = async () => {
+      (async () => {
         try {
-          if (localPrefs) {
-            await preferencesApi.update(localPrefs);
-          }
           const apiPrefs = await preferencesApi.get();
           setPreferences(apiPrefs);
           writeLocalStorage(apiPrefs);
         } catch {
-          // keep local state on error
+          toast.error('Không thể đồng bộ tuỳ chọn từ máy chủ.');
         }
-      };
-      syncAndFetch();
+      })();
       return;
     }
 
-    // user just logged out (had value, now null)
+    // Logout: keep current prefs as guest prefs.
     if (prevUser && !user) {
       writeLocalStorage(preferences);
     }
@@ -130,7 +120,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
           setPreferences(updated);
           writeLocalStorage(updated);
         } catch {
-          // optimistic update stays
+          toast.error('Không thể lưu tuỳ chọn. Vui lòng thử lại.');
         }
       }, 500);
     }
