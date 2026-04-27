@@ -7,12 +7,12 @@
 [x] Add effect in chapter list
 [ ] Allow user show/hide follow/history in home page
 [x] Refactor skeleton profile page to simple logo one.
-[ ] Smooth show/hide Advanced Filters button
-[ ] Testing NSFW content system.
+[x] Smooth show/hide Advanced Filters button
+[x] Testing NSFW content system.
 [x] Add NSFW content warning in chapter page.
 [x] Add NSFW content warning in manga page.
 [x] Always show "X" button follow/history in home page in mobile.
-[ ] Bug fix OAuth login google.
+[x] Bug fix OAuth login google.
 [ ] Add latest chapter in result search.
 [ ] Add histories search in search form.
 [x] Fix bug navigate incorrect manga in chapter reader.
