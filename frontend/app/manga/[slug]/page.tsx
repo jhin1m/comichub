@@ -8,6 +8,7 @@ import { mangaApi } from '@/lib/api/manga.api';
 import { commentApi } from '@/lib/api/comment.api';
 import { buildMeta, JsonLd, buildMangaJsonLd, buildBreadcrumbJsonLd, SITE_URL, SITE_NAME } from '@/lib/seo';
 import { getMangaUrl } from '@/lib/utils/manga-url';
+import { stripHtml } from '@/lib/utils/strip-html';
 import { MangaCoverHero } from '@/components/detail/manga-cover-hero';
 import { MangaSidebar } from '@/components/detail/manga-sidebar';
 import { MobileDetailsBar } from '@/components/detail/mobile-details-bar';
@@ -100,7 +101,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const manga = await getManga(slug);
     return buildMeta({
       title: manga.title,
-      description: manga.description?.replace(/<[^>]*>/g, '').slice(0, 160) ?? `Read ${manga.title} online on ${SITE_NAME}`,
+      description: (manga.description ? stripHtml(manga.description).slice(0, 160) : '') || `Read ${manga.title} online on ${SITE_NAME}`,
       path: `/manga/${slug}`,
       image: manga.cover,
     });

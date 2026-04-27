@@ -23,10 +23,21 @@ async function bootstrap() {
   app.set('trust proxy', trustProxyHops);
 
   // Helmet — security headers (CSP/HSTS/X-Frame-Options/nosniff/referrer-policy).
-  // CSP disabled in dev so Swagger UI loads without tuning; prod uses Helmet defaults.
+  // Prod: strict Helmet defaults. Dev: relaxed directives so Swagger UI's inline
+  // scripts/styles + external validator can load. Never set CSP to `false`
+  // (CWE-1021/693 — keeps the directive enforced in every environment).
   app.use(
     helmet({
-      contentSecurityPolicy: isProd ? undefined : false,
+      contentSecurityPolicy: isProd
+        ? undefined
+        : {
+            directives: {
+              defaultSrc: [`'self'`],
+              styleSrc: [`'self'`, `'unsafe-inline'`],
+              imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+              scriptSrc: [`'self'`, `'unsafe-inline'`],
+            },
+          },
       crossOriginEmbedderPolicy: false,
     }),
   );

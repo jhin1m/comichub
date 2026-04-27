@@ -2,11 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChatCircle } from '@phosphor-icons/react/ssr';
 import { formatRelativeDate } from '@/lib/utils';
+import { stripHtml } from '@/lib/utils/strip-html';
 import type { RecentComment } from '@/lib/api/comment.api';
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim();
-}
 
 function CommentItem({ comment }: { comment: RecentComment }) {
   const chapterLabel = comment.chapterNumber
@@ -40,7 +37,7 @@ function CommentItem({ comment }: { comment: RecentComment }) {
 
       {/* Comment content */}
       <p className="text-[13px] text-primary leading-relaxed line-clamp-2 mb-1.5">
-        {stripHtml(comment.content)}
+        {stripHtml(comment.content).trim()}
       </p>
 
       {/* User + time */}
