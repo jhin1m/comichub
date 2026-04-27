@@ -27,7 +27,6 @@ function TaxonomyLinks({
   items: TaxonomyItem[];
   href: (item: TaxonomyItem) => string;
 }) {
-  if (!items.length) return <span className="text-muted">—</span>;
   return (
     <span className="flex flex-wrap gap-x-1">
       {items.map((item, i) => (
@@ -68,24 +67,40 @@ export function MangaMetadata({ manga }: Props) {
         <span className="font-rajdhani font-semibold">{score}</span> by {formatCount(manga.totalRatings)} users
       </Row>
       <Row label="Type">{TYPE_LABELS[manga.type] ?? manga.type}</Row>
-      <Row label="Authors" scrollable>
-        <TaxonomyLinks
-          items={manga.authors}
-          href={(a) => `/browse?author=${a.id}`}
-        />
-      </Row>
-      <Row label="Artists" scrollable>
-        <TaxonomyLinks
-          items={manga.artists}
-          href={(a) => `/browse?artist=${a.id}`}
-        />
-      </Row>
-      <Row label="Genres" scrollable>
-        <TaxonomyLinks
-          items={manga.genres}
-          href={(g) => `/browse?genre=${g.slug}`}
-        />
-      </Row>
+      {manga.year !== null && (
+        <Row label="Year">
+          <Link
+            href={`/browse?yearFrom=${manga.year}&yearTo=${manga.year}`}
+            className="text-primary hover:text-accent transition-colors"
+          >
+            {manga.year}
+          </Link>
+        </Row>
+      )}
+      {manga.authors.length > 0 && (
+        <Row label="Authors" scrollable>
+          <TaxonomyLinks
+            items={manga.authors}
+            href={(a) => `/browse?author=${a.id}`}
+          />
+        </Row>
+      )}
+      {manga.artists.length > 0 && (
+        <Row label="Artists" scrollable>
+          <TaxonomyLinks
+            items={manga.artists}
+            href={(a) => `/browse?artist=${a.id}`}
+          />
+        </Row>
+      )}
+      {manga.genres.length > 0 && (
+        <Row label="Genres" scrollable>
+          <TaxonomyLinks
+            items={manga.genres}
+            href={(g) => `/browse?genre=${g.slug}`}
+          />
+        </Row>
+      )}
       <Row label="Status">{STATUS_LABELS[manga.status] ?? manga.status}</Row>
     </div>
   );
