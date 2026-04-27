@@ -49,6 +49,13 @@ export class ChapterImageService {
     mangaId: number,
     files: Express.Multer.File[],
   ): Promise<{ imageUrl: string; pageNumber: number }[]> {
+    // Runtime type guard: prevent type confusion attacks (CWE-843).
+    // Although NestJS FilesInterceptor normally yields an array, validating
+    // the runtime type here protects against bypassed/misconfigured interceptors
+    // and stops downstream string-iteration of a tampered payload.
+    if (!Array.isArray(files)) {
+      throw new BadRequestException('Invalid files payload');
+    }
     if (!files.length) throw new BadRequestException('No files provided');
 
     const [chapter] = await this.db
