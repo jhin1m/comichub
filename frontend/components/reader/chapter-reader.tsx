@@ -38,7 +38,6 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const { settings, update, imageFilterStyle } = useReaderSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [nsfwDismissed, setNsfwDismissed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -218,18 +217,6 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black">
 
-      {!nsfwDismissed && (chapter.contentRating === 'erotica' || chapter.contentRating === 'pornographic') && (
-        <div className="fixed top-12 left-0 right-0 z-40 flex items-center justify-center px-4 py-2 bg-accent/90 backdrop-blur-sm text-white text-sm font-medium">
-          <span>This chapter contains mature (18+) content</span>
-          <button
-            onClick={() => setNsfwDismissed(true)}
-            className="ml-3 px-2 py-0.5 rounded text-xs bg-white/20 hover:bg-white/30 transition-colors"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
       <div className="absolute inset-0 flex flex-col">
         <ReaderTopBar
           mangaTitle={mangaTitle} slug={slug} chapterNumber={chapter.number}
@@ -249,6 +236,12 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
+          {(chapter.contentRating === 'erotica' || chapter.contentRating === 'pornographic') && (
+            <div className="flex items-center justify-center px-4 py-2 bg-accent/90 text-white text-sm font-medium">
+              <span>This chapter contains mature (18+) content</span>
+            </div>
+          )}
+
           {/* Images */}
           <div
             className={`mx-auto ${isManualMode && settings.displayMode === 'double' ? 'flex gap-1 justify-center items-start' : ''} ${isManualMode ? 'flex flex-col items-center justify-center min-h-[calc(100vh-7rem)]' : ''}`}
