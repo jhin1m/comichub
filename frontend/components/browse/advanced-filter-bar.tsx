@@ -169,11 +169,18 @@ export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: Adv
     }
   }, [router]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="bg-surface border border-default rounded p-5 space-y-4">
-      {/* Row 1: 6-col aligned — Sort, Types, Genres, Demographic, Status, Min Chapter */}
+    <div
+      aria-hidden={!isOpen}
+      className={`grid transition-[grid-template-rows,opacity,margin-bottom] duration-300 ease-out ${
+        isOpen
+          ? 'grid-rows-[1fr] opacity-100 mb-4'
+          : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'
+      }`}
+    >
+      <div className="overflow-hidden">
+        <div className="bg-surface border border-default rounded p-5 space-y-4">
+          {/* Row 1: 6-col aligned — Sort, Types, Genres, Demographic, Status, Min Chapter */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <FilterDropdown
           label="Sort By"
@@ -311,6 +318,8 @@ export function AdvancedFilterBar({ currentParams, onApplyFilters, isOpen }: Adv
         >
           Apply Filter
         </button>
+      </div>
+        </div>
       </div>
     </div>
   );

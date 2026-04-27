@@ -59,13 +59,11 @@ function BrowseContentInner({ initialResult, initialParams }: Props) {
       </div>
 
       {/* Advanced filters panel */}
-      <div className="mb-4">
-        <AdvancedFilterBar
-          currentParams={initialParams}
-          onApplyFilters={updateParams}
-          isOpen={filtersOpen}
-        />
-      </div>
+      <AdvancedFilterBar
+        currentParams={initialParams}
+        onApplyFilters={updateParams}
+        isOpen={filtersOpen}
+      />
 
       {/* Results count + view toggle */}
       <div className="flex items-center justify-between mb-4">
