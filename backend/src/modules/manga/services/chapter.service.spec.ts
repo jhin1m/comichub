@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { getQueueToken } from '@nestjs/bullmq';
 import { ChapterService } from './chapter.service.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
+import { REDIS_AVAILABLE } from '../../../common/providers/redis.provider.js';
 
 function buildChain(resolvedValue: any = []) {
   const chain: any = {};
@@ -32,6 +34,8 @@ function buildChain(resolvedValue: any = []) {
 describe('ChapterService', () => {
   let service: ChapterService;
   let mockDb: any;
+  let mirrorQueue: { add: ReturnType<typeof vi.fn> };
+  let redisStatus: { available: boolean };
 
   beforeEach(async () => {
     mockDb = {
@@ -41,12 +45,16 @@ describe('ChapterService', () => {
       delete: vi.fn(),
       $count: vi.fn().mockResolvedValue(1),
     };
+    mirrorQueue = { add: vi.fn().mockResolvedValue({ id: 'mock' }) };
+    redisStatus = { available: true };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChapterService,
         { provide: DRIZZLE, useValue: mockDb },
         { provide: EventEmitter2, useValue: { emit: vi.fn() } },
+        { provide: getQueueToken('mirror'), useValue: mirrorQueue },
+        { provide: REDIS_AVAILABLE, useValue: redisStatus },
       ],
     }).compile();
 
@@ -110,13 +118,122 @@ describe('ChapterService', () => {
       let callCount = 0;
       mockDb.select.mockImplementation(() => {
         callCount++;
-        if (callCount === 1) return buildChain([{ chapter, mangaTitle: 'Test Manga' }]);
+        if (callCount === 1)
+          return buildChain([{ chapter, mangaTitle: 'Test Manga' }]);
         return buildChain(images);
       });
 
       const result = await service.findOne(1);
-      expect(result).toMatchObject({ id: 1, number: '1', mangaTitle: 'Test Manga' });
+      expect(result).toMatchObject({
+        id: 1,
+        number: '1',
+        mangaTitle: 'Test Manga',
+      });
       expect(result.images).toEqual(images);
+    });
+
+    it('should enqueue mirror job when images need mirroring', async () => {
+      const chapter = { id: 1, mangaId: 1, number: '1', slug: 'chapter-1' };
+      const images = [
+        {
+          id: 1,
+          chapterId: 1,
+          imageUrl: 'https://source.example/page1.jpg',
+          sourceUrl: 'https://source.example/page1.jpg',
+          order: 1,
+        },
+      ];
+
+      let callCount = 0;
+      mockDb.select.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return buildChain([{ chapter, mangaTitle: 'M' }]);
+        return buildChain(images);
+      });
+
+      await service.findOne(1);
+
+      expect(mirrorQueue.add).toHaveBeenCalledOnce();
+      expect(mirrorQueue.add).toHaveBeenCalledWith(
+        'mirror-chapter',
+        { chapterId: 1 },
+        { jobId: 'chapter:1' },
+      );
+    });
+
+    it('should NOT enqueue when all images already mirrored', async () => {
+      const chapter = { id: 1, mangaId: 1, number: '1', slug: 'chapter-1' };
+      const images = [
+        {
+          id: 1,
+          chapterId: 1,
+          imageUrl: 'https://cdn.example/page1.webp',
+          sourceUrl: 'https://source.example/page1.jpg',
+          order: 1,
+        },
+      ];
+
+      let callCount = 0;
+      mockDb.select.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return buildChain([{ chapter, mangaTitle: 'M' }]);
+        return buildChain(images);
+      });
+
+      await service.findOne(1);
+
+      expect(mirrorQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('should NOT enqueue when Redis is unavailable', async () => {
+      redisStatus.available = false;
+      const chapter = { id: 1, mangaId: 1, number: '1', slug: 'chapter-1' };
+      const images = [
+        {
+          id: 1,
+          chapterId: 1,
+          imageUrl: 'https://source.example/page1.jpg',
+          sourceUrl: 'https://source.example/page1.jpg',
+          order: 1,
+        },
+      ];
+
+      let callCount = 0;
+      mockDb.select.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return buildChain([{ chapter, mangaTitle: 'M' }]);
+        return buildChain(images);
+      });
+
+      await service.findOne(1);
+
+      expect(mirrorQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('should not propagate enqueue failures', async () => {
+      mirrorQueue.add.mockRejectedValueOnce(new Error('redis flap'));
+      const chapter = { id: 1, mangaId: 1, number: '1', slug: 'chapter-1' };
+      const images = [
+        {
+          id: 1,
+          chapterId: 1,
+          imageUrl: 'https://source.example/page1.jpg',
+          sourceUrl: 'https://source.example/page1.jpg',
+          order: 1,
+        },
+      ];
+
+      let callCount = 0;
+      mockDb.select.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) return buildChain([{ chapter, mangaTitle: 'M' }]);
+        return buildChain(images);
+      });
+
+      const result = await service.findOne(1);
+
+      expect(result).toMatchObject({ id: 1 });
+      expect(mirrorQueue.add).toHaveBeenCalledOnce();
     });
   });
 
@@ -209,7 +326,8 @@ describe('ChapterService', () => {
       let selectCall = 0;
       mockDb.select.mockImplementation(() => {
         selectCall++;
-        if (selectCall === 1) return buildChain([{ chapter, mangaTitle: 'Test Manga' }]); // findOne → chapter+manga join
+        if (selectCall === 1)
+          return buildChain([{ chapter, mangaTitle: 'Test Manga' }]); // findOne → chapter+manga join
         return buildChain([]); // findOne → images
       });
       mockDb.update.mockReturnValue(

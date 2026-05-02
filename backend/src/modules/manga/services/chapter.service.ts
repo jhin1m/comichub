@@ -1,13 +1,20 @@
 import {
   Injectable,
   Inject,
+  Logger,
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { eq, isNull, and, gt, lt, asc, desc, sql, inArray } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
+import {
+  REDIS_AVAILABLE,
+  type RedisStatus,
+} from '../../../common/providers/redis.provider.js';
 import {
   chapters,
   chapterImages,
@@ -27,9 +34,13 @@ import type {
 
 @Injectable()
 export class ChapterService {
+  private readonly logger = new Logger(ChapterService.name);
+
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
     private readonly eventEmitter: EventEmitter2,
+    @InjectQueue('mirror') private readonly mirrorQueue: Queue,
+    @Inject(REDIS_AVAILABLE) private readonly redisStatus: RedisStatus,
   ) {}
 
   async findByManga(mangaId: number): Promise<ChapterListItem[]> {
@@ -107,7 +118,32 @@ export class ChapterService {
         .where(eq(chapterGroups.chapterId, id)),
     ]);
 
-    return { ...row.chapter, mangaTitle: row.mangaTitle, contentRating: row.contentRating, images, groups: chapterGroupRows };
+    if (this.redisStatus.available) {
+      const needsMirror = images.some(
+        (img) => img.sourceUrl !== null && img.imageUrl === img.sourceUrl,
+      );
+      if (needsMirror) {
+        try {
+          await this.mirrorQueue.add(
+            'mirror-chapter',
+            { chapterId: id },
+            { jobId: `chapter:${id}` },
+          );
+        } catch (err) {
+          this.logger.warn(
+            `Failed to enqueue mirror for chapter ${id}: ${(err as Error).message}`,
+          );
+        }
+      }
+    }
+
+    return {
+      ...row.chapter,
+      mangaTitle: row.mangaTitle,
+      contentRating: row.contentRating,
+      images,
+      groups: chapterGroupRows,
+    };
   }
 
   async getNavigation(id: number): Promise<ChapterNavigation> {
@@ -125,7 +161,11 @@ export class ChapterService {
 
     const [prevRows, nextRows] = await Promise.all([
       this.db
-        .select({ id: chapters.id, number: chapters.number, slug: chapters.slug })
+        .select({
+          id: chapters.id,
+          number: chapters.number,
+          slug: chapters.slug,
+        })
         .from(chapters)
         .where(
           and(
@@ -137,7 +177,11 @@ export class ChapterService {
         .orderBy(desc(chapters.order))
         .limit(1),
       this.db
-        .select({ id: chapters.id, number: chapters.number, slug: chapters.slug })
+        .select({
+          id: chapters.id,
+          number: chapters.number,
+          slug: chapters.slug,
+        })
         .from(chapters)
         .where(
           and(

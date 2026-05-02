@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
+import { MirrorModule } from '../mirror/mirror.module.js';
 import { MangaController } from './controllers/manga.controller.js';
 import { ChapterController } from './controllers/chapter.controller.js';
 import { GenreController } from './controllers/genre.controller.js';
@@ -17,7 +18,7 @@ import { RankingService } from './services/ranking.service.js';
 import { StatsService } from './services/stats.service.js';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, MirrorModule],
   controllers: [
     RankingController,
     MangaController,
