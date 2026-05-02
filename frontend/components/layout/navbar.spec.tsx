@@ -75,4 +75,54 @@ describe('Navbar', () => {
     await user.click(screen.getByRole('button', { name: /login/i }));
     expect(pushMock).toHaveBeenCalledWith('/login');
   });
+
+  it('renders unread badge from SWR fetch when authenticated', async () => {
+    server.use(
+      http.get(`${BASE_URL}/auth/me`, () =>
+        HttpResponse.json(envelope({ id: 1, uuid: 'u', email: 'a@b.com', name: 'Alice', avatar: null, role: 'user' })),
+      ),
+      http.post(`${BASE_URL}/auth/refresh`, () =>
+        HttpResponse.json(envelope({ accessToken: 'tok', refreshToken: 'ref', expiresIn: 3600 })),
+      ),
+      http.get(`${BASE_URL}/notifications/unread-count`, () =>
+        HttpResponse.json(envelope({ count: 5 })),
+      ),
+    );
+
+    localStorage.setItem('refreshToken', 'seed-token');
+    render(<Navbar />);
+
+    try {
+      await waitFor(() => {
+        expect(screen.getByText('5')).toBeInTheDocument();
+      });
+    } finally {
+      localStorage.removeItem('refreshToken');
+    }
+  });
+
+  it('shows "99+" when unread count exceeds 99', async () => {
+    server.use(
+      http.get(`${BASE_URL}/auth/me`, () =>
+        HttpResponse.json(envelope({ id: 1, uuid: 'u', email: 'a@b.com', name: 'Alice', avatar: null, role: 'user' })),
+      ),
+      http.post(`${BASE_URL}/auth/refresh`, () =>
+        HttpResponse.json(envelope({ accessToken: 'tok', refreshToken: 'ref', expiresIn: 3600 })),
+      ),
+      http.get(`${BASE_URL}/notifications/unread-count`, () =>
+        HttpResponse.json(envelope({ count: 250 })),
+      ),
+    );
+
+    localStorage.setItem('refreshToken', 'seed-token');
+    render(<Navbar />);
+
+    try {
+      await waitFor(() => {
+        expect(screen.getByText('99+')).toBeInTheDocument();
+      });
+    } finally {
+      localStorage.removeItem('refreshToken');
+    }
+  });
 });

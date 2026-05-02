@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSWRConfig } from 'swr';
 import {
   BellIcon, SquaresFourIcon, TrendUpIcon, BookOpenIcon, LockIcon, SlidersHorizontalIcon,
   UserIcon, BookmarkSimpleIcon, ClockCounterClockwiseIcon, SignOutIcon,
@@ -15,7 +16,8 @@ import {
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/auth.context';
-import { notificationApi } from '@/lib/api/notification.api';
+import { useUserSWR } from '@/lib/swr/use-user-swr';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import { NotificationDropdown } from '@/components/notification/notification-dropdown';
 import { useNotificationStream } from '@/hooks/use-notification-stream';
 
@@ -23,24 +25,26 @@ export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [browseDropdownOpen, setBrowseDropdownOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
+  const { mutate } = useSWRConfig();
 
-  const fetchUnreadCount = useCallback(() => {
-    notificationApi.getUnreadCount().then((r) => setUnreadCount(r.count)).catch(() => {});
-  }, []);
+  // SWR cache is the single source of truth for the unread count. The
+  // dropdown mutates the same key when the user opens it, marks items read,
+  // or clears all — keeping navbar badge and dropdown view in sync without
+  // a callback prop. useUserSWR auto-disables the fetch when user is null.
+  const { data: unreadData } = useUserSWR<{ count: number }>(
+    SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT,
+  );
+  const unreadCount = unreadData?.count ?? 0;
 
-  // SSE: just +1 locally, no API call. Dropdown close syncs real count.
+  // SSE pushed a new notification → revalidate from the server. We do not
+  // optimistically `+1` here because the server already authored the count
+  // change; a fresh fetch avoids drift if multiple events race.
   const handleSseEvent = useCallback(() => {
-    setUnreadCount((c) => c + 1);
-  }, []);
+    mutate(SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT);
+  }, [mutate]);
   useNotificationStream(handleSseEvent);
   const browseDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Fetch once when user logs in
-  useEffect(() => {
-    if (user) fetchUnreadCount();
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close browse dropdown on outside click
   useEffect(() => {
@@ -122,7 +126,6 @@ export default function Navbar() {
             <NotificationDropdown
               open={notifOpen}
               onOpenChange={setNotifOpen}
-              onUnreadCountChange={setUnreadCount}
             >
               <button
                 className="relative w-9 h-9 flex items-center justify-center rounded text-secondary hover:bg-elevated hover:text-primary transition-colors"

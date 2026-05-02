@@ -84,6 +84,18 @@ export const handlers = [
     })),
   ),
 
+  http.get(`${BASE_URL}/notifications/unread-count`, () =>
+    HttpResponse.json(envelope({ count: 0 })),
+  ),
+
+  http.patch(`${BASE_URL}/notifications/read-all`, () =>
+    HttpResponse.json(envelope(null)),
+  ),
+
+  http.patch(`${BASE_URL}/notifications/:id/read`, () =>
+    HttpResponse.json(envelope(null)),
+  ),
+
   // Preferences
   http.get(`${BASE_URL}/users/preferences`, () =>
     HttpResponse.json(envelope({

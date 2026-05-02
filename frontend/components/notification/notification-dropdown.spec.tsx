@@ -37,11 +37,8 @@ describe('NotificationDropdown', () => {
       ),
     );
 
-    const onOpenChange = vi.fn();
-    const onUnreadCountChange = vi.fn();
-
     render(
-      <NotificationDropdown open onOpenChange={onOpenChange} onUnreadCountChange={onUnreadCountChange}>
+      <NotificationDropdown open onOpenChange={vi.fn()}>
         <button>Bell</button>
       </NotificationDropdown>,
     );
@@ -68,10 +65,8 @@ describe('NotificationDropdown', () => {
       ),
     );
 
-    const onUnreadCountChange = vi.fn();
-
     render(
-      <NotificationDropdown open onOpenChange={vi.fn()} onUnreadCountChange={onUnreadCountChange}>
+      <NotificationDropdown open onOpenChange={vi.fn()}>
         <button>Bell</button>
       </NotificationDropdown>,
     );
@@ -80,9 +75,6 @@ describe('NotificationDropdown', () => {
       // groupNotifications groups by manga — one group for 2 uploads on same manga
       expect(screen.getByText('Test Manga')).toBeInTheDocument();
     });
-
-    // unreadCount synced to parent
-    expect(onUnreadCountChange).toHaveBeenCalledWith(2);
   });
 
   it('shows "Mark all read" button when there are unread notifications', async () => {
@@ -100,7 +92,7 @@ describe('NotificationDropdown', () => {
     );
 
     render(
-      <NotificationDropdown open onOpenChange={vi.fn()} onUnreadCountChange={vi.fn()}>
+      <NotificationDropdown open onOpenChange={vi.fn()}>
         <button>Bell</button>
       </NotificationDropdown>,
     );
@@ -110,7 +102,47 @@ describe('NotificationDropdown', () => {
     });
   });
 
-  it('clears unread groups after "Mark all read" is clicked', async () => {
+  it('clears unread groups and calls markAllRead API when "Mark all read" is clicked', async () => {
+    const markAllReadSpy = vi.fn(() => HttpResponse.json(envelope(null)));
+
+    server.use(
+      http.get(`${BASE_URL}/notifications`, () =>
+        HttpResponse.json(envelope({
+          data: [makeNotification(1, null)],
+          total: 1,
+          unreadCount: 1,
+          page: 1,
+          limit: 20,
+          totalPages: 1,
+        })),
+      ),
+      http.patch(`${BASE_URL}/notifications/read-all`, markAllReadSpy),
+    );
+
+    const user = userEvent.setup();
+
+    render(
+      <NotificationDropdown open onOpenChange={vi.fn()}>
+        <button>Bell</button>
+      </NotificationDropdown>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /mark all read/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /mark all read/i }));
+
+    await waitFor(() => {
+      // Button disappears once all groups are flipped to read locally
+      expect(screen.queryByRole('button', { name: /mark all read/i })).not.toBeInTheDocument();
+      // API was actually invoked — spy on the network call rather than asserting
+      // SWR mutate internals (implementation detail).
+      expect(markAllReadSpy).toHaveBeenCalled();
+    });
+  });
+
+  it('handles markAllRead API error gracefully', async () => {
     server.use(
       http.get(`${BASE_URL}/notifications`, () =>
         HttpResponse.json(envelope({
@@ -123,15 +155,14 @@ describe('NotificationDropdown', () => {
         })),
       ),
       http.patch(`${BASE_URL}/notifications/read-all`, () =>
-        HttpResponse.json(envelope(null)),
+        HttpResponse.json({ success: false, message: 'Server error' }, { status: 500 }),
       ),
     );
 
-    const onUnreadCountChange = vi.fn();
     const user = userEvent.setup();
 
     render(
-      <NotificationDropdown open onOpenChange={vi.fn()} onUnreadCountChange={onUnreadCountChange}>
+      <NotificationDropdown open onOpenChange={vi.fn()}>
         <button>Bell</button>
       </NotificationDropdown>,
     );
@@ -140,12 +171,14 @@ describe('NotificationDropdown', () => {
       expect(screen.getByRole('button', { name: /mark all read/i })).toBeInTheDocument();
     });
 
+    // Click mark all read — API will fail, but component should handle it gracefully
+    // without throwing an error or leaving the UI in a broken state.
     await user.click(screen.getByRole('button', { name: /mark all read/i }));
 
+    // Verify component is still rendered and responsive after error
+    // (doesn't crash or break on API failure)
     await waitFor(() => {
-      // After marking all read, button disappears and count resets to 0
-      expect(screen.queryByRole('button', { name: /mark all read/i })).not.toBeInTheDocument();
-      expect(onUnreadCountChange).toHaveBeenCalledWith(0);
+      expect(screen.getByText(/notifications/i)).toBeInTheDocument();
     });
   });
 });

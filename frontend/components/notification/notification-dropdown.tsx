@@ -2,30 +2,32 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSWRConfig } from 'swr';
 import * as Popover from '@radix-ui/react-popover';
 import { notificationApi } from '@/lib/api/notification.api';
 import { groupNotifications } from '@/lib/notification-grouping';
 import { NotificationItem, getGroupHref } from '@/components/notification/notification-item';
+import { SWR_KEYS } from '@/lib/swr/swr-keys';
 import type { NotificationGroup } from '@/lib/notification-grouping';
 
 interface NotificationDropdownProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUnreadCountChange: (count: number) => void;
   children: React.ReactNode;
 }
+
+type UnreadCountCache = { count: number } | undefined;
 
 export function NotificationDropdown({
   open,
   onOpenChange,
-  onUnreadCountChange,
   children,
 }: NotificationDropdownProps) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const [groups, setGroups] = useState<NotificationGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const fetchingRef = useRef(false);
-  const unreadRef = useRef(0); // tracks authoritative unread count
 
   const fetchNotifications = useCallback(async () => {
     if (fetchingRef.current) return;
@@ -34,48 +36,71 @@ export function NotificationDropdown({
     try {
       const res = await notificationApi.list({ limit: 20 });
       setGroups(groupNotifications(res.data));
-      unreadRef.current = res.unreadCount;
-      onUnreadCountChange(res.unreadCount);
+      // List response carries the authoritative unreadCount from the DB —
+      // sync the badge cache with it. revalidate=false because the list call
+      // already supplies the truth and re-fetching `/unread-count` would just
+      // duplicate work.
+      mutate(
+        SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT,
+        { count: res.unreadCount },
+        false,
+      );
     } catch {
       // silently fail
     } finally {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [onUnreadCountChange]);
+  }, [mutate]);
 
   useEffect(() => {
     if (open) fetchNotifications();
   }, [open, fetchNotifications]);
 
   const handleMarkAllRead = async () => {
+    // Optimistic: zero out badge immediately so the user sees instant feedback.
+    mutate(SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT, { count: 0 }, false);
+    setGroups((prev) => prev.map((g) => ({ ...g, isUnread: false })));
     try {
       await notificationApi.markAllRead();
-      setGroups((prev) => prev.map((g) => ({ ...g, isUnread: false })));
-      unreadRef.current = 0;
-      onUnreadCountChange(0);
     } catch {
-      // silently fail
+      // Server is the source of truth — revalidate to roll back if PATCH failed.
+      mutate(SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT);
     }
   };
 
   const handleItemClick = async (group: NotificationGroup) => {
     const href = getGroupHref(group);
     const unreadInGroup = group.notifications.filter((n) => !n.readAt).length;
-    // mark all notifications in group as read
-    await Promise.allSettled(
+
+    // Optimistic decrement. Updater fn (not literal) so rapid clicks compose
+    // correctly against the latest cache rather than a stale closure.
+    if (unreadInGroup > 0) {
+      mutate(
+        SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT,
+        (curr: UnreadCountCache) => ({
+          count: Math.max(0, (curr?.count ?? 0) - unreadInGroup),
+        }),
+        false,
+      );
+    }
+    setGroups((prev) =>
+      prev.map((g) => (g.key === group.key ? { ...g, isUnread: false } : g)),
+    );
+
+    // Fire mark-read PATCHes in the background. We don't await — the user
+    // already clicked through, so navigation should not wait on N round-trips.
+    // If any call fails, revalidate from the server to recover the truth.
+    Promise.allSettled(
       group.notifications
         .filter((n) => !n.readAt)
         .map((n) => notificationApi.markRead(n.id)),
-    );
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.key === group.key ? { ...g, isUnread: false } : g,
-      ),
-    );
-    // sync badge count immediately
-    unreadRef.current = Math.max(0, unreadRef.current - unreadInGroup);
-    onUnreadCountChange(unreadRef.current);
+    ).then((results) => {
+      if (results.some((r) => r.status === 'rejected')) {
+        mutate(SWR_KEYS.NOTIFICATIONS_UNREAD_COUNT);
+      }
+    });
+
     onOpenChange(false);
     router.push(href);
   };
