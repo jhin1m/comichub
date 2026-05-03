@@ -29,6 +29,7 @@ export function ReaderTopBar({
 }: Props) {
   return (
     <div
+      data-reader-control
       className={`absolute top-0 left-0 right-0 z-40 flex items-center justify-between gap-4 px-4 h-12 bg-base/95 backdrop-blur-sm border-b border-default/50 transition-transform duration-300 ${
         hidden ? '-translate-y-full' : 'translate-y-0'
       }`}

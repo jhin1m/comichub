@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSWRConfig } from 'swr';
+import { toast } from 'sonner';
 import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { userApi } from '@/lib/api/user.api';
 import { useAuth } from '@/contexts/auth.context';
@@ -12,6 +13,7 @@ import { useReaderSettings } from '@/hooks/use-reader-settings';
 import { useReaderKeyboard } from '@/hooks/use-reader-keyboard';
 import { usePageTracker } from '@/hooks/use-page-tracker';
 import { useAutoHide } from '@/hooks/use-auto-hide';
+import { useReaderTapToggle } from '@/hooks/use-reader-tap-toggle';
 import { ReaderTopBar } from '@/components/reader/reader-top-bar';
 import { ReaderBottomBar } from '@/components/reader/reader-bottom-bar';
 import { ReaderImage } from '@/components/reader/reader-image';
@@ -29,6 +31,8 @@ interface Props {
   mangaTitle: string;
 }
 
+const TAP_TIP_KEY = 'comichub:reader-tap-tip-seen';
+
 export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   const router = useRouter();
   const { user } = useAuth();
@@ -43,6 +47,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
 
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'chapters' | 'comments' | 'settings' | null>(null);
+  const [barsHidden, setBarsHidden] = useState(false);
 
   // ─── Responsive (suppress transition on first mount) ───
   useEffect(() => {
@@ -90,7 +95,8 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
     scrollRef, totalPages: sortedImages.length, manualMode: isManualMode,
   });
 
-  const topBarHidden = useAutoHide(scrollRef, !isManualMode);
+  const autoHideHidden = useAutoHide(scrollRef, !isMobile && !isManualMode);
+  const topBarHidden = barsHidden || autoHideHidden;
 
   // ─── Track reading history ─────────────────────────────
   // Key on user?.id (not user obj) so auth context re-renders with a fresh user
@@ -110,7 +116,16 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
     setCurrentPage(1);
+    setBarsHidden(false);
   }, [chapter.id, setCurrentPage]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(TAP_TIP_KEY)) return;
+    toast.info('💡 Tip: Tap the image to hide/show the control bar.', { duration: 5000 });
+    localStorage.setItem(TAP_TIP_KEY, '1');
+  }, [isMobile]);
 
   // ─── Navigation helpers ────────────────────────────────
   const goToPrevChapter = useCallback(() => {
@@ -150,23 +165,24 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
 
   useReaderKeyboard(keyboardActions, !settingsOpen);
 
-  // ─── Swipe gestures (single/double page) ───────────────
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isManualMode) return;
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!isManualMode || !touchStart.current) return;
-    const dx = e.changedTouches[0].clientX - touchStart.current.x;
-    const dy = e.changedTouches[0].clientY - touchStart.current.y;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-      const isRtl = settings.readingDirection === 'rtl';
-      if (dx > 0) scrollByPage(isRtl ? 1 : -1);
-      else scrollByPage(isRtl ? -1 : 1);
-    }
-    touchStart.current = null;
-  };
+  // ─── Touch gestures: tap toggles bars (mobile), swipe pages (manual) ───
+  const handleTap = useCallback(() => setBarsHidden((v) => !v), []);
+  const handleSwipeLeft = useCallback(() => {
+    const isRtl = settings.readingDirection === 'rtl';
+    scrollByPage(isRtl ? -1 : 1);
+  }, [scrollByPage, settings.readingDirection]);
+  const handleSwipeRight = useCallback(() => {
+    const isRtl = settings.readingDirection === 'rtl';
+    scrollByPage(isRtl ? 1 : -1);
+  }, [scrollByPage, settings.readingDirection]);
+
+  useReaderTapToggle(scrollRef, {
+    enableTap: isMobile,
+    enableSwipe: isMobile && isManualMode,
+    onTap: handleTap,
+    onSwipeLeft: handleSwipeLeft,
+    onSwipeRight: handleSwipeRight,
+  });
 
   // ─── Mobile panel toggle ───────────────────────────────
   const handleMobilePanel = useCallback((panel: typeof mobilePanel) => {
@@ -233,8 +249,6 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
             paddingRight: !isMobile && sidebarOpen ? 380 : 0,
             paddingBottom: isMobile ? 56 : 0,
           }}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
         >
           {(chapter.contentRating === 'erotica' || chapter.contentRating === 'pornographic') && (
             <div className="flex items-center justify-center px-4 py-2 bg-accent/90 text-white text-sm font-medium">
@@ -274,7 +288,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
             const canLeft = isRtl ? canGoNext : canGoPrev;
             const canRight = isRtl ? canGoPrev : canGoNext;
             return (
-              <div className="fixed inset-y-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-between px-2 md:px-4" style={{ top: 48, bottom: isMobile ? 56 : 0 }}>
+              <div data-reader-control className="fixed inset-y-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-between px-2 md:px-4" style={{ top: 48, bottom: isMobile ? 56 : 0 }}>
                 <button
                   onClick={() => scrollByPage(leftAction as 1 | -1)}
                   disabled={!canLeft}
@@ -316,6 +330,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
         {isMobile && (
           <ReaderBottomBar
             hasPrev={!!nav?.prev} hasNext={!!nav?.next}
+            hidden={barsHidden}
             activePanel={mobilePanel}
             onPrev={goToPrevChapter} onNext={goToNextChapter}
             onTogglePanel={handleMobilePanel}

@@ -13,6 +13,7 @@ type MobilePanel = 'chapters' | 'comments' | 'settings' | null;
 interface Props {
   hasPrev: boolean;
   hasNext: boolean;
+  hidden: boolean;
   activePanel: MobilePanel;
   onPrev: () => void;
   onNext: () => void;
@@ -23,13 +24,19 @@ interface Props {
 export function ReaderBottomBar({
   hasPrev,
   hasNext,
+  hidden,
   activePanel,
   onPrev,
   onNext,
   onTogglePanel,
 }: Props) {
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-40 h-14 bg-surface/95 backdrop-blur-sm border-t border-default/50 flex items-center justify-around px-2 md:hidden">
+    <div
+      data-reader-control
+      className={`absolute bottom-0 left-0 right-0 z-40 h-14 bg-surface/95 backdrop-blur-sm border-t border-default/50 flex items-center justify-around px-2 md:hidden transition-transform duration-300 ${
+        hidden ? 'translate-y-full' : 'translate-y-0'
+      }`}
+    >
       <BarButton
         icon={<CaretLeftIcon size={20} />}
         label="Prev"

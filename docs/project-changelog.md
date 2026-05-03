@@ -4,6 +4,13 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Added - Reader Bars Tap-Toggle + First-time Tip (2026-05-03)
+- **Mobile-only UX**: Tap anywhere on chapter images to toggle top/bottom control bars (bars auto-hide on scroll remains disabled on mobile)
+- **Unified Touch Handler**: New `useReaderTapToggle` hook distinguishes tap (bar toggle) from swipe (page pagination in manual mode). Swipe min threshold 50px; tap max duration 250ms
+- **First-time Tip**: Sonner toast shows "💡 Tip: Tap the image to hide/show the control bar." (Vietnamese: "Tap image to show/hide control bars") on first visit to reader on mobile, persisted via `localStorage` key `comichub:reader-tap-tip-seen`
+- **Files**: NEW `frontend/hooks/use-reader-tap-toggle.ts`, modified `chapter-reader.tsx`, `reader-top-bar.tsx`, `reader-bottom-bar.tsx`, `reader-zoom-controls.tsx`
+- **Scope**: Pure UX gesture; no API/schema/backend changes. Mobile-only (≤768px)
+
 ### Restored - Homepage ISR after Blank-Page Hardening (2026-04-23)
 - **Change**: `frontend/app/page.tsx` switched from `export const dynamic = 'force-dynamic'` back to `export const revalidate = 180`. Not a revert — all safety nets from 2026-04-20 remain in place.
 - **Safety Net #1 (already in place, commit `1a8ff960`)**: Critical fetches (rankings, manga lists) re-throw on error and hit `error.tsx`. Only decoration fetches (comments, genres, stats) still use `.catch(() => [])`.

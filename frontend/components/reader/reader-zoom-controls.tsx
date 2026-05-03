@@ -22,7 +22,10 @@ export function ReaderZoomControls({ zoom, onZoomChange, onSettingsClick, scroll
   const increase = () => onZoomChange(Math.min(ZOOM_MAX, zoom + ZOOM_STEP));
 
   return (
-    <div className="absolute bottom-4 left-0 right-0 flex items-end justify-between px-4 pointer-events-none z-40 md:bottom-4 bottom-18">
+    <div
+      data-reader-control
+      className="absolute bottom-4 left-0 right-0 flex items-end justify-between px-4 pointer-events-none z-40 md:bottom-4 bottom-18"
+    >
       {/* Zoom controls — desktop only */}
       {!isMobile && (
         <div className="pointer-events-auto flex items-center gap-1 bg-elevated/80 backdrop-blur-sm rounded-lg px-2 py-1.5">
