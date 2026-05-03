@@ -58,8 +58,8 @@ export default async function MangaDetailPage({ params }: Props) {
             <div className="absolute inset-0 bg-linear-to-r from-base via-base/95 to-base/80" />
             <div className="absolute inset-0 bg-linear-to-t from-base via-transparent to-base/60" />
             {/* Accent color glow — top-right warm, bottom-left cool */}
-            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent/[0.06] blur-3xl" />
-            <div className="absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-info/[0.04] blur-3xl" />
+            <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-accent/6 blur-3xl" />
+            <div className="absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-info/4 blur-3xl" />
           </div>
 
           {/* Hero content */}

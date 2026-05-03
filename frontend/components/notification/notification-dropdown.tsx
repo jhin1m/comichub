@@ -119,7 +119,7 @@ export function NotificationDropdown({
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-default">
-            <h3 className="font-rajdhani font-bold text-base text-primary">Notifications</h3>
+            <h3 className="font-rajdhani font-bold text-base">Notifications</h3>
             {groups.some((g) => g.isUnread) && (
               <button
                 onClick={handleMarkAllRead}

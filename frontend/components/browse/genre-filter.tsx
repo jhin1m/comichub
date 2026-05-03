@@ -118,7 +118,7 @@ export function GenreFilter({
           onKeyDown={(e) => { if (e.key === 'Escape') setIsOpen(false); }}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className="flex items-center justify-between w-full min-w-[140px] px-3 py-2 bg-hover border border-hover rounded text-sm text-primary hover:border-muted transition-colors cursor-pointer"
+          className="flex items-center justify-between w-full min-w-35 px-3 py-2 bg-hover border border-hover rounded text-sm text-primary hover:border-muted transition-colors cursor-pointer"
         >
           <span className={selectedCount ? 'text-primary' : 'text-muted'}>
             {selectedCount ? `${selectedCount} selected` : 'Any'}
@@ -139,7 +139,7 @@ export function GenreFilter({
             <div
               ref={panelRef}
               style={{ top: coords.top, left: coords.left }}
-              className="fixed z-50 w-[calc(100vw-6rem)] max-w-[700px] bg-elevated border border-hover rounded shadow-xl overflow-hidden"
+              className="fixed z-50 w-[calc(100vw-6rem)] max-w-175 bg-elevated border border-hover rounded shadow-xl overflow-hidden"
               onKeyDown={(e) => { if (e.key === 'Escape') setIsOpen(false); }}
             >
               {/* Search */}
@@ -182,7 +182,7 @@ export function GenreFilter({
                         {/* Checkbox indicator */}
                         <span
                           className={cn(
-                            'w-3 h-3 rounded-sm border flex-shrink-0 flex items-center justify-center text-[8px]',
+                            'w-3 h-3 rounded-sm border shrink-0 flex items-center justify-center text-[8px]',
                             state === 'neutral' && 'border-muted',
                             state === 'include' && 'border-green-500 bg-green-500/20',
                             state === 'exclude' && 'border-red-500 bg-red-500/20',

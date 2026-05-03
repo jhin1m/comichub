@@ -340,7 +340,7 @@ export function ChapterReader({ chapter, nav, slug, mangaTitle }: Props) {
 
       {/* Sidebar backdrop (mobile) */}
       {isMobile && sidebarOpen && (
-        <div className="absolute inset-0 z-[49] bg-black/50" onClick={toggleSidebar} />
+        <div className="absolute inset-0 z-49 bg-black/50" onClick={toggleSidebar} />
       )}
 
       {/* Sidebar */}

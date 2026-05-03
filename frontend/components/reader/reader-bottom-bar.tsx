@@ -89,7 +89,7 @@ function BarButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-[52px] ${
+      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors min-w-13 ${
         disabled
           ? 'opacity-30 cursor-not-allowed'
           : active
