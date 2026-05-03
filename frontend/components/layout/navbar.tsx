@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import {
   BellIcon, SquaresFourIcon, TrendUpIcon, BookOpenIcon, LockIcon, SlidersHorizontalIcon,
-  UserIcon, BookmarkSimpleIcon, ClockCounterClockwiseIcon, SignOutIcon,
+  UserIcon, BookmarkSimpleIcon, ClockCounterClockwiseIcon, CurrencyCnyIcon, ListMagnifyingGlassIcon, SignOutIcon,
 } from '@phosphor-icons/react';
 import { SearchAutocomplete } from '@/components/layout/search-autocomplete';
 import { Avatar } from '@/components/ui/avatar';
@@ -93,12 +93,28 @@ export default function Navbar() {
                   Trending Webtoon
                 </Link>
                 <Link
+                  href="/browse?sort=trending&type=manhua"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-hover transition-colors"
+                  onClick={() => setBrowseDropdownOpen(false)}
+                >
+                  <CurrencyCnyIcon size={14} />
+                  Trending Manhua
+                </Link>
+                <Link
                   href="/browse?sort=trending&type=manga"
                   className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-hover transition-colors"
                   onClick={() => setBrowseDropdownOpen(false)}
                 >
                   <BookOpenIcon size={14} />
                   Trending Manga
+                </Link>
+                <Link
+                  href="/browse"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-hover transition-colors"
+                  onClick={() => setBrowseDropdownOpen(false)}
+                >
+                  <ListMagnifyingGlassIcon size={14} />
+                  Browse All Comic
                 </Link>
                 <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted cursor-not-allowed">
                   <LockIcon size={14} />
