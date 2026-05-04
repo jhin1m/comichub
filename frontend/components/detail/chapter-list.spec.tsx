@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '@/tests/test-utils';
 import { ChapterList } from './chapter-list';
@@ -73,20 +73,4 @@ describe('ChapterList', () => {
     expect(screen.getByText('Ch. 10')).toBeInTheDocument();
   });
 
-  it('shows language filter when multiple languages present', () => {
-    const multiLangChapters = [
-      makeChapter(1, '1', { language: 'en' }),
-      makeChapter(2, '2', { language: 'vi' }),
-    ];
-    render(<ChapterList chapters={multiLangChapters} mangaSlug="test-manga" />);
-
-    const select = screen.getByRole('combobox');
-    expect(select).toBeInTheDocument();
-    expect(within(select).getByText(/all languages/i)).toBeInTheDocument();
-  });
-
-  it('does not show language filter when all chapters have same language', () => {
-    render(<ChapterList chapters={chapters} mangaSlug="test-manga" />);
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-  });
 });

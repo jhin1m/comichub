@@ -5,7 +5,6 @@ import {
   ListBulletsIcon,
   CaretDownIcon,
   CaretUpIcon,
-  GlobeIcon,
   UsersThreeIcon,
 } from '@phosphor-icons/react';
 import { useSWRConfig } from 'swr';
@@ -27,23 +26,6 @@ type SortField = 'number' | 'date';
 type SortDir = 'asc' | 'desc';
 
 const CHAPTERS_PER_PAGE = 50;
-
-const LANG_LABELS: Record<string, string> = {
-  vi: 'Vietnamese',
-  en: 'English',
-  ja: 'Japanese',
-  ko: 'Korean',
-  zh: 'Chinese',
-  es: 'Spanish',
-  fr: 'French',
-  pt: 'Portuguese',
-  id: 'Indonesian',
-  th: 'Thai',
-};
-
-function getLangLabel(code: string): string {
-  return LANG_LABELS[code] ?? code.toUpperCase();
-}
 
 /**
  * Smart chapter search: typing "1" matches chapters whose number
@@ -81,7 +63,6 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
   const [query, setQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('number');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [language, setLanguage] = useState<string>('all');
   const [group, setGroup] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [lastReadChapterId, setLastReadChapterId] = useState<number | null>(null);
@@ -109,12 +90,6 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
     );
   };
 
-  // Extract unique languages from chapters
-  const languages = useMemo(() => {
-    const set = new Set(chapters.map((ch) => ch.language));
-    return Array.from(set).sort();
-  }, [chapters]);
-
   // Extract unique groups from chapters
   const uniqueGroups = useMemo(() => {
     const map = new Map<number, { id: number; name: string; slug: string }>();
@@ -137,11 +112,6 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
 
   const filtered = useMemo(() => {
     let list = [...chapters];
-
-    // Language filter
-    if (language !== 'all') {
-      list = list.filter((ch) => ch.language === language);
-    }
 
     // Group filter
     if (group !== 'all') {
@@ -167,7 +137,7 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
     });
 
     return list;
-  }, [chapters, query, sortField, sortDir, language, group]);
+  }, [chapters, query, sortField, sortDir, group]);
 
 
   // Reset page when filters change
@@ -213,32 +183,6 @@ export function ChapterList({ chapters, mangaSlug, mangaId }: Props) {
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          {/* Language filter */}
-          {languages.length > 1 && (
-            <div className="relative">
-              <GlobeIcon
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-              />
-              <select
-                value={language}
-                onChange={(e) => { setLanguage(e.target.value); setPage(1); }}
-                className="appearance-none pl-8 pr-7 py-2 text-sm bg-elevated border border-default rounded-lg text-primary focus:outline-none focus:border-accent/40 transition-colors cursor-pointer"
-              >
-                <option value="all">All Languages</option>
-                {languages.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {getLangLabel(lang)}
-                  </option>
-                ))}
-              </select>
-              <CaretDownIcon
-                size={12}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-              />
-            </div>
-          )}
-
           {/* Group filter */}
           {uniqueGroups.length > 1 && (
             <div className="relative">
