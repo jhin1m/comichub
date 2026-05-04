@@ -4,6 +4,16 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Changed - Comment Section: SWR Migration + Optimistic Post/Delete (2026-05-03)
+- **SWR cache layer**: `comment-section.tsx` migrated from manual `useState`+`useEffect`+`fetchComments` to `useSWR<PaginatedComments>` gated on `!authLoading`. Cache hits on back-nav between mangas/chapters within `dedupingInterval` (60s).
+- **SWR keys registry**: Added `commentListKey(type, id, page, limit, sort)` to `frontend/lib/swr/swr-keys.ts`. Default fetcher (`apiClient.get`) resolves URL-as-key directly.
+- **Optimistic post**: Comment renders instantly via `mutate(...)` `optimisticData` + `populateCache: true` + `rollbackOnError`. Forces `sort=newest` + `page=1` BEFORE the optimistic write so the placeholder lands in the next-render's cache slot. Negative timestamp ID for placeholder avoids collision with PG serial PK.
+- **Optimistic delete**: Comment disappears instantly; rollback restores it on API failure. Top-level uses SWR `mutate` cache mutation; replies use local-state snapshot rollback in `comment-reply-thread.tsx`.
+- **Reply submission lifted**: `comment-item.tsx` no longer calls the API directly — it emits `onReplyPosted` upward. Top-level replies handled by section; nested replies handled by thread (with local optimistic insert + rollback).
+- **Files**: `frontend/lib/swr/swr-keys.ts`, `frontend/components/comment/{comment-section,comment-item,comment-reply-thread}.tsx`, NEW `frontend/components/comment/comment-section.spec.tsx` (9 tests).
+- **Tests**: 154/154 unit pass; `pnpm run build` clean. Code review 9.6/10.
+- **Scope**: Frontend-only refactor; no API/schema changes.
+
 ### Added - Reader Bars Tap-Toggle + First-time Tip (2026-05-03)
 - **Mobile-only UX**: Tap anywhere on chapter images to toggle top/bottom control bars (bars auto-hide on scroll remains disabled on mobile)
 - **Unified Touch Handler**: New `useReaderTapToggle` hook distinguishes tap (bar toggle) from swipe (page pagination in manual mode). Swipe min threshold 50px; tap max duration 250ms
