@@ -35,8 +35,13 @@ interface CommentItemProps {
   comment: Comment;
   commentableType: 'manga' | 'chapter';
   commentableId: number;
-  onCommentAdded?: () => void;
-  onCommentDeleted?: (commentId: number) => void;
+  // Reply path: parent (comment-reply-thread) owns the API call + optimistic
+  // insert. We just emit the html upward. Parent throws on failure so the
+  // editor keeps its content for retry.
+  onReplyPosted?: (html: string, parentId: number) => Promise<void>;
+  // Delete path: parent owns the API call + optimistic remove. Returning a
+  // rejected promise surfaces the failure so we don't toast prematurely.
+  onCommentDeleted?: (commentId: number) => Promise<void>;
   depth?: number;
   highlighted?: boolean;
 }
@@ -45,7 +50,7 @@ export function CommentItem({
   comment,
   commentableType,
   commentableId,
-  onCommentAdded,
+  onReplyPosted,
   onCommentDeleted,
   depth = 0,
   highlighted = false,
@@ -59,7 +64,6 @@ export function CommentItem({
   const [showReply, setShowReply] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [content, setContent] = useState(comment.content);
-  const [deleted, setDeleted] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [flash, setFlash] = useState(highlighted);
@@ -106,10 +110,9 @@ export function CommentItem({
   };
 
   const handleReplySubmit = async (html: string) => {
-    await commentApi.create({ commentableType, commentableId, content: html, parentId: comment.id });
+    if (!onReplyPosted) return;
+    await onReplyPosted(html, comment.id);
     setShowReply(false);
-    onCommentAdded?.();
-    toast.success('Reply posted');
   };
 
   const handleEditSubmit = async (html: string) => {
@@ -124,13 +127,16 @@ export function CommentItem({
   };
 
   const handleDelete = async () => {
+    if (!onCommentDeleted) return;
+    setConfirmingDelete(false);
+    // Parent removes us from its list and surfaces toasts on success/failure.
+    // Swallow rejection here so onClick doesn't see an unhandled promise; the
+    // parent has already toasted. On rollback we re-render normally with
+    // confirmingDelete cleared.
     try {
-      await commentApi.remove(comment.id);
-      setDeleted(true);
-      onCommentDeleted?.(comment.id);
-      toast.success('Comment deleted');
+      await onCommentDeleted(comment.id);
     } catch {
-      toast.error('Failed to delete comment');
+      // handled by parent
     }
   };
 
@@ -139,8 +145,6 @@ export function CommentItem({
     navigator.clipboard.writeText(url);
     toast.success('Link copied');
   };
-
-  if (deleted) return null;
 
   const hasMenuItems = isOwner || isAdmin;
 
