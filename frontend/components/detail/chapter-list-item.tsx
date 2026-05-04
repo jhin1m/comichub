@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, BookmarkSimple, Check } from '@phosphor-icons/react';
-import { LanguageFlag } from '@/components/ui/language-flag';
-import { formatRelativeDate, formatCount } from '@/lib/utils';
+import { formatRelativeDateCompact, formatCount } from '@/lib/utils';
 import type { ChapterListItem } from '@/types/manga.types';
 
 function isNewChapter(createdAt: string): boolean {
@@ -43,7 +42,7 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, is
         striped ? 'bg-surface/50' : ''
       } ${isLastRead ? 'bg-accent/8 border-l-3 border-l-accent' : ''}`}
     >
-      {/* Read indicator + Flag + Chapter number + Volume + NEW badge */}
+      {/* Read indicator + Chapter number + Volume + NEW badge */}
       <div className="flex items-center gap-2.5 shrink-0 min-w-0">
         {/* Read status indicator */}
         {isRead ? (
@@ -51,7 +50,6 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, is
         ) : (
           <span className="w-1.5 h-1.5 rounded-full bg-border shrink-0" />
         )}
-        <LanguageFlag lang={chapter.language} />
         <span className={`font-rajdhani font-bold group-hover:text-accent transition-colors whitespace-nowrap ${isRead ? 'text-muted' : 'text-secondary'}`}>
           Ch. {chapter.number}
         </span>
@@ -103,7 +101,7 @@ export function ChapterListItemRow({ chapter, mangaSlug, striped, isLastRead, is
 
       {/* Date */}
       <span className="w-16 text-right shrink-0 text-sm text-muted" suppressHydrationWarning>
-        {formatRelativeDate(chapter.createdAt)}
+        {formatRelativeDateCompact(chapter.createdAt)}
       </span>
 
       {/* Bookmark */}

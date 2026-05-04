@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, formatCount, formatDate, formatRelativeDate, statusVariant } from './utils';
+import { cn, formatCount, formatDate, formatRelativeDate, formatRelativeDateCompact, statusVariant } from './utils';
 
 describe('cn', () => {
   it('merges class names', () => {
@@ -30,27 +30,104 @@ describe('formatRelativeDate', () => {
     expect(formatRelativeDate(now)).toBe('just now');
   });
 
-  it('returns minutes ago', () => {
+  it('uses singular for 1 minute', () => {
+    const oneMinAgo = new Date(Date.now() - 60_000).toISOString();
+    expect(formatRelativeDate(oneMinAgo)).toBe('1 minute ago');
+  });
+
+  it('uses plural for multiple minutes', () => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString();
-    expect(formatRelativeDate(fiveMinAgo)).toBe('5m ago');
+    expect(formatRelativeDate(fiveMinAgo)).toBe('5 minutes ago');
   });
 
-  it('returns hours ago', () => {
-    const threeHoursAgo = new Date(Date.now() - 3 * 3_600_000).toISOString();
-    expect(formatRelativeDate(threeHoursAgo)).toBe('3h ago');
+  it('uses singular for 1 hour', () => {
+    const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();
+    expect(formatRelativeDate(oneHourAgo)).toBe('1 hour ago');
   });
 
-  it('returns days ago', () => {
+  it('uses plural for multiple hours', () => {
+    const sixHoursAgo = new Date(Date.now() - 6 * 3_600_000).toISOString();
+    expect(formatRelativeDate(sixHoursAgo)).toBe('6 hours ago');
+  });
+
+  it('uses singular for 1 day', () => {
+    const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
+    expect(formatRelativeDate(oneDayAgo)).toBe('1 day ago');
+  });
+
+  it('uses plural for multiple days', () => {
+    const fourDaysAgo = new Date(Date.now() - 4 * 86_400_000).toISOString();
+    expect(formatRelativeDate(fourDaysAgo)).toBe('4 days ago');
+
+    const twentyOneDaysAgo = new Date(Date.now() - 21 * 86_400_000).toISOString();
+    expect(formatRelativeDate(twentyOneDaysAgo)).toBe('21 days ago');
+  });
+
+  it('uses singular for 1 month', () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000).toISOString();
+    expect(formatRelativeDate(thirtyDaysAgo)).toBe('1 month ago');
+  });
+
+  it('uses plural for multiple months', () => {
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000).toISOString();
+    expect(formatRelativeDate(sixtyDaysAgo)).toBe('2 months ago');
+  });
+
+  it('uses singular for 1 year', () => {
+    const oneYearAgo = new Date(Date.now() - 365 * 86_400_000).toISOString();
+    expect(formatRelativeDate(oneYearAgo)).toBe('1 year ago');
+  });
+
+  it('uses plural for multiple years', () => {
+    const twoYearsAgo = new Date(Date.now() - 2 * 365 * 86_400_000).toISOString();
+    expect(formatRelativeDate(twoYearsAgo)).toBe('2 years ago');
+  });
+});
+
+describe('formatRelativeDateCompact', () => {
+  it('returns "now" for < 60s', () => {
+    const now = new Date().toISOString();
+    expect(formatRelativeDateCompact(now)).toBe('now');
+  });
+
+  it('returns minutes with min suffix', () => {
+    const fortyMinAgo = new Date(Date.now() - 40 * 60_000).toISOString();
+    expect(formatRelativeDateCompact(fortyMinAgo)).toBe('40min');
+  });
+
+  it('returns hours with h suffix', () => {
+    const sixHoursAgo = new Date(Date.now() - 6 * 3_600_000).toISOString();
+    expect(formatRelativeDateCompact(sixHoursAgo)).toBe('6h');
+  });
+
+  it('returns days with d suffix for 1-29 days', () => {
     const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
-    expect(formatRelativeDate(twoDaysAgo)).toBe('2d ago');
+    expect(formatRelativeDateCompact(twoDaysAgo)).toBe('2d');
+
+    const twentyOneDaysAgo = new Date(Date.now() - 21 * 86_400_000).toISOString();
+    expect(formatRelativeDateCompact(twentyOneDaysAgo)).toBe('21d');
   });
 
-  it('falls back to formatDate for 7+ days', () => {
-    const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
-    const result = formatRelativeDate(tenDaysAgo);
-    // Should return a formatted date string, not relative
-    expect(result).not.toContain('ago');
-    expect(result).not.toBe('just now');
+  it('returns clean months when no residual days (multiple of 30)', () => {
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000).toISOString();
+    expect(formatRelativeDateCompact(sixtyDaysAgo)).toBe('2mo');
+  });
+
+  it('returns composite months + days when residual days > 0', () => {
+    // 71 days = 2 months (60 days) + 11 residual days
+    const seventyOneDaysAgo = new Date(Date.now() - 71 * 86_400_000).toISOString();
+    expect(formatRelativeDateCompact(seventyOneDaysAgo)).toBe('2mo, 11d');
+  });
+
+  it('returns clean years when no residual months', () => {
+    const twoYearsAgo = new Date(Date.now() - 2 * 365 * 86_400_000).toISOString();
+    expect(formatRelativeDateCompact(twoYearsAgo)).toBe('2y');
+  });
+
+  it('returns composite years + months when residual months > 0', () => {
+    // 400 days = 1 year (365 days) + 35 residual days = 1 month
+    const fourHundredDaysAgo = new Date(Date.now() - 400 * 86_400_000).toISOString();
+    expect(formatRelativeDateCompact(fourHundredDaysAgo)).toBe('1y, 1mo');
   });
 });
 
