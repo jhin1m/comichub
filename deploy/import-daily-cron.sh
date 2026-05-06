@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Frequent incremental comix.to import — pulls page 1 (newest) with --resume.
-# Install via crontab: `*/30 * * * * /path/to/deploy/import-daily-cron.sh`
+# Hourly incremental comix.to import — pulls page 1 (newest) with --resume.
+# Install via crontab: `0 * * * * /path/to/deploy/import-daily-cron.sh`
 #
-# flock guard prevents overlapping runs if a previous invocation is still
-# active when the next 30-min tick fires (network slowness, large batch, etc).
+# flock guard prevents overlapping runs in case a previous invocation is still
+# active when the next tick fires (network slowness, image-heavy batch, etc).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
