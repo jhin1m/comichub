@@ -30,6 +30,56 @@ pkill -f import-campaign.sh
 
 The campaign orchestrator spawns parallel shards (one per proxy endpoint, configured via `PARALLEL_SHARDS`). Each shard processes disjoint page ranges independently. Concurrent shards use advisory database locks (`withSourceLock`) to prevent duplicate manga processing if list order shifts during import — safe to run multiple shards simultaneously.
 
+## Scheduled Imports (Cron)
+
+Two cron entries on the VPS:
+
+```cron
+0  *    * * *   /var/www/comichub/deploy/import-daily-cron.sh    # hourly page-1 incremental
+*/30 * * * *    /var/www/comichub/deploy/import-health-check.sh  # every 30 min: monitor errors, disk, DB
+```
+
+### `import-daily-cron.sh` — hourly incremental
+
+- Pulls **page 1 only** (`--from 1 --to 1 --resume`) — newest 100 manga at source
+- `--reset-checkpoint` each tick (independent of campaign checkpoint)
+- Checkpoint at `/data/comix-daily-checkpoint.json`
+- Log: `/var/log/comichub/import-daily-YYYYMMDD.log`
+- **flock guard** (`/var/lock/comichub-import-daily.lock`) — skips silently if previous tick still running. Logs `"Skip — previous run still active"`.
+- **Telegram noti only when noteworthy** — sends only if `chapters > 0`, `failed > 0`, or `exit != 0`. Idle ticks are silent.
+
+Steady-state runtime: 3-10 min. First-run after long catch-up gap: up to 50 min — expected.
+
+### Modify schedule
+
+```bash
+crontab -e
+# Then change "0 * * * *" to your desired schedule.
+# Examples:
+#   */30 * * * *  → every 30 min  (only safe if catch-up is done; flock will skip otherwise)
+#   0 */6 * * *   → every 6 hours (low-volume mode)
+```
+
+### Disable temporarily (e.g. during deploy of import code)
+
+```bash
+# Comment out the daily-cron line
+crontab -l | sed 's|^0 \* \* \* \* /var/www/comichub/deploy/import-daily-cron.sh|# &|' | crontab -
+
+# Re-enable
+crontab -l | sed 's|^# \(0 \* \* \* \* /var/www/comichub/deploy/import-daily-cron.sh\)|\1|' | crontab -
+```
+
+### Force-skip current run (if stuck)
+
+```bash
+# Find lock holder & PID
+fuser /var/lock/comichub-import-daily.lock
+# Kill the holder if confirmed stuck
+kill <PID>
+# Lock auto-releases on process exit
+```
+
 ## Live Monitoring
 
 ```bash

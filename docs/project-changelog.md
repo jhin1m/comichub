@@ -4,6 +4,21 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Fixed - Manga Stuck on Homepage Despite New Chapters (2026-05-06)
+- **Root Cause**: Standalone import scripts (`comix-import.ts`, `weebdex-import.ts`, `atsumaru-import.ts`) bumped `manga.chapter_updated_at` but missed `manga.updated_at` when adding new chapters. Homepage default sort uses `updated_at` (semantic: "new chapter release timestamp" since commit `4e777820`), so freshly-crawled manga didn't surface on the home page even though chapters were imported. Completes the fix from `4e777820` which only patched `chapter.service.ts` and `import.service.ts`.
+- **Helper extracted**: `backend/src/modules/manga/utils/manga-chapter-release.util.ts` — single source of truth for chapter-release manga-row updates (`lastChapterId`, `chaptersCount`, `chapterUpdatedAt`, `updatedAt`). All 5 entry points (admin create, admin import API, 3 standalone crawler scripts) now share one implementation.
+- **Side effect**: `chapter.service.ts` (admin manual chapter create) had silently never updated `lastChapterId` — helper fixes this implicit bug.
+- **Cache invalidation**: Standalone scripts now `DEL cache:/api/v1/manga*` Redis keys at end of run — eliminates 180s stale-cache delay after import. (Scripts run in a separate process from NestJS server, so the EventEmitter `chapter.created` invalidation never reached them.)
+- **Backfill**: One-time `UPDATE manga SET updated_at = chapter_updated_at WHERE chapter_updated_at > updated_at` — 69,392 rows synced.
+- **Files**: NEW `backend/src/modules/manga/utils/manga-chapter-release.util.ts`; modified `backend/src/modules/manga/services/chapter.service.ts`, `backend/src/modules/import/services/import.service.ts`, `backend/src/scripts/import-utils.ts`, `backend/src/scripts/{comix,weebdex,atsumaru}-import.ts`, `backend/src/modules/manga/services/chapter.service.spec.ts`.
+- **Tests**: 537/537 pass.
+
+### Added - Hourly Cron Import for Page-1 Incremental (2026-05-06)
+- **New cron**: `0 * * * * /var/www/comichub/deploy/import-daily-cron.sh` — pulls comix.to page 1 (newest 100 manga) with `--resume` every hour. Steady-state runtime 3-10 min; first-run after long catch-up gap can hit ~50 min.
+- **`import-daily-cron.sh` improvements**: Added `flock` non-blocking guard (skips overlapping ticks silently), reduced page range from 1-30 to 1-1, gated Telegram notification on `chapters > 0 || failed > 0 || exit != 0` (prevents 24 silent pings/day).
+- **Crontab now**: hourly import + existing `*/30 * * * *` health-check.
+- **Docs**: New section `## Scheduled Imports (Cron)` in `docs/import-monitoring-guide.md` covering schedule, modify, disable, force-skip.
+
 ### Changed - Comment Section: SWR Migration + Optimistic Post/Delete (2026-05-03)
 - **SWR cache layer**: `comment-section.tsx` migrated from manual `useState`+`useEffect`+`fetchComments` to `useSWR<PaginatedComments>` gated on `!authLoading`. Cache hits on back-nav between mangas/chapters within `dedupingInterval` (60s).
 - **SWR keys registry**: Added `commentListKey(type, id, page, limit, sort)` to `frontend/lib/swr/swr-keys.ts`. Default fetcher (`apiClient.get`) resolves URL-as-key directly.
