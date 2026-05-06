@@ -5,11 +5,13 @@ import 'dotenv/config';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq, and, inArray } from 'drizzle-orm';
+import Redis from 'ioredis';
 import * as schema from '@/database/schema/index.js';
 import { slugify } from '@/common/utils/slug.util.js';
 
 export { schema, eq, and, inArray };
 export { desc, count } from 'drizzle-orm';
+export { bumpMangaOnChapterRelease } from '@/modules/manga/utils/manga-chapter-release.util.js';
 
 // ─── DB ──────────────────────────────────────────────────────────
 export const sqlClient = postgres(process.env.DATABASE_URL!);
@@ -334,4 +336,48 @@ export async function upsertManga(
   }
 
   return { mangaId, isNew: true };
+}
+
+// ─── Cache invalidation (best-effort) ────────────────────────────
+// Standalone scripts run in a separate process from the NestJS server, so
+// EventEmitter `chapter.created` events don't reach the running cache layer.
+// We DEL the L1 HTTP-cache keys directly via Redis instead. The in-memory L3
+// cache inside the NestJS process can't be reached from here — that one
+// expires on its own TTL (60s).
+//
+// Best-effort: if Redis is unreachable, log + continue. Never fail the script.
+export async function invalidateMangaListCache(): Promise<void> {
+  const url = process.env.REDIS_URL || 'redis://localhost:6379';
+  const client = new Redis(url, {
+    maxRetriesPerRequest: 1,
+    connectTimeout: 3000,
+    lazyConnect: true,
+  });
+
+  try {
+    await client.connect();
+    // Match all manga list/detail HTTP cache keys (RedisCacheInterceptor uses
+    // `cache:<url>` format — see backend/src/common/interceptors/redis-cache.interceptor.ts).
+    let total = 0;
+    let cursor = '0';
+    do {
+      const [next, keys] = await client.scan(
+        cursor,
+        'MATCH',
+        'cache:/api/v1/manga*',
+        'COUNT',
+        500,
+      );
+      cursor = next;
+      if (keys.length) {
+        await client.del(...keys);
+        total += keys.length;
+      }
+    } while (cursor !== '0');
+    console.log(`  cache invalidated: ${total} key(s)`);
+  } catch (err) {
+    console.warn(`  cache invalidation skipped: ${(err as Error).message}`);
+  } finally {
+    client.disconnect();
+  }
 }

@@ -19,10 +19,10 @@ import {
   apiFetch,
   upsertManga,
   resolveByName,
+  bumpMangaOnChapterRelease,
+  invalidateMangaListCache,
   eq,
   and,
-  desc,
-  count,
 } from './import-utils.js';
 import { normalizeContentRating } from '../common/utils/content-rating.util.js';
 
@@ -228,26 +228,7 @@ async function importChapters(
   }
 
   // Always sync counters — conflicts may leave chaptersCount stale
-  const [latest] = await db
-    .select({ id: schema.chapters.id })
-    .from(schema.chapters)
-    .where(eq(schema.chapters.mangaId, mangaId))
-    .orderBy(desc(schema.chapters.order))
-    .limit(1);
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(schema.chapters)
-    .where(eq(schema.chapters.mangaId, mangaId));
-  if (total > 0) {
-    await db
-      .update(schema.manga)
-      .set({
-        lastChapterId: latest?.id ?? null,
-        chaptersCount: total,
-        chapterUpdatedAt: new Date(),
-      })
-      .where(eq(schema.manga.id, mangaId));
-  }
+  await bumpMangaOnChapterRelease(db, mangaId);
 
   return { chapters: totalChapters, images: totalImages };
 }
@@ -318,6 +299,7 @@ async function main() {
   );
   console.log(`Chapters: ${totalCh} | Images: ${totalImg}`);
   console.log(`${'═'.repeat(50)}\n`);
+  if (totalCh > 0) await invalidateMangaListCache();
   await sqlClient.end();
 }
 

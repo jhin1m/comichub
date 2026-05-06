@@ -274,7 +274,10 @@ describe('ChapterService', () => {
       mockDb.select.mockImplementation(() => {
         selectCall++;
         if (selectCall === 1) return buildChain([{ id: 1 }]); // manga exists
-        return buildChain([]); // slug not taken
+        if (selectCall === 2) return buildChain([]); // slug not taken
+        // bumpMangaOnChapterRelease: select latest chapter, then count
+        if (selectCall === 3) return buildChain([{ id: 5 }]); // latest chapter
+        return buildChain([{ total: 1 }]); // chaptersCount
       });
 
       mockDb.insert.mockReturnValue(buildChain([created]));

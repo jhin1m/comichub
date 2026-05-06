@@ -24,10 +24,10 @@ import {
   sleep,
   withRetry,
   withSourceLock,
+  bumpMangaOnChapterRelease,
+  invalidateMangaListCache,
   eq,
   and,
-  desc,
-  count,
 } from './import-utils.js';
 import { nsfwToContentRating } from '../common/utils/content-rating.util.js';
 import { signUrl, signedFetch } from './comix-sign.js';
@@ -489,26 +489,7 @@ async function importChapters(
   }
 
   // Always sync counters — conflicts may leave chaptersCount stale
-  const [latest] = await db
-    .select({ id: schema.chapters.id })
-    .from(schema.chapters)
-    .where(eq(schema.chapters.mangaId, mangaId))
-    .orderBy(desc(schema.chapters.order))
-    .limit(1);
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(schema.chapters)
-    .where(eq(schema.chapters.mangaId, mangaId));
-  if (total > 0) {
-    await db
-      .update(schema.manga)
-      .set({
-        lastChapterId: latest?.id ?? null,
-        chaptersCount: total,
-        chapterUpdatedAt: new Date(),
-      })
-      .where(eq(schema.manga.id, mangaId));
-  }
+  await bumpMangaOnChapterRelease(db, mangaId);
 
   return { chapters: totalChapters, images: totalImages };
 }
@@ -777,6 +758,7 @@ async function main() {
     console.log(`  Re-run: --from <N> --to <N> per failed page to recover.`);
   }
   console.log(`${'═'.repeat(50)}\n`);
+  if (cp.stats.chapters > 0) await invalidateMangaListCache();
   await sqlClient.end();
 }
 

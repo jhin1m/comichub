@@ -5,10 +5,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, and, inArray, desc, sql, count } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
-import { mangaSources, manga, chapters } from '../../../database/schema/index.js';
+import { mangaSources } from '../../../database/schema/index.js';
 import type { SourceAdapter } from '../adapters/source-adapter.interface.js';
 import { ImportSource } from '../types/import-source.enum.js';
 import type {
@@ -17,6 +17,7 @@ import type {
   ExternalChapter,
 } from '../types/external-manga.types.js';
 import { ImportMappingService } from './import-mapping.service.js';
+import { bumpMangaOnChapterRelease } from '../../manga/utils/manga-chapter-release.util.js';
 
 @Injectable()
 export class ImportService {
@@ -129,19 +130,23 @@ export class ImportService {
       .limit(1);
 
     if (!sourceRecord) {
-      throw new NotFoundException(`No import source found for manga ${mangaId}`);
+      throw new NotFoundException(
+        `No import source found for manga ${mangaId}`,
+      );
     }
 
     const source = sourceRecord.source as ImportSource;
     const adapter = this.getAdapter(source);
 
     if (!adapter.fetchChapters) {
-      throw new BadRequestException(`Adapter ${source} does not support chapter fetching`);
+      throw new BadRequestException(
+        `Adapter ${source} does not support chapter fetching`,
+      );
     }
 
     const MAX_PAGES = 50;
     let page = 1;
-    let allChapters: ExternalChapter[] = [];
+    const allChapters: ExternalChapter[] = [];
     let batch: ExternalChapter[];
     do {
       batch = await adapter.fetchChapters(sourceRecord.externalId, lang, page);
@@ -153,7 +158,11 @@ export class ImportService {
       return { chaptersImported: 0, imagesImported: 0 };
     }
 
-    const results = await this.mappingService.upsertChapters(mangaId, allChapters, source);
+    const results = await this.mappingService.upsertChapters(
+      mangaId,
+      allChapters,
+      source,
+    );
     const newChapters = results.filter((r) => r.isNew);
 
     let imagesImported = 0;
@@ -161,37 +170,20 @@ export class ImportService {
       for (const ch of newChapters) {
         try {
           const images = await adapter.fetchChapterImages(ch.externalId);
-          imagesImported += await this.mappingService.insertChapterImages(ch.chapterId, images);
+          imagesImported += await this.mappingService.insertChapterImages(
+            ch.chapterId,
+            images,
+          );
         } catch (err) {
-          this.logger.warn(`Image import failed for chapter ${ch.externalId}: ${(err as Error).message}`);
+          this.logger.warn(
+            `Image import failed for chapter ${ch.externalId}: ${(err as Error).message}`,
+          );
         }
       }
     }
 
-    // Update manga counters: lastChapterId, chaptersCount, chapterUpdatedAt
     if (newChapters.length > 0) {
-      const [latest] = await this.db
-        .select({ id: chapters.id })
-        .from(chapters)
-        .where(eq(chapters.mangaId, mangaId))
-        .orderBy(desc(chapters.number))
-        .limit(1);
-
-      const [{ total }] = await this.db
-        .select({ total: count() })
-        .from(chapters)
-        .where(eq(chapters.mangaId, mangaId));
-
-      const now = new Date();
-      await this.db
-        .update(manga)
-        .set({
-          lastChapterId: latest?.id ?? null,
-          chaptersCount: total,
-          chapterUpdatedAt: now,
-          updatedAt: now,
-        })
-        .where(eq(manga.id, mangaId));
+      await bumpMangaOnChapterRelease(this.db, mangaId);
     }
 
     return { chaptersImported: newChapters.length, imagesImported };

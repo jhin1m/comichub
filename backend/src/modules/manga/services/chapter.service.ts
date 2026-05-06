@@ -26,6 +26,7 @@ import {
 import { CreateChapterDto } from '../dto/create-chapter.dto.js';
 import { UpdateChapterDto } from '../dto/update-chapter.dto.js';
 import { NewChapterEvent } from '../../notification/events/new-chapter.event.js';
+import { bumpMangaOnChapterRelease } from '../utils/manga-chapter-release.util.js';
 import type {
   ChapterWithImages,
   ChapterNavigation,
@@ -238,16 +239,7 @@ export class ChapterService {
       })
       .returning();
 
-    // Update manga chaptersCount, chapterUpdatedAt, and bump updatedAt (new chapter released)
-    const now = new Date();
-    await this.db
-      .update(manga)
-      .set({
-        chaptersCount: sql<number>`(SELECT count(*) FROM ${chapters} WHERE manga_id = ${mangaId} AND deleted_at IS NULL)`,
-        chapterUpdatedAt: now,
-        updatedAt: now,
-      })
-      .where(eq(manga.id, mangaId));
+    await bumpMangaOnChapterRelease(this.db, mangaId);
 
     // Emit event for notifications + cache invalidation
     const event = new NewChapterEvent();

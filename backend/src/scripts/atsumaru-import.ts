@@ -17,10 +17,10 @@ import {
   hasFlag,
   upsertManga,
   resolveByName,
+  bumpMangaOnChapterRelease,
+  invalidateMangaListCache,
   eq,
   and,
-  desc,
-  count,
   sleep,
 } from './import-utils.js';
 
@@ -244,26 +244,7 @@ async function importChapters(
   }
 
   // Sync counters
-  const [latest] = await db
-    .select({ id: schema.chapters.id })
-    .from(schema.chapters)
-    .where(eq(schema.chapters.mangaId, internalId))
-    .orderBy(desc(schema.chapters.order))
-    .limit(1);
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(schema.chapters)
-    .where(eq(schema.chapters.mangaId, internalId));
-  if (total > 0) {
-    await db
-      .update(schema.manga)
-      .set({
-        lastChapterId: latest?.id ?? null,
-        chaptersCount: total,
-        chapterUpdatedAt: new Date(),
-      })
-      .where(eq(schema.manga.id, internalId));
-  }
+  await bumpMangaOnChapterRelease(db, internalId);
 
   return { chapters: totalChapters, images: totalImages };
 }
@@ -367,6 +348,7 @@ async function main() {
   );
   if (!NO_CHAPTERS) console.log(`Chapters: ${totalCh} | Images: ${totalImg}`);
   console.log(`${'═'.repeat(50)}\n`);
+  if (totalCh > 0) await invalidateMangaListCache();
   await sqlClient.end();
 }
 
