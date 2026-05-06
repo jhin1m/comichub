@@ -11,6 +11,7 @@ export interface MangaListItem {
   latestChapterNumber: string | null;
   averageRating: string;
   updatedAt: Date;
+  chapterUpdatedAt: Date | null;
   contentRating: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
   isHot: boolean;
 }
@@ -22,7 +23,6 @@ export interface MangaDetail extends MangaListItem {
   followersCount: number;
   totalRatings: number;
   year: number | null;
-  chapterUpdatedAt: Date | null;
   genres: { id: number; name: string; slug: string }[];
   artists: { id: number; name: string; slug: string }[];
   authors: { id: number; name: string; slug: string }[];

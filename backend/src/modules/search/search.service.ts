@@ -280,6 +280,7 @@ export class SearchService {
           latestChapterNumber: chapters.number,
           averageRating: manga.averageRating,
           updatedAt: manga.updatedAt,
+          chapterUpdatedAt: manga.chapterUpdatedAt,
           contentRating: manga.contentRating,
           isHot: manga.isHot,
         })
@@ -308,6 +309,7 @@ export class SearchService {
               latestChapterNumber: chapters.number,
               averageRating: manga.averageRating,
               updatedAt: manga.updatedAt,
+              chapterUpdatedAt: manga.chapterUpdatedAt,
               contentRating: manga.contentRating,
               isHot: manga.isHot,
             })
