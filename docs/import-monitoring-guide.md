@@ -198,6 +198,14 @@ Signing module may have changed. Re-run to auto-refresh JS chunk cache:
 ./deploy/run-import.sh comix --from 1 --to 1 --resume --checkpoint-file /data/comix-checkpoint.json
 ```
 
+If re-run still fails with `Could not locate main bundle URL` or `Could not locate secure module import`, comix.to may have changed bundle build system again. Indicator:
+```bash
+# Check current homepage script tag — should match Vite layout:
+#   src="https://comix.to/assets/build/<hash>/dist/main-<id>.js"
+curl -sS https://comix.to/home | grep -oE 'src="https://comix\.to/[^"]+\.js"' | head -3
+```
+If pattern differs (e.g. reverts to `_next/static/chunks/...`), `comix-sign.ts` regex needs updating. See `plans/archive/260507-2029-comix-signing-rewrite/` for the previous Vite migration playbook.
+
 ### DB slow during import
 ```bash
 # Run vacuum (safe during import — non-blocking)

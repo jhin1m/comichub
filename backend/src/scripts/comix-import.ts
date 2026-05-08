@@ -1,14 +1,22 @@
 #!/usr/bin/env npx tsx --tsconfig tsconfig.json
 /**
  * Bulk import manga + chapters + images from Comix.to → ComicHub DB.
- * Note: API search/scope params appear non-functional. Uses order[chapter_updated_at]=desc by default.
+ *
+ * API surface (post 2026-05-07 Vite migration):
+ *  - GET /api/v1/manga?...                  public, no signing
+ *  - GET /api/v1/manga/{hid}                public detail (genres, altTitles, authors)
+ *  - GET /api/v1/manga/{hid}/chapters?...   signed (`_=<sig>`)
+ *  - GET /api/v1/chapters/{id}              signed (`_=<sig>`) — pages live here
+ *
+ * Hybrid metadata strategy: list endpoint lacks genres/altTitles/authors, so
+ * we fetch /manga/{hid} detail ONLY for new manga. Existing manga skip the
+ * detail call (genre/altTitles aren't refreshed once imported).
  *
  * Usage:
  *   pnpm run import:comix                                  # default: pages 1-3, lang=all, recently updated
  *   pnpm run import:comix -- --from 1 --to 10              # pages 1-10
  *   pnpm run import:comix -- --lang vi                     # Vietnamese chapters only
  *   pnpm run import:comix -- --type manhwa --from 1 --to 5 # manhwa only
- *   pnpm run import:comix -- --resume                       # skip manga with no new chapters
  *   pnpm run import:comix -- --dry                         # preview without importing
  */
 import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
@@ -29,8 +37,7 @@ import {
   eq,
   and,
 } from './import-utils.js';
-import { nsfwToContentRating } from '../common/utils/content-rating.util.js';
-import { signUrl, signedFetch } from './comix-sign.js';
+import { signedFetch } from './comix-sign.js';
 
 // ─── CLI args ────────────────────────────────────────────────────
 const PAGE_FROM = parseInt(flag('from', '1'), 10);
@@ -39,7 +46,6 @@ const LIMIT = parseInt(flag('limit', '100'), 10);
 const LANG = flag('lang', 'all');
 const SEARCH = flag('search', '');
 const TYPE = flag('type', '');
-const RESUME = hasFlag('resume');
 const DRY_RUN = hasFlag('dry');
 
 // Random jitter (default 400-1200ms) — override via --jitter-min / --jitter-max
@@ -79,138 +85,19 @@ const IMAGE_RETRY_BACKOFF = parseBackoff(
   flag('image-retry-backoff', '3,10,30'),
 );
 
-const BASE = 'https://comix.to/api/v2';
+const BASE = 'https://comix.to/api/v1';
 const SOURCE = 'comix';
 const LINK_MAP: Record<string, string> = {
   al: 'anilist',
   mal: 'mal',
   mu: 'mu',
 };
-
-// Comix.to term_id → demographic mapping (extracted from /browser filter)
-const DEMOGRAPHIC_IDS: Record<number, string> = {
-  1: 'shoujo',
-  2: 'shounen',
-  3: 'josei',
-  4: 'seinen',
-};
-
-// NSFW theme term_ids → content rating escalation (highest severity wins)
-const NSFW_RATING_MAP: Record<number, string> = {
-  87266: 'pornographic', // Hentai
-  87264: 'erotica', // Adult
-  87267: 'erotica', // Mature
-  87268: 'erotica', // Smut
-  87265: 'suggestive', // Ecchi
-};
-const RATING_SEVERITY: Record<string, number> = {
-  safe: 0,
-  suggestive: 1,
-  erotica: 2,
-  pornographic: 3,
-};
-
-// Comix.to term_id → genre/theme name mapping (extracted from /genres page)
-const GENRE_IDS: Record<number, string> = {
-  6: 'Action',
-  7: 'Adventure',
-  8: 'Boys Love',
-  9: 'Comedy',
-  10: 'Crime',
-  11: 'Drama',
-  12: 'Fantasy',
-  13: 'Girls Love',
-  14: 'Historical',
-  15: 'Horror',
-  16: 'Isekai',
-  17: 'Magical Girls',
-  18: 'Mecha',
-  19: 'Medical',
-  20: 'Mystery',
-  21: 'Philosophical',
-  22: 'Psychological',
-  23: 'Romance',
-  24: 'Sci-Fi',
-  25: 'Slice of Life',
-  26: 'Sports',
-  27: 'Superhero',
-  28: 'Thriller',
-  29: 'Tragedy',
-  30: 'Wuxia',
-};
-const THEME_IDS: Record<number, string> = {
-  31: 'Aliens',
-  32: 'Animals',
-  33: 'Cooking',
-  34: 'Crossdressing',
-  35: 'Delinquents',
-  36: 'Demons',
-  37: 'Genderswap',
-  38: 'Ghosts',
-  39: 'Gyaru',
-  40: 'Harem',
-  41: 'Incest',
-  42: 'Loli',
-  43: 'Mafia',
-  44: 'Magic',
-  45: 'Martial Arts',
-  46: 'Military',
-  47: 'Monster Girls',
-  48: 'Monsters',
-  49: 'Music',
-  50: 'Ninja',
-  51: 'Office Workers',
-  52: 'Police',
-  53: 'Post-Apocalyptic',
-  54: 'Reincarnation',
-  55: 'Reverse Harem',
-  56: 'Samurai',
-  57: 'School Life',
-  58: 'Shota',
-  59: 'Supernatural',
-  60: 'Survival',
-  61: 'Time Travel',
-  62: 'Traditional Games',
-  63: 'Vampires',
-  64: 'Video Games',
-  65: 'Villainess',
-  66: 'Virtual Reality',
-  67: 'Zombies',
-  87264: 'Adult',
-  87265: 'Ecchi',
-  87266: 'Hentai',
-  87267: 'Mature',
-  87268: 'Smut',
-};
-
-function resolveTermIds(termIds: number[]): {
-  genres: string[];
-  themes: string[];
-  demographic: string | null;
-  contentRating: string;
-} {
-  const genres: string[] = [];
-  const themes: string[] = [];
-  let demographic: string | null = null;
-  let maxSeverity = 0;
-  let contentRating = 'safe';
-
-  for (const id of termIds) {
-    if (DEMOGRAPHIC_IDS[id]) {
-      demographic = DEMOGRAPHIC_IDS[id];
-      continue;
-    }
-    if (GENRE_IDS[id]) genres.push(GENRE_IDS[id]);
-    else if (THEME_IDS[id]) themes.push(THEME_IDS[id]);
-    // Escalate content rating based on NSFW themes
-    const rating = NSFW_RATING_MAP[id];
-    if (rating && RATING_SEVERITY[rating] > maxSeverity) {
-      maxSeverity = RATING_SEVERITY[rating];
-      contentRating = rating;
-    }
-  }
-  return { genres, themes, demographic, contentRating };
-}
+const VALID_RATINGS = new Set([
+  'safe',
+  'suggestive',
+  'erotica',
+  'pornographic',
+]);
 
 function api<T>(path: string) {
   return apiFetch<T>(BASE, path, {
@@ -254,10 +141,6 @@ function normalizeType(type?: string): string {
   return 'manga'; // 'other' → 'manga'
 }
 
-function unixToDate(ts?: number): Date | null {
-  return ts ? new Date(ts * 1000) : null;
-}
-
 // Extract external ID from URL:
 //   anilist.co/manga/137358/  → "137358"
 //   myanimelist.net/manga/144158/ → "144158"
@@ -280,54 +163,96 @@ function extractIdFromUrl(key: string, url: string): string | null {
 }
 
 // ─── Import single manga ────────────────────────────────────────
+function buildLinks(
+  rawLinks: Record<string, string | null> | undefined,
+): { type: string; externalId?: string; url?: string }[] {
+  const out: { type: string; externalId?: string; url?: string }[] = [];
+  if (!rawLinks) return out;
+  for (const [key, url] of Object.entries(rawLinks)) {
+    const type = LINK_MAP[key];
+    if (!type || !url) continue;
+    const id = extractIdFromUrl(key, url);
+    if (id) out.push({ type, externalId: id, url });
+  }
+  return out;
+}
+
+function pickRating(raw: any): string {
+  const r = (raw?.contentRating ?? '').toLowerCase();
+  return VALID_RATINGS.has(r) ? r : 'safe';
+}
+
+/**
+ * Hybrid metadata fetch: list endpoint lacks genres/altTitles/authors so we
+ * call /manga/{hid} only for new manga (not yet in mangaSources). Existing
+ * manga skip the detail call — saves ~100 HTTP/page on hourly cron runs.
+ */
 async function importOneManga(
   raw: any,
 ): Promise<{ mangaId: number; isNew: boolean }> {
-  const hashId = raw.hash_id;
-  const altTitles = raw.alt_titles ?? [];
-  const coverUrl = raw.poster?.large ?? raw.poster?.medium ?? null;
+  const hid = raw.hid;
 
-  // External links — extract IDs from URLs
-  const links: { type: string; externalId?: string; url?: string }[] = [];
-  if (raw.links) {
-    for (const [key, url] of Object.entries(
-      raw.links as Record<string, string>,
-    )) {
-      const type = LINK_MAP[key];
-      if (!type || !url) continue;
-      const id = extractIdFromUrl(key, url);
-      if (id) links.push({ type, externalId: id, url });
-    }
+  // Cheap existence check — avoid detail fetch for already-imported manga.
+  const [existingSrc] = await db
+    .select({ mangaId: schema.mangaSources.mangaId })
+    .from(schema.mangaSources)
+    .where(
+      and(
+        eq(
+          schema.mangaSources.source,
+          SOURCE as typeof schema.mangaSources.$inferInsert.source,
+        ),
+        eq(schema.mangaSources.externalId, hid),
+      ),
+    )
+    .limit(1);
+
+  if (existingSrc) {
+    return { mangaId: existingSrc.mangaId, isNew: false };
   }
 
-  const resolved = resolveTermIds(raw.term_ids ?? []);
+  // New manga — pull detail to enrich genres/themes/altTitles/authors.
+  // /manga/{hid} is unsigned per bundle interceptor whitelist.
+  const detail = await api<any>(`/manga/${hid}`);
+  const d = detail.result ?? {};
 
-  // Use theme-based rating if higher severity than is_nsfw flag
-  const flagRating = nsfwToContentRating(!!raw.is_nsfw);
-  const finalRating =
-    (RATING_SEVERITY[resolved.contentRating] ?? 0) >=
-    (RATING_SEVERITY[flagRating] ?? 0)
-      ? resolved.contentRating
-      : flagRating;
+  const altTitles: string[] = Array.isArray(d.altTitles) ? d.altTitles : [];
+  const coverUrl = d.poster?.large ?? d.poster?.medium ?? null;
+  const links = buildLinks(d.links);
+
+  const genreNames: string[] = (d.genres ?? [])
+    .map((g: any) => g?.title)
+    .filter(Boolean);
+  // Themes come from `tags` + `formats` (both are theme-like taxonomy).
+  const themeNames: string[] = [...(d.tags ?? []), ...(d.formats ?? [])]
+    .map((t: any) => t?.title)
+    .filter(Boolean);
+  const demographic: string | null = d.demographics?.[0]?.slug ?? null;
+  const authorNames: string[] = (d.authors ?? [])
+    .map((a: any) => a?.title)
+    .filter(Boolean);
+  const artistNames: string[] = (d.artists ?? [])
+    .map((a: any) => a?.title)
+    .filter(Boolean);
 
   const { mangaId, isNew } = await upsertManga({
-    title: raw.title,
+    title: d.title ?? raw.title,
     altTitles,
-    description: raw.synopsis ?? null,
+    description: d.synopsis ?? raw.synopsis ?? null,
     coverUrl,
-    originalLanguage: raw.original_language ?? null,
-    status: normalizeStatus(raw.status),
-    type: normalizeType(raw.type),
-    contentRating: finalRating,
-    demographic: resolved.demographic,
-    year: raw.year ?? null,
-    genreNames: resolved.genres,
-    themeNames: resolved.themes,
-    authorNames: [],
-    artistNames: [],
+    originalLanguage: d.originalLanguage ?? raw.originalLanguage ?? null,
+    status: normalizeStatus(d.status ?? raw.status),
+    type: normalizeType(d.type ?? raw.type),
+    contentRating: pickRating(d) || pickRating(raw),
+    demographic,
+    year: d.year ?? raw.year ?? null,
+    genreNames,
+    themeNames,
+    authorNames,
+    artistNames,
     links,
     source: SOURCE,
-    externalId: hashId,
+    externalId: hid,
   });
 
   return { mangaId, isNew };
@@ -366,20 +291,32 @@ async function importChapters(
       LANG === 'all' ? items : items.filter((ch: any) => ch.language === LANG);
 
     for (const raw of filtered) {
-      const extId = String(raw.chapter_id);
+      const extId = String(raw.id);
 
-      // Skip if this exact external chapter was already imported
+      // Skip if this exact external chapter was already imported.
+      // Scope to (source, externalId): chapter_sources is uniquely keyed by
+      // both — Comix int-cast ids could collide with other sources' ids.
       const [existingSrc] = await db
         .select({ chapterId: schema.chapterSources.chapterId })
         .from(schema.chapterSources)
-        .where(eq(schema.chapterSources.externalId, extId))
+        .where(
+          and(
+            eq(
+              schema.chapterSources.source,
+              SOURCE as typeof schema.chapterSources.$inferInsert.source,
+            ),
+            eq(schema.chapterSources.externalId, extId),
+          ),
+        )
         .limit(1);
       if (existingSrc) continue;
 
-      const num = parseFloat(raw.number ?? '0');
-      const group = raw.scanlation_group;
+      const num = parseFloat(String(raw.number ?? '0'));
+      const group = raw.group;
 
-      // Try insert chapter — may conflict if same number+lang already exists from another group
+      // Try insert chapter — may conflict if same number+lang already exists from another group.
+      // publishedAt set to now: new API only provides relative strings ("39s ago"),
+      // so we use insert time as approximation (semantic: "this chapter just landed").
       const [inserted] = await db
         .insert(schema.chapters)
         .values({
@@ -389,7 +326,7 @@ async function importChapters(
           slug: `chapter-${num}`,
           language: raw.language ?? 'en',
           volume: raw.volume && raw.volume > 0 ? String(raw.volume) : null,
-          publishedAt: unixToDate(raw.created_at),
+          publishedAt: new Date(),
           order: Math.round(num * 10),
         })
         .onConflictDoNothing()
@@ -433,17 +370,23 @@ async function importChapters(
       // chapter_sources insert is DEFERRED until after images land so a mid-step
       // failure leaves the chapter unclaimed; re-runs will retry instead of
       // skipping (prevents "chapter ma": chapter_sources present but 0 images).
+      // /chapters/{id} now requires signing (post 2026-05-07 Vite migration).
       let imagesInserted = false;
       try {
         const chDetail = await withRetry(
-          () => api<any>(`/chapters/${raw.chapter_id}`),
+          () =>
+            signedFetch<any>(
+              `/chapters/${raw.id}`,
+              {},
+              { jitter: JITTER, fetchTimeoutMs: FETCH_TIMEOUT_MS },
+            ),
           {
             max: IMAGE_RETRY_MAX,
             backoffSec: IMAGE_RETRY_BACKOFF,
-            label: `chapter-images ${raw.chapter_id}`,
+            label: `chapter-images ${raw.id}`,
           },
         );
-        const images = chDetail.result?.images ?? [];
+        const images = chDetail.result?.pages ?? [];
         if (images.length) {
           await db
             .insert(schema.chapterImages)
@@ -555,15 +498,28 @@ function saveCheckpoint(cp: Checkpoint): void {
 }
 
 // ─── Pre-flight health check ─────────────────────────────────────
+// End-to-end signing verification: pull a real hid from the unsigned list,
+// then sign + fetch its chapters. Catches stale signers / rotated bundles
+// that a synthetic 'test' hid wouldn't surface.
 async function healthCheck(): Promise<boolean> {
   const MAX_RETRIES = 3;
   const BACKOFF = [2000, 4000, 8000];
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      await signUrl('/manga/test/chapters'); // signing module OK
-      const res = await fetch(`${BASE}/manga?limit=1&page=1`);
-      if (res.ok) return true;
-      console.warn(`  Health check attempt ${attempt + 1}: API ${res.status}`);
+      const listRes = await fetch(`${BASE}/manga?limit=1&page=1`);
+      if (!listRes.ok)
+        throw new Error(`list endpoint API ${listRes.status}`);
+      const list: any = await listRes.json();
+      const sample = list?.result?.items?.[0];
+      if (!sample?.hid) throw new Error('list returned no items');
+
+      // Real signed call — confirms signature is accepted by server.
+      await signedFetch<any>(
+        `/manga/${sample.hid}/chapters`,
+        { limit: 1, page: 1 },
+        { fetchTimeoutMs: 15_000 },
+      );
+      return true;
     } catch (err: any) {
       console.warn(`  Health check attempt ${attempt + 1}: ${err.message}`);
     }
@@ -581,7 +537,6 @@ async function main() {
     `jitter=${JITTER_MIN}-${JITTER_MAX}ms`,
     SEARCH && `search="${SEARCH}"`,
     TYPE && `type=${TYPE}`,
-    RESUME && 'RESUME',
     DRY_RUN && 'DRY RUN',
     process.env.USE_PROXY === '1' && 'PROXY',
   ]
@@ -658,7 +613,7 @@ async function main() {
     if (DRY_RUN) {
       items.forEach((m: any, i: number) =>
         console.log(
-          `    ${i + 1}. [${m.hash_id}] ${m.title} (${m.type}, ${m.status})`,
+          `    ${i + 1}. [${m.hid}] ${m.title} (${m.type}, ${m.status})`,
         ),
       );
     } else {
@@ -672,11 +627,11 @@ async function main() {
           // sentinel object when fn ran, or null if another shard owns it.
           const result = await withSourceLock<'done'>(
             SOURCE,
-            raw.hash_id,
+            raw.hid,
             async () => {
               const { mangaId, isNew } = await importOneManga(raw);
 
-              if (!raw.has_chapters) {
+              if (!raw.hasChapters) {
                 if (isNew) cp.stats.imported++;
                 else cp.stats.skipped++;
                 console.log(
@@ -685,28 +640,11 @@ async function main() {
                 return 'done';
               }
 
-              // --resume: skip manga whose source hasn't updated since last import
-              if (RESUME && !isNew) {
-                const [local] = await db
-                  .select({ chapterUpdatedAt: schema.manga.chapterUpdatedAt })
-                  .from(schema.manga)
-                  .where(eq(schema.manga.id, mangaId))
-                  .limit(1);
-                const sourceUpdated = unixToDate(raw.chapter_updated_at);
-                if (
-                  local?.chapterUpdatedAt &&
-                  sourceUpdated &&
-                  local.chapterUpdatedAt >= sourceUpdated
-                ) {
-                  cp.stats.skipped++;
-                  console.log(
-                    `${tag} ${raw.title} ⏭ id:${mangaId} (up-to-date)`,
-                  );
-                  return 'done';
-                }
-              }
+              // Note: --resume time-skip dropped — new API only exposes relative
+              // strings ("6s ago") so direct timestamp comparison isn't reliable.
+              // chapter_sources externalId dedup still prevents re-importing.
 
-              const r = await importChapters(mangaId, raw.hash_id);
+              const r = await importChapters(mangaId, raw.hid);
               if (isNew) cp.stats.imported++;
               else cp.stats.skipped++;
               cp.stats.chapters += r.chapters;

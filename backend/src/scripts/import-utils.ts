@@ -82,12 +82,15 @@ export function sleep(ms: number) {
 // ─── Retry helper ────────────────────────────────────────────────
 // Classify errors as retryable (transient) vs fatal. Transient: 5xx incl.
 // Cloudflare 521-524, 408, 429, plus common network errors / aborts.
+// 403 included for source adapters that auto-refresh stale signing state
+// (e.g. comix-sign resets cached signer + throws on 403 → next attempt
+// re-discovers bundle). Worst case for non-recovering 403: 3 wasted retries.
 export function isRetryable(err: Error): boolean {
   const msg = err?.message || '';
   const m = msg.match(/^API (\d{3}):/);
   if (m) {
     const s = parseInt(m[1], 10);
-    return s >= 500 || s === 408 || s === 429;
+    return s >= 500 || s === 408 || s === 429 || s === 403;
   }
   return /ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|fetch failed|aborted|timeout|socket hang up/i.test(
     msg,
