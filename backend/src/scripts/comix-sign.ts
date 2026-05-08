@@ -1,23 +1,35 @@
 /**
  * Comix.to API request signing.
  *
- * Comix migrated their frontend from Next.js/Turbopack to Vite/rolldown on
- * 2026-05-07. Signing logic now lives in a sibling ESM module `secure-*.js`
- * imported via static `import{n,r,t} from "./secure-*.js"`. The module
- * exports an array `ki` whose 3rd entry (`ki[2]`) is the URL hash function
- * used by the request interceptor for endpoints matching:
+ * Comix migrated frontend Next.js/Turbopack → Vite/rolldown on 2026-05-07,
+ * then re-obfuscated the signing module on 2026-05-08 (likely after detecting
+ * scraper traffic). Algorithm + cipher keys remain stable across both bundles
+ * — only the wrapper changed (28KB plain → 252KB obfuscated VM with `vmO_*`
+ * prefix names as red herring).
+ *
+ * Strategy: instead of digging into the obfuscation to extract a hash
+ * function (was `ki[2]` in plain bundle, hidden inside vmO interpreter in
+ * obfuscated bundle), use the EXPORTED interceptor installer (`n` per main
+ * bundle's `import{n,r,t} from "./secure-*.js"` alias) which the bundle
+ * always wires on its axios instance. We register a fake axios, capture the
+ * handler, then invoke it with mock GET configs — the handler adds `_=<sig>`
+ * to params for whitelisted paths:
  *   /manga/{hid}/chapters
  *   /manga/{hid}/chapter-indexes
  *   /chapters/{id}
+ * This survives bundler / variable-renaming / obfuscation changes as long as
+ * the ESM export contract holds.
  *
- * Anti-tamper: the secure module probes `document.querySelector.toString()`
- * against a native-code regex; if it doesn't match, internal cipher keys get
- * scrambled. We spoof a fake querySelector whose toString matches the regex
- * so the keys stay intact under Node vm.
+ * Anti-tamper bypass:
+ *   1. `document.querySelector.toString()` probed against native-code regex —
+ *      spoof toString.
+ *   2. `navigator.appCodeName` required by the obfuscator's runtime
+ *      decryption key derivation (throws "VM decryption key not available"
+ *      when missing).
  *
  * Cache: signer is loaded once per process (default 1h TTL); on 403 from a
- * signed call the caller can invoke `resetSigner()` to force a re-fetch
- * (handles bundle hash rotation).
+ * signed call `resetSigner()` is invoked to force re-fetch (bundle hash
+ * rotation handling).
  */
 import vm from 'node:vm';
 
@@ -145,9 +157,22 @@ function makeBrowserSandbox(): vm.Context {
     window: fakeWindow,
     location: fakeWindow.location,
     navigator: {
+      // Comix's obfuscator derives a runtime decryption key from
+      // navigator.appCodeName — missing/empty value throws
+      // "VM decryption key not available". Add common-browser fields
+      // defensively in case future obfuscator iterations probe more.
       userAgent: UA,
       platform: 'MacIntel',
       maxTouchPoints: 0,
+      appCodeName: 'Mozilla',
+      appName: 'Netscape',
+      appVersion: '5.0',
+      language: 'en-US',
+      languages: ['en-US', 'en'],
+      onLine: true,
+      vendor: '',
+      product: 'Gecko',
+      productSub: '20030107',
     },
     localStorage: fakeStorage(),
     sessionStorage: fakeStorage(),
@@ -170,15 +195,17 @@ function makeBrowserSandbox(): vm.Context {
 
 // ─── Signer load + cache ────────────────────────────────────────
 
+type SignerFn = (path: string) => string | null;
+
 interface CachedSigner {
-  sign: (path: string) => string;
+  sign: SignerFn;
   loadedAt: number;
 }
 
 let cached: CachedSigner | null = null;
 const SIGNER_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-async function loadSigner(): Promise<(path: string) => string> {
+async function loadSigner(): Promise<SignerFn> {
   if (cached && Date.now() - cached.loadedAt < SIGNER_TTL_MS) {
     return cached.sign;
   }
@@ -186,24 +213,55 @@ async function loadSigner(): Promise<(path: string) => string> {
   const secureUrl = await discoverSecureBundleUrl();
   const secureCode = await fetchText(secureUrl);
 
-  // Strip ESM `export {...}` so the code runs as a plain script in vm.
-  // Capture the `ki` array's 3rd entry (the hash function used by the
-  // request interceptor) on globalThis after evaluation.
+  // Strip ESM `export {...}` so the code runs as plain script in vm.
+  // Capture the export aliased as `n` in main bundle (`import{n,...} from
+  // "./secure-*.js"`). In the secure module's source it's `var g` — a
+  // function that takes an axios-like instance and registers a request
+  // interceptor on it.
   const transformed =
     secureCode.replace(/export\s*\{[^}]+\}\s*;?\s*$/, '') +
-    '\n; globalThis.__comixSign = ki[2];';
+    "\n; globalThis.__comixInstall = typeof g === 'function' ? g : null;";
 
   const ctx = makeBrowserSandbox();
   try {
-    vm.runInContext(transformed, ctx, { timeout: 5000 });
+    // Bigger timeout — obfuscated bundle takes longer to evaluate (~2x).
+    vm.runInContext(transformed, ctx, { timeout: 15_000 });
   } catch {
     // Late IIFEs (devtool detector, ad injector) may throw on missing
-    // browser APIs — irrelevant once `ki` is captured.
+    // browser APIs — irrelevant once `g` is captured.
   }
 
-  const sign = (ctx as any).__comixSign;
-  if (typeof sign !== 'function')
-    throw new Error('Comix signing function not captured from secure module');
+  const install = (ctx as any).__comixInstall as
+    | ((axios: any) => void)
+    | undefined;
+  if (typeof install !== 'function')
+    throw new Error('Comix interceptor installer not captured from secure module');
+
+  // Mock just enough of axios for the interceptor to register itself, then
+  // capture the handler so we can invoke it directly to sign URLs.
+  let handler: ((cfg: any) => any) | null = null;
+  install({
+    interceptors: {
+      request: {
+        use(h: (cfg: any) => any) {
+          handler = h;
+          return 0;
+        },
+      },
+      response: { use: () => 0 },
+    },
+  });
+  if (typeof handler !== 'function')
+    throw new Error('Comix request-interceptor handler not registered');
+  const finalHandler: (cfg: any) => any = handler;
+
+  // Wrap as a path-only signer: invoke handler with mock GET config and
+  // pull the `_` query param the bundle adds for whitelisted paths.
+  const sign: SignerFn = (path) => {
+    const cfg = { method: 'get', url: `/api/v1${path}`, params: {} };
+    const out = finalHandler(cfg);
+    return out?.params?._ ?? null;
+  };
 
   cached = { sign, loadedAt: Date.now() };
   return sign;
