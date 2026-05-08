@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10 --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
@@ -15,7 +15,7 @@ RUN pnpm run build
 
 # Stage 3: Production
 FROM node:20-alpine AS production
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10 --activate
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3001
