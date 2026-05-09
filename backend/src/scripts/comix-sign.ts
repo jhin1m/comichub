@@ -213,14 +213,26 @@ async function loadSigner(): Promise<SignerFn> {
   const secureUrl = await discoverSecureBundleUrl();
   const secureCode = await fetchText(secureUrl);
 
-  // Strip ESM `export {...}` so the code runs as plain script in vm.
-  // Capture the export aliased as `n` in main bundle (`import{n,...} from
-  // "./secure-*.js"`). In the secure module's source it's `var g` — a
-  // function that takes an axios-like instance and registers a request
-  // interceptor on it.
+  // The main bundle imports the installer via the stable export alias `n`
+  // (`import{n,...} from "./secure-*.js"`). The source-side variable name
+  // is volatile across bundles: `g` on 2026-05-08, `v` on 2026-05-09.
+  // Resolve it dynamically by parsing `<name> as n` from the export clause —
+  // alias `n` is the durable contract, source name is not.
+  const exportMatch = secureCode.match(/export\s*\{([^}]+)\}/);
+  if (!exportMatch)
+    throw new Error('Comix secure module has no ESM export clause');
+  const installerNameMatch = exportMatch[1].match(/(\w+)\s+as\s+n\b/);
+  if (!installerNameMatch)
+    throw new Error(
+      'Comix secure module export clause missing `as n` (installer alias)',
+    );
+  const installerName = installerNameMatch[1];
+
+  // Strip ESM `export {...}` so the code runs as plain script in vm, then
+  // promote the resolved installer to globalThis for capture below.
   const transformed =
     secureCode.replace(/export\s*\{[^}]+\}\s*;?\s*$/, '') +
-    "\n; globalThis.__comixInstall = typeof g === 'function' ? g : null;";
+    `\n; globalThis.__comixInstall = typeof ${installerName} === 'function' ? ${installerName} : null;`;
 
   const ctx = makeBrowserSandbox();
   try {
