@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, and } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
@@ -46,15 +46,31 @@ export class TaxonomyService {
     }
   }
 
-  async findAll(type: string): Promise<TaxonomyItem[]> {
-    const cacheKey = `all:${type}`;
+  /**
+   * List all rows of a taxonomy table.
+   *
+   * For `genres` table specifically, an optional `group` filter narrows the
+   * result. The `genres` table is a discriminated taxonomy holding three
+   * groups: 'genre' (true categories like Action, Romance ~25 rows) plus
+   * 'theme' / 'format' (sub-classification tags imported from upstream
+   * sources, ~177+ rows). Default `group='genre'` keeps the public
+   * `/genres` endpoint focused on user-facing categories.
+   */
+  async findAll(type: string, group?: string): Promise<TaxonomyItem[]> {
+    const cacheKey = `all:${type}:${group ?? 'all'}`;
     const cached = this.cache.get<TaxonomyItem[]>(cacheKey);
     if (cached) return cached;
 
     const table = this.getTable(type);
+    const where =
+      type === 'genres' && group
+        ? eq((table as typeof genres).group, group)
+        : undefined;
+
     const result = (await this.db
       .select()
       .from(table)
+      .where(where as never)
       .orderBy(table.name)) as TaxonomyItem[];
     this.cache.set(cacheKey, result);
     return result;
@@ -70,17 +86,22 @@ export class TaxonomyService {
       .limit(20) as Promise<TaxonomyItem[]>;
   }
 
-  async findBySlug(type: string, slug: string): Promise<TaxonomyItem> {
-    const cacheKey = `slug:${type}:${slug}`;
+  async findBySlug(
+    type: string,
+    slug: string,
+    group?: string,
+  ): Promise<TaxonomyItem> {
+    const cacheKey = `slug:${type}:${slug}:${group ?? 'all'}`;
     const cached = this.cache.get<TaxonomyItem>(cacheKey);
     if (cached) return cached;
 
     const table = this.getTable(type);
-    const [item] = await this.db
-      .select()
-      .from(table)
-      .where(eq(table.slug, slug))
-      .limit(1);
+    const where =
+      type === 'genres' && group
+        ? and(eq(table.slug, slug), eq((table as typeof genres).group, group))
+        : eq(table.slug, slug);
+
+    const [item] = await this.db.select().from(table).where(where).limit(1);
     if (!item) throw new NotFoundException(`${type} not found`);
     this.cache.set(cacheKey, item);
     return item as TaxonomyItem;

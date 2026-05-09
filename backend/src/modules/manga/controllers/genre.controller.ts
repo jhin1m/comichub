@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   ParseIntPipe,
   UseGuards,
@@ -18,6 +19,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { TaxonomyService } from '../services/taxonomy.service.js';
 import { CreateTaxonomyDto, UpdateTaxonomyDto } from '../dto/taxonomy.dto.js';
@@ -37,20 +39,27 @@ export class GenreController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'List all genres' })
+  @ApiOperation({ summary: 'List genres (filter by group, default: genre)' })
+  @ApiQuery({
+    name: 'group',
+    required: false,
+    enum: ['genre', 'theme', 'format'],
+    description:
+      'Discriminator for the genres taxonomy table. Defaults to `genre` so user-facing filters only show real categories (Action, Romance, ...). Pass `theme` to retrieve sub-classification tags (~177 entries) imported from upstream sources.',
+  })
   @ApiResponse({ status: 200, description: 'Genre list' })
-  findAll() {
-    return this.taxonomyService.findAll('genres');
+  findAll(@Query('group') group?: string) {
+    return this.taxonomyService.findAll('genres', group ?? 'genre');
   }
 
   @Public()
   @Get(':slug')
-  @ApiOperation({ summary: 'Get genre by slug' })
+  @ApiOperation({ summary: 'Get genre by slug (only group=genre)' })
   @ApiParam({ name: 'slug', example: 'action' })
   @ApiResponse({ status: 200, description: 'Genre detail' })
   @ApiResponse({ status: 404, description: 'Genre not found' })
   findOne(@Param('slug') slug: string) {
-    return this.taxonomyService.findBySlug('genres', slug);
+    return this.taxonomyService.findBySlug('genres', slug, 'genre');
   }
 
   @ApiBearerAuth()
