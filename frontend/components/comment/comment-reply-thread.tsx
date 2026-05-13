@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { commentApi } from '@/lib/api/comment.api';
 import { useAuth } from '@/contexts/auth.context';
@@ -49,6 +49,20 @@ export function CommentReplyThread({
     }
   };
 
+  // Auto-surface replies when the parent's count grows (e.g. top-level reply
+  // posted → section revalidate → replyCount prop increases). Without this,
+  // the freshly-posted reply stays hidden behind a "View 1 reply" stub until
+  // the user clicks — feels like the reply was lost.
+  const prevReplyCount = useRef(replyCount);
+  useEffect(() => {
+    if (replyCount > prevReplyCount.current) {
+      setExpanded(true);
+      loadReplies(1);
+    }
+    prevReplyCount.current = replyCount;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replyCount]);
+
   const handleCommentDeleted = async (id: number) => {
     const snapshot = replies;
     const snapshotTotal = total;
@@ -78,6 +92,11 @@ export function CommentReplyThread({
       likesCount: 0,
       dislikesCount: 0,
       parentId: replyParentId,
+      isPinned: false,
+      pinnedAt: null,
+      editedAt: null,
+      mentionedUserIds: [],
+      moderationStatus: 'approved',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       userName: user.name,

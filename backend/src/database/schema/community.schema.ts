@@ -8,6 +8,7 @@ import {
   timestamp,
   numeric,
   boolean,
+  jsonb,
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
@@ -30,6 +31,32 @@ export const reportStatusEnum = pgEnum('report_status', [
   'rejected',
 ]);
 
+// Comment moderation status — drives visibility filter
+export const moderationStatusEnum = pgEnum('moderation_status', [
+  'pending',
+  'approved',
+  'flagged',
+  'rejected',
+]);
+
+// Comment report reasons
+export const commentReportReasonEnum = pgEnum('comment_report_reason', [
+  'spam',
+  'harassment',
+  'hate_speech',
+  'sexual_content',
+  'spoiler',
+  'misinformation',
+  'other',
+]);
+
+// Comment report lifecycle — separate from existing `report_status` to allow `dismissed`
+export const commentReportStatusEnum = pgEnum('comment_report_status', [
+  'pending',
+  'resolved',
+  'dismissed',
+]);
+
 // comments — polymorphic (commentable_type: manga|chapter), supports nesting
 export const comments = pgTable(
   'comments',
@@ -45,12 +72,30 @@ export const comments = pgTable(
     content: text('content').notNull(),
     likesCount: integer('likes_count').default(0).notNull(),
     dislikesCount: integer('dislikes_count').default(0).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at')
+    // Pin: max 3 per (commentableType, commentableId), FIFO. pinnedBy=admin user.
+    isPinned: boolean('is_pinned').default(false).notNull(),
+    pinnedAt: timestamp('pinned_at', { withTimezone: true }),
+    pinnedBy: integer('pinned_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    // Edited indicator: distinct from updatedAt (which fires on every mutation incl. like/dislike).
+    editedAt: timestamp('edited_at', { withTimezone: true }),
+    // Mention IDs: parsed from sanitized HTML server-side, validated against users table.
+    mentionedUserIds: integer('mentioned_user_ids')
+      .array()
+      .default(sql`'{}'::int[]`)
+      .notNull(),
+    // Moderation: defaults to 'approved' so legacy + no-API-key paths auto-pass.
+    moderationStatus: moderationStatusEnum('moderation_status')
+      .default('approved')
+      .notNull(),
+    moderationScore: jsonb('moderation_score'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .notNull()
       .$onUpdateFn(() => new Date()),
-    deletedAt: timestamp('deleted_at'),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (table) => [
     index('comments_commentable_idx').on(
@@ -59,6 +104,66 @@ export const comments = pgTable(
     ),
     index('comments_parent_idx').on(table.parentId),
     index('comments_user_idx').on(table.userId),
+    // Pin-first sort: filter by commentable scope, fast lookup of pinned set.
+    index('comments_pinned_idx').on(
+      table.commentableType,
+      table.commentableId,
+      table.isPinned,
+    ),
+    index('comments_moderation_idx').on(table.moderationStatus),
+    // GIN for array contains query: "comments where I am mentioned".
+    // Concurrent index created in separate no-transaction migration (see 0023).
+    index('comments_mentioned_users_idx').using('gin', table.mentionedUserIds),
+  ],
+);
+
+// comment_revisions — public edit history, cap 10/comment with prune-oldest on insert.
+export const commentRevisions = pgTable(
+  'comment_revisions',
+  {
+    id: serial('id').primaryKey(),
+    commentId: integer('comment_id')
+      .notNull()
+      .references(() => comments.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    editedAt: timestamp('edited_at', { withTimezone: true }).defaultNow().notNull(),
+    // Editor preserved as SET NULL on user delete — anonymize, keep revision content.
+    editorId: integer('editor_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (table) => [
+    index('comment_revisions_comment_idx').on(table.commentId, table.editedAt),
+  ],
+);
+
+// comment_reports — user-submitted abuse reports, unique per (comment, reporter).
+export const commentReports = pgTable(
+  'comment_reports',
+  {
+    id: serial('id').primaryKey(),
+    commentId: integer('comment_id')
+      .notNull()
+      .references(() => comments.id, { onDelete: 'cascade' }),
+    reporterId: integer('reporter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    reason: commentReportReasonEnum('reason').notNull(),
+    details: text('details'),
+    status: commentReportStatusEnum('status').default('pending').notNull(),
+    resolvedBy: integer('resolved_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // Prevent spam: one report per (comment, reporter) regardless of status.
+    uniqueIndex('comment_reports_unique_idx').on(
+      table.commentId,
+      table.reporterId,
+    ),
+    index('comment_reports_status_idx').on(table.status, table.createdAt),
   ],
 );
 
@@ -230,6 +335,10 @@ export const stickers = pgTable('stickers', {
 
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+export type CommentRevision = typeof commentRevisions.$inferSelect;
+export type NewCommentRevision = typeof commentRevisions.$inferInsert;
+export type CommentReport = typeof commentReports.$inferSelect;
+export type NewCommentReport = typeof commentReports.$inferInsert;
 export type Rating = typeof ratings.$inferSelect;
 export type Follow = typeof follows.$inferSelect;
 export type NewFollow = typeof follows.$inferInsert;

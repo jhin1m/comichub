@@ -13,6 +13,7 @@ import type { NotificationQueryDto } from './dto/notification-query.dto.js';
 import type { NewChapterEvent } from './events/new-chapter.event.js';
 import type { CommentReplyEvent } from './events/comment-reply.event.js';
 import type { CommentLikeEvent } from './events/comment-like.event.js';
+import type { CommentMentionEvent } from './events/comment-mention.event.js';
 import { DiscordWebhookService } from './discord/discord-webhook.service.js';
 import { SseConnectionManagerService } from './sse-connection-manager.service.js';
 
@@ -49,6 +50,25 @@ export class NotificationService {
       replyAuthorAvatar: event.replyAuthorAvatar,
       replyContent: event.replyContent,
       mangaId: event.mangaId,
+      mangaSlug: event.mangaSlug,
+    });
+  }
+
+  @OnEvent('comment.mentioned')
+  async handleCommentMention(event: CommentMentionEvent): Promise<void> {
+    await this.createSingle(event.mentionedUserId, 'comment.mentioned', {
+      commentId: event.commentId,
+      mentionerName: event.mentionerName,
+      mentionerAvatar: event.mentionerAvatar,
+      mentionPreview: event.mentionPreview,
+      mangaSlug: event.mangaSlug,
+    });
+    this.sseManager.pushToUser(event.mentionedUserId, {
+      type: 'comment.mentioned',
+      commentId: event.commentId,
+      mentionerName: event.mentionerName,
+      mentionerAvatar: event.mentionerAvatar,
+      mentionPreview: event.mentionPreview,
       mangaSlug: event.mangaSlug,
     });
   }

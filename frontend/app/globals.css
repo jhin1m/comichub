@@ -51,6 +51,16 @@ h1, h2, h3, h4 {
   font-family: 'Rajdhani', sans-serif;
 }
 
+/* Comment mention spans — rendered from sanitized HTML */
+.mention {
+  color: var(--accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+.mention:hover {
+  text-decoration: underline;
+}
+
 /* Comment spoiler tags */
 .spoiler {
   background-color: currentColor;

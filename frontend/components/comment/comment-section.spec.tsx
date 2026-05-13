@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '@/tests/test-utils';
@@ -6,6 +6,14 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/tests/mocks/handlers';
 import { CommentSection } from './comment-section';
 import type { Comment, PaginatedComments } from '@/types/comment.types';
+
+// Mock EventSource for SSE streaming.
+class MockEventSource {
+  addEventListener = vi.fn();
+  removeEventListener = vi.fn();
+  close = vi.fn();
+}
+global.EventSource = MockEventSource as any;
 
 // TipTap (CommentEditor) needs DOM features happy-dom can't fully emulate.
 // Replace it with a minimal stub so we can exercise CommentSection in isolation.
@@ -51,6 +59,11 @@ function makeComment(overrides: Partial<Comment> = {}): Comment {
     likesCount: 0,
     dislikesCount: 0,
     parentId: null,
+    isPinned: false,
+    pinnedAt: null,
+    editedAt: null,
+    mentionedUserIds: [],
+    moderationStatus: 'approved',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     userName: 'Alice',

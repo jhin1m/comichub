@@ -1,13 +1,14 @@
 'use client';
 
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import { commentApi } from '@/lib/api/comment.api';
 import { useAuth } from '@/contexts/auth.context';
 import { commentListKey } from '@/lib/swr/swr-keys';
-import type { Comment, PaginatedComments, CommentSort } from '@/types/comment.types';
+import { useCommentStream } from './use-comment-stream';
+import type { PaginatedComments, CommentSort } from '@/types/comment.types';
 const CommentEditor = lazy(() => import('./comment-editor').then(m => ({ default: m.CommentEditor })));
 import { CommentItem } from './comment-item';
 import { CommentReplyThread } from './comment-reply-thread';
@@ -47,6 +48,7 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
 
   const [sort, setSort] = useState<CommentSort>('best');
   const [page, setPage] = useState(1);
+  const [newCount, setNewCount] = useState(0);
 
   // Wait for auth to settle before fetching: isLiked/isDisliked depend on the
   // bearer token being present. `null` key short-circuits SWR.
@@ -57,7 +59,18 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
   const { data, isLoading, error, mutate } = useSWR<PaginatedComments>(swrKey, {
     onError: () => toast.error('Failed to load comments'),
   });
-  const { mutate: globalMutate } = useSWRConfig();
+
+  const handleStreamNewComment = useCallback(() => {
+    setNewCount((c) => c + 1);
+  }, []);
+
+  useCommentStream(commentableType, commentableId, handleStreamNewComment);
+
+  const handleShowNewComments = () => {
+    setNewCount(0);
+    mutate();
+    document.getElementById('comments-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const comments = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -77,72 +90,34 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
   const handleNewComment = async (html: string) => {
     if (!user) return;
 
-    // Force sort=newest + page=1 BEFORE the optimistic write so the placeholder
-    // lands in the cache slot the next render will read. Without this swap the
-    // new comment would land in the previous (e.g. `best`) cache and flash
-    // out when React re-renders into the new sort.
-    const targetSort: CommentSort = 'newest';
-    const targetPage = 1;
-    if (sort !== targetSort) setSort(targetSort);
-    if (page !== targetPage) setPage(targetPage);
-
-    const targetKey = commentListKey(commentableType, commentableId, targetPage, LIMIT, targetSort);
-
-    // Negative timestamp ID — won't collide with the positive serial PK from
-    // the DB, so the placeholder is uniquely identifiable until the server
-    // response replaces it.
-    const placeholder: Comment = {
-      id: -Date.now(),
-      userId: user.id,
-      content: html,
-      likesCount: 0,
-      dislikesCount: 0,
-      parentId: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      userName: user.name,
-      userAvatar: user.avatar ?? null,
-      userRole: user.role,
-      isLiked: false,
-      isDisliked: false,
-      repliesCount: 0,
-    };
-
     try {
-      // Target the new key explicitly via global mutate. The bound `mutate`
-      // from useSWR still references the previous key in this tick.
-      await globalMutate<PaginatedComments>(
-        targetKey,
-        async (current?: PaginatedComments) => {
-          const real = await commentApi.create({ commentableType, commentableId, content: html });
-          const realComment: Comment = {
-            ...placeholder,
-            ...real,
-            repliesCount: real.repliesCount ?? 0,
-          };
-          if (!current) {
-            return { data: [realComment], total: 1, page: targetPage, limit: LIMIT };
-          }
-          // Drop the placeholder if it landed in the cache before the response.
-          const filtered = current.data.filter((c) => c.id !== placeholder.id);
-          return { ...current, data: [realComment, ...filtered], total: current.total + 1 };
-        },
-        {
-          optimisticData: (current?: PaginatedComments) =>
-            current
-              ? { ...current, data: [placeholder, ...current.data], total: current.total + 1 }
-              : { data: [placeholder], total: 1, page: targetPage, limit: LIMIT },
-          rollbackOnError: true,
-          revalidate: false,
-          populateCache: true,
-        },
-      );
+      await commentApi.create({ commentableType, commentableId, content: html });
+
+      // Post-create UX rule: surface the user's comment immediately.
+      // - 'best' sort orders by likesCount → a fresh 0-like comment lands at the
+      //   bottom and the user thinks the post failed. Switch to 'newest' so it
+      //   pops to position 1.
+      // - SWR refetches automatically when the swrKey changes (sort/page) — no
+      //   manual mutate() needed for that branch.
+      // - For users already on 'newest' page 1, swap nothing changes → call
+      //   mutate() explicitly to revalidate.
+      if (sort !== 'newest' || page !== 1) {
+        if (sort !== 'newest') setSort('newest');
+        if (page !== 1) setPage(1);
+      } else {
+        await mutate();
+      }
       toast.success('Comment posted');
     } catch {
       toast.error('Failed to post comment');
       throw new Error('Failed to post comment');
     }
   };
+
+  /** Revalidate after pin/unpin so the comment moves into pin-priority position. */
+  const handlePinToggled = useCallback(() => {
+    mutate();
+  }, [mutate]);
 
   const handleCommentDeleted = async (commentId: number) => {
     try {
@@ -237,6 +212,18 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
         </Suspense>
       </div>
 
+      {/* New comments banner (SSE) */}
+      {newCount > 0 && (
+        <div className="sticky top-2 flex justify-center z-10 mb-2">
+          <button
+            onClick={handleShowNewComments}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-semibold shadow-lg hover:bg-accent-hover transition-colors"
+          >
+            ↑ {newCount} new {newCount === 1 ? 'comment' : 'comments'}
+          </button>
+        </div>
+      )}
+
       {/* Comment list */}
       {loading ? (
         <CommentSkeleton />
@@ -262,6 +249,7 @@ export function CommentSection({ commentableType, commentableId }: CommentSectio
                   commentableId={commentableId}
                   onReplyPosted={handleTopLevelReply}
                   onCommentDeleted={handleCommentDeleted}
+                  onPinToggled={handlePinToggled}
                   depth={0}
                   highlighted={highlightId === comment.id}
                 />

@@ -1,14 +1,28 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import DOMPurify from 'dompurify';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { ThumbsUpIcon, ThumbsDownIcon, ArrowBendUpLeftIcon, DotsThreeOutlineIcon, PencilSimpleIcon, TrashIcon, LinkSimpleIcon } from '@phosphor-icons/react';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import {
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  ArrowBendUpLeftIcon,
+  DotsThreeOutlineIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+  LinkSimpleIcon,
+  PushPinIcon,
+  FlagIcon,
+  ClockCounterClockwiseIcon,
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Avatar } from '@/components/ui/avatar';
 import { CommentEditor } from './comment-editor';
+import { RevisionHistoryModal } from './revision-history-modal';
+import { ReportCommentModal } from './report-comment-modal';
 import { commentApi } from '@/lib/api/comment.api';
-import { useAuth } from '@/contexts/auth.context';
+import { useAuth } from '@/hooks/use-auth';
+import { sanitizeCommentHtml } from '@/lib/comment/render-html';
 import type { Comment } from '@/types/comment.types';
 import { cn, formatRelativeDate } from '@/lib/utils';
 
@@ -35,13 +49,10 @@ interface CommentItemProps {
   comment: Comment;
   commentableType: 'manga' | 'chapter';
   commentableId: number;
-  // Reply path: parent (comment-reply-thread) owns the API call + optimistic
-  // insert. We just emit the html upward. Parent throws on failure so the
-  // editor keeps its content for retry.
   onReplyPosted?: (html: string, parentId: number) => Promise<void>;
-  // Delete path: parent owns the API call + optimistic remove. Returning a
-  // rejected promise surfaces the failure so we don't toast prematurely.
   onCommentDeleted?: (commentId: number) => Promise<void>;
+  /** Called after pin/unpin so parent can revalidate */
+  onPinToggled?: () => void;
   depth?: number;
   highlighted?: boolean;
 }
@@ -52,6 +63,7 @@ export function CommentItem({
   commentableId,
   onReplyPosted,
   onCommentDeleted,
+  onPinToggled,
   depth = 0,
   highlighted = false,
 }: CommentItemProps) {
@@ -67,6 +79,9 @@ export function CommentItem({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [flash, setFlash] = useState(highlighted);
+  const [isPinned, setIsPinned] = useState(comment.isPinned);
+  const [showRevisions, setShowRevisions] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   const isOwner = user?.id === comment.userId;
   const isAdmin = user?.role === 'admin';
@@ -129,10 +144,6 @@ export function CommentItem({
   const handleDelete = async () => {
     if (!onCommentDeleted) return;
     setConfirmingDelete(false);
-    // Parent removes us from its list and surfaces toasts on success/failure.
-    // Swallow rejection here so onClick doesn't see an unhandled promise; the
-    // parent has already toasted. On rollback we re-render normally with
-    // confirmingDelete cleared.
     try {
       await onCommentDeleted(comment.id);
     } catch {
@@ -146,7 +157,22 @@ export function CommentItem({
     toast.success('Link copied');
   };
 
-  const hasMenuItems = isOwner || isAdmin;
+  const handlePinToggle = async () => {
+    try {
+      if (isPinned) {
+        await commentApi.unpin(comment.id);
+        setIsPinned(false);
+        toast.success('Comment unpinned');
+      } else {
+        await commentApi.pin(comment.id);
+        setIsPinned(true);
+        toast.success('Comment pinned');
+      }
+      onPinToggled?.();
+    } catch {
+      toast.error('Could not complete this action');
+    }
+  };
 
   return (
     <div
@@ -166,22 +192,68 @@ export function CommentItem({
           className={cn(comment.userRole === 'admin' && 'ring-1 ring-accent')}
         />
         <div className="flex-1 min-w-0">
-          {/* Header: name + role badge + time + collapse */}
+          {/* Header: name + role badge + time + pin badge + collapse */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-primary font-semibold text-xs">{comment.userName}</span>
               <RoleBadge role={comment.userRole} />
               <span className="text-muted text-[11px]" title={new Date(comment.createdAt).toLocaleString()}>
                 {formatRelativeDate(comment.createdAt)}
               </span>
+              {/* "edited" label */}
+              {comment.editedAt && (
+                <button
+                  onClick={() => setShowRevisions(true)}
+                  className="flex items-center gap-0.5 text-muted text-[10px] hover:text-secondary transition-colors"
+                  title="View edit history"
+                >
+                  <ClockCounterClockwiseIcon size={10} />
+                  <span>edited</span>
+                </button>
+              )}
+              {/* Moderation status badges (owner only) */}
+              {isOwner && comment.moderationStatus === 'pending' && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-warning/20 text-warning leading-none">
+                  pending review
+                </span>
+              )}
+              {isOwner && comment.moderationStatus === 'rejected' && (
+                <Tooltip.Provider delayDuration={200}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-muted/20 text-muted leading-none cursor-help">
+                        hidden
+                      </span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="bg-elevated border border-default rounded px-2 py-1 text-xs text-secondary shadow-lg z-50"
+                        sideOffset={4}
+                      >
+                        This comment violated guidelines and was hidden.
+                        <Tooltip.Arrow className="fill-elevated" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+              )}
             </div>
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              aria-label={collapsed ? 'Expand comment' : 'Collapse comment'}
-              className="text-muted hover:text-primary text-xs font-mono leading-none transition-colors px-1"
-            >
-              {collapsed ? '+' : '–'}
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Pinned badge */}
+              {isPinned && (
+                <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-accent-muted text-accent leading-none">
+                  <PushPinIcon size={9} weight="fill" />
+                  Pinned
+                </span>
+              )}
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                aria-label={collapsed ? 'Expand comment' : 'Collapse comment'}
+                className="text-muted hover:text-primary text-xs font-mono leading-none transition-colors px-1"
+              >
+                {collapsed ? '+' : '–'}
+              </button>
+            </div>
           </div>
 
           {!collapsed && (
@@ -198,8 +270,8 @@ export function CommentItem({
                 </div>
               ) : (
                 <div
-                  className="text-primary text-xs leading-relaxed mt-0.5 prose prose-invert prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+                  className="text-primary text-xs leading-relaxed mt-0.5 prose prose-invert prose-sm max-w-none [&_.mention]:text-accent [&_.mention]:font-medium [&_.mention]:hover:underline [&_.mention]:cursor-pointer"
+                  dangerouslySetInnerHTML={{ __html: sanitizeCommentHtml(content) }}
                   onClick={handleSpoilerClick}
                 />
               )}
@@ -258,7 +330,7 @@ export function CommentItem({
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Portal>
                     <DropdownMenu.Content
-                      className="bg-elevated border border-default rounded-md shadow-lg py-1 z-50 min-w-[120px] animate-in fade-in-0 zoom-in-95"
+                      className="bg-elevated border border-default rounded-md shadow-lg py-1 z-50 min-w-[130px] animate-in fade-in-0 zoom-in-95"
                       sideOffset={4}
                       align="start"
                     >
@@ -268,6 +340,7 @@ export function CommentItem({
                       >
                         <LinkSimpleIcon size={11} /> Copy link
                       </DropdownMenu.Item>
+
                       {isOwner && (
                         <DropdownMenu.Item
                           onClick={() => setShowEdit(true)}
@@ -276,6 +349,28 @@ export function CommentItem({
                           <PencilSimpleIcon size={11} /> Edit
                         </DropdownMenu.Item>
                       )}
+
+                      {/* Report — logged-in non-owner */}
+                      {user && !isOwner && (
+                        <DropdownMenu.Item
+                          onClick={() => setShowReport(true)}
+                          className="px-3 py-1.5 text-xs text-secondary hover:bg-hover hover:text-primary transition-colors cursor-pointer outline-none flex items-center gap-1.5"
+                        >
+                          <FlagIcon size={11} /> Report
+                        </DropdownMenu.Item>
+                      )}
+
+                      {/* Admin: pin/unpin */}
+                      {isAdmin && (
+                        <DropdownMenu.Item
+                          onClick={handlePinToggle}
+                          className="px-3 py-1.5 text-xs text-secondary hover:bg-hover hover:text-primary transition-colors cursor-pointer outline-none flex items-center gap-1.5"
+                        >
+                          <PushPinIcon size={11} weight={isPinned ? 'fill' : 'regular'} />
+                          {isPinned ? 'Unpin' : 'Pin'}
+                        </DropdownMenu.Item>
+                      )}
+
                       {(isOwner || isAdmin) && (
                         <DropdownMenu.Item
                           onClick={() => setConfirmingDelete(true)}
@@ -314,6 +409,18 @@ export function CommentItem({
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <RevisionHistoryModal
+        commentId={comment.id}
+        open={showRevisions}
+        onOpenChange={setShowRevisions}
+      />
+      <ReportCommentModal
+        commentId={comment.id}
+        open={showReport}
+        onOpenChange={setShowReport}
+      />
     </div>
   );
 }

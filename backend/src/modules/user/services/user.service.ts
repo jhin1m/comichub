@@ -4,7 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, ilike, or, sql, count } from 'drizzle-orm';
+import { and, eq, ilike, isNull, or, sql, count, inArray } from 'drizzle-orm';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
@@ -242,6 +242,46 @@ export class UserService {
         ? `User banned until ${bannedUntil.toISOString()}`
         : 'User unbanned',
     };
+  }
+
+  /**
+   * Search users by name prefix for mention autocomplete (@-typeahead).
+   * Returns minimal projection: only id/uuid/name/avatar. Auth-required at controller layer.
+   */
+  async searchByName(
+    query: string,
+    limit = 10,
+  ): Promise<
+    Array<{ id: number; uuid: string; name: string; avatar: string | null }>
+  > {
+    const q = query.trim();
+    if (q.length < 1) return [];
+    const safe = escapeLike(q);
+    return this.db
+      .select({
+        id: users.id,
+        uuid: users.uuid,
+        name: users.name,
+        avatar: users.avatar,
+      })
+      .from(users)
+      .where(
+        and(ilike(users.name, `${safe}%`), isNull(users.deletedAt)),
+      )
+      .orderBy(users.name)
+      .limit(Math.min(Math.max(limit, 1), 20));
+  }
+
+  /**
+   * Lookup users by IDs for mention validation: drops invalid/deleted/duplicate.
+   */
+  async findExistingByIds(ids: number[]): Promise<number[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(inArray(users.id, ids), isNull(users.deletedAt)));
+    return rows.map((r) => r.id);
   }
 
   async deleteUser(id: number): Promise<{ message: string }> {

@@ -25,3 +25,11 @@ export const commentListKey = (
   sort: CommentSort,
 ): string =>
   `/${type === 'manga' ? 'manga' : 'chapters'}/${id}/comments?page=${page}&limit=${limit}&sort=${sort}`;
+
+// Phase 4: revision history key
+export const commentRevisionsKey = (commentId: number): [string, number] =>
+  ['comment-revisions', commentId];
+
+// Phase 3: admin reports list key
+export const adminReportsKey = (page: number, status: string): [string, number, string] =>
+  ['admin-comment-reports', page, status];

@@ -13,6 +13,7 @@ import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import {
   comments,
   commentLikes,
+  commentRevisions,
 } from '../../../database/schema/community.schema.js';
 import { users } from '../../../database/schema/user.schema.js';
 import { manga, chapters } from '../../../database/schema/manga.schema.js';
@@ -24,8 +25,9 @@ import {
   CommentSort,
   type CommentQueryDto,
 } from '../dto/create-comment.dto.js';
-import { CommentReplyEvent } from '../../notification/events/comment-reply.event.js';
 import { CommentLikeEvent } from '../../notification/events/comment-like.event.js';
+import { CommentMentionService } from './comment-mention.service.js';
+import { ModerationService } from './moderation.service.js';
 
 const ALLOWED_TAGS = [
   'b',
@@ -42,7 +44,8 @@ const ALLOWED_TAGS = [
 const ALLOWED_ATTRIBUTES: sanitizeHtml.IOptions['allowedAttributes'] = {
   a: ['href', 'target', 'rel'],
   img: ['src', 'alt'],
-  span: ['class'],
+  // data-type/data-id/data-label needed for TipTap Mention extension nodes.
+  span: ['class', 'data-type', 'data-id', 'data-label'],
 };
 
 const ALLOWED_IMG_SRC_PATTERN = /^https:\/\//i;
@@ -50,6 +53,11 @@ const ALLOWED_IMG_SRC_PATTERN = /^https:\/\//i;
 // C4: explicit class whitelist — free-form class attr lets attackers inject
 // Tailwind utilities (e.g. `fixed inset-0 z-[9999]`) to hijack reader UI.
 const SPAN_CLASS_WHITELIST = new Set(['spoiler', 'highlight', 'mention']);
+
+// Mention data attrs: strict validation prevents inject of foreign markup.
+// data-id must be a positive integer (our serial PK); data-label alphanumeric + underscore/dash.
+const MENTION_ID_PATTERN = /^[1-9]\d*$/;
+const MENTION_LABEL_PATTERN = /^[A-Za-z0-9_.-]{1,50}$/;
 
 function sanitizeContent(content: string): string {
   return sanitizeHtml(content, {
@@ -76,6 +84,24 @@ function sanitizeContent(content: string): string {
           .filter((c) => SPAN_CLASS_WHITELIST.has(c));
         const newAttribs: Record<string, string> = {};
         if (kept.length) newAttribs.class = kept.join(' ');
+
+        // Preserve mention markup only if class includes 'mention' AND data-* shape valid.
+        if (kept.includes('mention')) {
+          const dataType = attribs['data-type'];
+          const dataId = attribs['data-id'];
+          const dataLabel = attribs['data-label'];
+          if (
+            dataType === 'mention' &&
+            typeof dataId === 'string' &&
+            MENTION_ID_PATTERN.test(dataId) &&
+            typeof dataLabel === 'string' &&
+            MENTION_LABEL_PATTERN.test(dataLabel)
+          ) {
+            newAttribs['data-type'] = 'mention';
+            newAttribs['data-id'] = dataId;
+            newAttribs['data-label'] = dataLabel;
+          }
+        }
         return { tagName, attribs: newAttribs };
       },
     },
@@ -101,6 +127,11 @@ const COMMENT_USER_SELECT = {
   likesCount: comments.likesCount,
   dislikesCount: comments.dislikesCount,
   parentId: comments.parentId,
+  isPinned: comments.isPinned,
+  pinnedAt: comments.pinnedAt,
+  editedAt: comments.editedAt,
+  mentionedUserIds: comments.mentionedUserIds,
+  moderationStatus: comments.moderationStatus,
   createdAt: comments.createdAt,
   updatedAt: comments.updatedAt,
   userName: users.name,
@@ -113,13 +144,51 @@ const COMMENT_USER_SELECT = {
 };
 
 const MAX_DEPTH = 3;
+const MAX_PINS_PER_THREAD = 3;
+const MAX_REVISIONS_PER_COMMENT = 10;
 
 @Injectable()
 export class CommentService {
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
     private readonly eventEmitter: EventEmitter2,
+    private readonly mentionService: CommentMentionService,
+    private readonly moderationService: ModerationService,
   ) {}
+
+  /**
+   * Resolve manga slug for an event payload — used by mention/reply/like emitters
+   * to give the FE a deep link without an extra round-trip.
+   */
+  private async resolveMangaSlug(
+    commentableType: string,
+    commentableId: number | null,
+  ): Promise<string | null> {
+    if (!commentableId) return null;
+    if (commentableType === 'manga') {
+      const [m] = await this.db
+        .select({ slug: manga.slug })
+        .from(manga)
+        .where(eq(manga.id, commentableId))
+        .limit(1);
+      return m?.slug ?? null;
+    }
+    if (commentableType === 'chapter') {
+      const [ch] = await this.db
+        .select({ mangaId: chapters.mangaId })
+        .from(chapters)
+        .where(eq(chapters.id, commentableId))
+        .limit(1);
+      if (!ch?.mangaId) return null;
+      const [m] = await this.db
+        .select({ slug: manga.slug })
+        .from(manga)
+        .where(eq(manga.id, ch.mangaId))
+        .limit(1);
+      return m?.slug ?? null;
+    }
+    return null;
+  }
 
   /** Attach isLiked/isDisliked to each comment for the given user */
   private async attachReactions<T extends { id: number }>(
@@ -181,7 +250,13 @@ export class CommentService {
         chapters,
         sql`CASE WHEN ${comments.commentableType} = 'chapter' THEN ${comments.commentableId} = ${chapters.id} ELSE NULL END`,
       )
-      .where(and(isNull(comments.parentId), isNull(comments.deletedAt)))
+      .where(
+        and(
+          isNull(comments.parentId),
+          isNull(comments.deletedAt),
+          eq(comments.moderationStatus, 'approved'),
+        ),
+      )
       .orderBy(desc(comments.createdAt))
       .limit(limit);
 
@@ -233,6 +308,26 @@ export class CommentService {
     });
   }
 
+  /**
+   * Build visibility predicate combining soft-delete + moderation rules:
+   *   public sees only `approved`; author sees their own at any status; admin sees all.
+   */
+  private buildVisibilityWhere(currentUserId?: number, isAdmin = false) {
+    if (isAdmin) {
+      return isNull(comments.deletedAt);
+    }
+    if (currentUserId) {
+      return and(
+        isNull(comments.deletedAt),
+        sql`(${comments.moderationStatus} = 'approved' OR ${comments.userId} = ${currentUserId})`,
+      );
+    }
+    return and(
+      isNull(comments.deletedAt),
+      eq(comments.moderationStatus, 'approved'),
+    );
+  }
+
   private async listComments(
     where: ReturnType<typeof and>,
     query: CommentQueryDto | PaginationDto,
@@ -245,7 +340,8 @@ export class CommentService {
         .from(comments)
         .leftJoin(users, eq(comments.userId, users.id))
         .where(where)
-        .orderBy(sortClause)
+        // Pinned items always lead — preserves admin-curated highlights across sort modes.
+        .orderBy(desc(comments.isPinned), sortClause)
         .limit(query.limit)
         .offset(query.offset),
       this.db
@@ -262,12 +358,13 @@ export class CommentService {
     mangaId: number,
     query: CommentQueryDto,
     currentUserId?: number,
+    isAdmin = false,
   ) {
     const where = and(
       eq(comments.commentableType, CommentableType.MANGA),
       eq(comments.commentableId, mangaId),
       isNull(comments.parentId),
-      isNull(comments.deletedAt),
+      this.buildVisibilityWhere(currentUserId, isAdmin),
     );
     return this.listComments(
       where,
@@ -281,12 +378,13 @@ export class CommentService {
     chapterId: number,
     query: CommentQueryDto,
     currentUserId?: number,
+    isAdmin = false,
   ) {
     const where = and(
       eq(comments.commentableType, CommentableType.CHAPTER),
       eq(comments.commentableId, chapterId),
       isNull(comments.parentId),
-      isNull(comments.deletedAt),
+      this.buildVisibilityWhere(currentUserId, isAdmin),
     );
     return this.listComments(
       where,
@@ -300,10 +398,11 @@ export class CommentService {
     commentId: number,
     pagination: PaginationDto,
     currentUserId?: number,
+    isAdmin = false,
   ) {
     const where = and(
       eq(comments.parentId, commentId),
-      isNull(comments.deletedAt),
+      this.buildVisibilityWhere(currentUserId, isAdmin),
     );
     return this.listComments(
       where,
@@ -334,6 +433,33 @@ export class CommentService {
     }
 
     const cleanContent = sanitizeContent(dto.content);
+    const mentionedUserIds = await this.mentionService.parseAndValidate(
+      cleanContent,
+      userId,
+    );
+
+    // Initial moderation status:
+    //  - moderation disabled → 'approved' (legacy fast path)
+    //  - moderation enabled  → 'pending' (listener finalizes async)
+    const initialStatus = this.moderationService.isEnabled()
+      ? 'pending'
+      : 'approved';
+
+    // Resolve enrichment BEFORE insert so the moderation listener can emit
+    // mention/reply notifications post-approval without a second DB lookup.
+    // Skip resolution when nothing downstream needs it — avoids a DB round-trip
+    // for the common case of a top-level comment with no mentions.
+    const needsEnrichment = mentionedUserIds.length > 0 || !!dto.parentId;
+    const [mangaSlug, replyTargetUserId] = needsEnrichment
+      ? await Promise.all([
+          this.resolveMangaSlug(dto.commentableType, dto.commentableId),
+          dto.parentId
+            ? this.findOrFail(dto.parentId).then((p) =>
+                p.userId && p.userId !== userId ? p.userId : null,
+              )
+            : Promise.resolve(null),
+        ])
+      : [null, null];
 
     const [comment] = await this.db
       .insert(comments)
@@ -343,72 +469,126 @@ export class CommentService {
         commentableId: dto.commentableId,
         parentId: dto.parentId ?? null,
         content: cleanContent,
+        mentionedUserIds,
+        moderationStatus: initialStatus,
       })
       .returning();
 
-    if (dto.parentId) {
-      const parent = await this.findOrFail(dto.parentId);
-      if (parent.userId && parent.userId !== userId) {
-        const event = new CommentReplyEvent();
-        event.commentId = dto.parentId;
-        event.replyAuthorName = userName ?? '';
-        event.replyAuthorAvatar = userAvatar ?? null;
-        event.replyContent = cleanContent.slice(0, 100);
-        event.mangaId =
-          dto.commentableType === CommentableType.MANGA
-            ? dto.commentableId
-            : null;
-        if (
-          dto.commentableType === CommentableType.MANGA &&
-          dto.commentableId
-        ) {
-          const [m] = await this.db
-            .select({ slug: manga.slug })
-            .from(manga)
-            .where(eq(manga.id, dto.commentableId))
-            .limit(1);
-          event.mangaSlug = m?.slug ?? null;
-        } else if (
-          dto.commentableType === CommentableType.CHAPTER &&
-          dto.commentableId
-        ) {
-          const [ch] = await this.db
-            .select({ mangaId: chapters.mangaId })
-            .from(chapters)
-            .where(eq(chapters.id, dto.commentableId))
-            .limit(1);
-          if (ch?.mangaId) {
-            const [m] = await this.db
-              .select({ slug: manga.slug })
-              .from(manga)
-              .where(eq(manga.id, ch.mangaId))
-              .limit(1);
-            event.mangaSlug = m?.slug ?? null;
-          } else {
-            event.mangaSlug = null;
-          }
-        } else {
-          event.mangaSlug = null;
-        }
-        event.commentOwnerId = parent.userId;
-        this.eventEmitter.emit('comment.replied', event);
-      }
-    }
+    // Moderation listener gates SSE broadcast + mention/reply notifications
+    // on approval — emitting those inline would leak rejected content.
+    this.eventEmitter.emit('comment.created', {
+      commentId: comment.id,
+      authorId: comment.userId,
+      content: cleanContent,
+      commentableType: comment.commentableType,
+      commentableId: comment.commentableId,
+      userName,
+      userAvatar,
+      mangaSlug,
+      mangaId:
+        dto.commentableType === CommentableType.MANGA
+          ? dto.commentableId
+          : null,
+      mentionedUserIds,
+      parentCommentId: dto.parentId ?? null,
+      replyTargetUserId,
+    });
 
     return comment;
   }
 
-  async update(commentId: number, userId: number, dto: UpdateCommentDto) {
+  async update(
+    commentId: number,
+    userId: number,
+    dto: UpdateCommentDto,
+    userName?: string,
+    userAvatar?: string | null,
+  ) {
     const comment = await this.findOrFail(commentId);
     if (comment.userId !== userId) {
       throw new ForbiddenException("Cannot edit another user's comment");
     }
 
-    const [updated] = await this.db
-      .update(comments)
-      .set({ content: sanitizeContent(dto.content) })
-      .where(eq(comments.id, commentId))
-      .returning();
+    const cleanContent = sanitizeContent(dto.content);
+    const newMentionIds = await this.mentionService.parseAndValidate(
+      cleanContent,
+      userId,
+    );
+    const oldMentionIds = new Set(comment.mentionedUserIds ?? []);
+    const freshlyMentioned = newMentionIds.filter(
+      (id) => !oldMentionIds.has(id),
+    );
+
+    // When moderation is enabled, reset status to 'pending' so the edited content
+    // re-runs the classifier. Prevents the "post benign, edit to abusive" bypass.
+    const moderationReset = this.moderationService.isEnabled();
+
+    const updated = await this.db.transaction(async (tx) => {
+      // Phase 4: record snapshot of OLD content before update (cap 10, prune oldest FIFO).
+      // Order by `id` instead of `editedAt` for deterministic prune when timestamps tie.
+      await tx.insert(commentRevisions).values({
+        commentId,
+        content: comment.content,
+        editedAt: comment.editedAt ?? comment.createdAt,
+        editorId: comment.userId,
+      });
+      const allRevs = await tx
+        .select({ id: commentRevisions.id })
+        .from(commentRevisions)
+        .where(eq(commentRevisions.commentId, commentId))
+        .orderBy(asc(commentRevisions.id));
+      if (allRevs.length > MAX_REVISIONS_PER_COMMENT) {
+        const toDelete = allRevs
+          .slice(0, allRevs.length - MAX_REVISIONS_PER_COMMENT)
+          .map((r) => r.id);
+        await tx
+          .delete(commentRevisions)
+          .where(inArray(commentRevisions.id, toDelete));
+      }
+
+      const [row] = await tx
+        .update(comments)
+        .set({
+          content: cleanContent,
+          editedAt: new Date(),
+          mentionedUserIds: newMentionIds,
+          ...(moderationReset
+            ? { moderationStatus: 'pending' as const, moderationScore: null }
+            : {}),
+        })
+        .where(eq(comments.id, commentId))
+        .returning();
+      return row;
+    });
+
+    // Emit comment.created so the moderation listener can:
+    //   1. Re-moderate edited content (if enabled) before re-broadcast.
+    //   2. Fire CommentMentionEvent for FRESH mentions post-approval.
+    // Skip emission when moderation disabled AND no fresh mentions — nothing
+    // for the listener to do, and we don't want to spam SSE on every minor edit.
+    if (freshlyMentioned.length > 0 || moderationReset) {
+      const mangaSlug = await this.resolveMangaSlug(
+        comment.commentableType,
+        comment.commentableId,
+      );
+      this.eventEmitter.emit('comment.created', {
+        commentId: updated.id,
+        authorId: updated.userId,
+        content: cleanContent,
+        commentableType: updated.commentableType,
+        commentableId: updated.commentableId,
+        userName,
+        userAvatar,
+        mangaSlug,
+        mangaId:
+          comment.commentableType === CommentableType.MANGA
+            ? comment.commentableId
+            : null,
+        mentionedUserIds: freshlyMentioned,
+        parentCommentId: null,
+        replyTargetUserId: null,
+      });
+    }
 
     return updated;
   }
@@ -582,6 +762,102 @@ export class CommentService {
 
   async toggleDislike(commentId: number, userId: number) {
     return this.toggleReaction(commentId, userId, true);
+  }
+
+  /**
+   * Pin a comment. FIFO: if thread already has MAX_PINS_PER_THREAD pinned,
+   * the oldest pin is auto-released to keep slot count bounded.
+   *
+   * Advisory xact lock keyed by (commentableType, commentableId) serializes
+   * concurrent admin pins so the FIFO cap is never violated.
+   */
+  async pinComment(commentId: number, adminId: number) {
+    const target = await this.findOrFail(commentId);
+    return this.db.transaction(async (tx) => {
+      // Two-key advisory lock: scope key (type+id hash) + isolation namespace constant.
+      const lockKey = sql`hashtextextended(${target.commentableType} || ':' || ${target.commentableId}::text, 0)`;
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
+
+      // Fetch currently pinned set for same commentable scope, oldest first.
+      const pinned = await tx
+        .select({ id: comments.id })
+        .from(comments)
+        .where(
+          and(
+            eq(comments.commentableType, target.commentableType),
+            eq(comments.commentableId, target.commentableId),
+            eq(comments.isPinned, true),
+            isNull(comments.deletedAt),
+          ),
+        )
+        .orderBy(asc(comments.pinnedAt));
+
+      // If already pinned: no-op (idempotent).
+      if (pinned.some((p) => p.id === commentId)) {
+        return target;
+      }
+
+      if (pinned.length >= MAX_PINS_PER_THREAD) {
+        await tx
+          .update(comments)
+          .set({ isPinned: false, pinnedAt: null, pinnedBy: null })
+          .where(eq(comments.id, pinned[0].id));
+      }
+
+      const [row] = await tx
+        .update(comments)
+        .set({ isPinned: true, pinnedAt: new Date(), pinnedBy: adminId })
+        .where(eq(comments.id, commentId))
+        .returning();
+      return row;
+    });
+  }
+
+  async unpinComment(commentId: number) {
+    await this.findOrFail(commentId);
+    const [row] = await this.db
+      .update(comments)
+      .set({ isPinned: false, pinnedAt: null, pinnedBy: null })
+      .where(eq(comments.id, commentId))
+      .returning();
+    return row;
+  }
+
+  /**
+   * Public edit history (capped at MAX_REVISIONS_PER_COMMENT, oldest pruned at insert time).
+   * Returns reverse-chronological list with editor display info.
+   *
+   * Visibility mirrors list endpoints: admin sees all, author sees own at any
+   * moderation status, public sees only `approved`. Without this gate a
+   * rejected comment's original abusive content would leak via revisions.
+   */
+  async getRevisions(
+    commentId: number,
+    currentUserId?: number,
+    isAdmin = false,
+  ) {
+    const comment = await this.findOrFail(commentId);
+    if (!isAdmin) {
+      const isAuthor =
+        currentUserId != null && comment.userId === currentUserId;
+      if (!isAuthor && comment.moderationStatus !== 'approved') {
+        throw new NotFoundException('Comment not found');
+      }
+    }
+    return this.db
+      .select({
+        id: commentRevisions.id,
+        content: commentRevisions.content,
+        editedAt: commentRevisions.editedAt,
+        editorId: commentRevisions.editorId,
+        editorName: users.name,
+        editorAvatar: users.avatar,
+      })
+      .from(commentRevisions)
+      .leftJoin(users, eq(commentRevisions.editorId, users.id))
+      .where(eq(commentRevisions.commentId, commentId))
+      .orderBy(desc(commentRevisions.editedAt))
+      .limit(MAX_REVISIONS_PER_COMMENT);
   }
 
   private async findOrFail(id: number) {

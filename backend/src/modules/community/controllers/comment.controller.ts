@@ -24,6 +24,7 @@ import { PaginationDto } from '../../../common/dto/pagination.dto.js';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 import { RolesGuard } from '../../../common/guards/roles.guard.js';
+import { Roles } from '../../../common/decorators/roles.decorator.js';
 import type { User } from '../../../database/schema/index.js';
 
 @ApiTags('comments')
@@ -48,7 +49,12 @@ export class CommentController {
     @Query() query: CommentQueryDto,
     @CurrentUser() user?: User,
   ) {
-    return this.commentService.listForManga(mangaId, query, user?.id);
+    return this.commentService.listForManga(
+      mangaId,
+      query,
+      user?.id,
+      user?.role === 'admin',
+    );
   }
 
   @Public()
@@ -59,7 +65,12 @@ export class CommentController {
     @Query() query: CommentQueryDto,
     @CurrentUser() user?: User,
   ) {
-    return this.commentService.listForChapter(chapterId, query, user?.id);
+    return this.commentService.listForChapter(
+      chapterId,
+      query,
+      user?.id,
+      user?.role === 'admin',
+    );
   }
 
   @Public()
@@ -70,7 +81,12 @@ export class CommentController {
     @Query() pagination: PaginationDto,
     @CurrentUser() user?: User,
   ) {
-    return this.commentService.getReplies(commentId, pagination, user?.id);
+    return this.commentService.getReplies(
+      commentId,
+      pagination,
+      user?.id,
+      user?.role === 'admin',
+    );
   }
 
   @Get('users/me/comments')
@@ -97,7 +113,21 @@ export class CommentController {
     @CurrentUser() user: User,
     @Body() dto: UpdateCommentDto,
   ) {
-    return this.commentService.update(id, user.id, dto);
+    return this.commentService.update(id, user.id, dto, user.name, user.avatar);
+  }
+
+  @Public()
+  @Get('comments/:id/revisions')
+  @ApiOperation({ summary: 'Get edit history for a comment (public)' })
+  getRevisions(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user?: User,
+  ) {
+    return this.commentService.getRevisions(
+      id,
+      user?.id,
+      user?.role === 'admin',
+    );
   }
 
   @Delete('comments/:id')
@@ -110,6 +140,26 @@ export class CommentController {
     @CurrentUser() user: User,
   ) {
     await this.commentService.remove(id, user.id, user.role);
+  }
+
+  @Post('comments/:id/pin')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Pin a comment (admin only, max 3/thread FIFO)' })
+  pin(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    return this.commentService.pinComment(id, user.id);
+  }
+
+  @Delete('comments/:id/pin')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Unpin a comment (admin only)' })
+  unpin(@Param('id', ParseIntPipe) id: number) {
+    return this.commentService.unpinComment(id);
   }
 
   @Post('comments/:id/like')

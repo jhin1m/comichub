@@ -14,12 +14,14 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiConsumes,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Public } from '../../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
@@ -147,6 +149,17 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   clearHistory(@CurrentUser() user: JwtPayload) {
     return this.historyService.clearAll(user.sub);
+  }
+
+  @Get('search')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Search users by name prefix (mention autocomplete)' })
+  @ApiQuery({ name: 'q', required: true, type: String })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  searchUsers(@Query('q') q: string, @Query('limit') limit?: string) {
+    const parsedLimit = limit ? Math.max(1, Math.min(20, parseInt(limit, 10) || 10)) : 10;
+    return this.userService.searchByName(q ?? '', parsedLimit);
   }
 
   @Get(':uuid')

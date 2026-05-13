@@ -2,22 +2,9 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Mark, mergeAttributes } from '@tiptap/core';
 import { useState, useCallback } from 'react';
-import { TextBolderIcon, QuotesIcon, EyeSlashIcon, ImageIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-
-const Spoiler = Mark.create({
-  name: 'spoiler',
-  parseHTML() {
-    return [{ tag: 'span.spoiler' }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ['span', mergeAttributes({ class: 'spoiler' }, HTMLAttributes), 0];
-  },
-});
 
 interface CommentEditorProps {
   onSubmit: (html: string) => Promise<void>;
@@ -37,25 +24,23 @@ export function CommentEditor({
   isLoggedIn = true,
 }: CommentEditorProps) {
   const [submitting, setSubmitting] = useState(false);
-  const [showImageInput, setShowImageInput] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
   const [charCount, setCharCount] = useState(0);
   const [focused, setFocused] = useState(false);
   const MAX_CHARS = 2000;
 
-  // Show toolbar when editor is focused OR has content
-  const showToolbar = focused || charCount > 0;
+  const showFooter = focused || charCount > 0;
 
-  const onUpdate = useCallback(({ editor: e }: { editor: { getText: () => string } }) => {
-    setCharCount(e.getText().length);
-  }, []);
+  const onUpdate = useCallback(
+    ({ editor: e }: { editor: { getText: () => string } }) => {
+      setCharCount(e.getText().length);
+    },
+    [],
+  );
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: false, codeBlock: false }),
-      Image.configure({ inline: true, allowBase64: false }),
       Placeholder.configure({ placeholder }),
-      Spoiler,
     ],
     content: initialContent,
     immediatelyRender: false,
@@ -88,24 +73,13 @@ export function CommentEditor({
     }
   };
 
-  const handleAddImage = () => {
-    if (imageUrl && editor) {
-      try {
-        const parsed = new URL(imageUrl);
-        if (!['http:', 'https:'].includes(parsed.protocol)) return;
-      } catch {
-        return;
-      }
-      editor.chain().focus().setImage({ src: imageUrl }).run();
-      setImageUrl('');
-      setShowImageInput(false);
-    }
-  };
-
   if (!isLoggedIn) {
     return (
       <div className="rounded-lg p-3 text-center text-secondary text-xs bg-surface/50">
-        <a href="/login" className="text-accent hover:underline">Login</a> to post a comment.
+        <a href="/login" className="text-accent hover:underline">
+          Login
+        </a>{' '}
+        to post a comment.
       </div>
     );
   }
@@ -116,92 +90,35 @@ export function CommentEditor({
         <EditorContent editor={editor} />
       </div>
 
-      {showToolbar && (
-        <>
-          {showImageInput && (
-            <div className="flex items-center gap-2 mt-1.5">
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.png"
-                className="flex-1 bg-elevated border border-default rounded px-2 py-1 text-xs text-primary placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
-                onKeyDown={(e) => e.key === 'Enter' && handleAddImage()}
-                autoFocus
-              />
-              <button onClick={handleAddImage} disabled={!imageUrl} className="text-xs text-accent hover:text-accent-hover disabled:opacity-40">Add</button>
-              <button onClick={() => { setShowImageInput(false); setImageUrl(''); }} className="text-xs text-secondary hover:text-primary">Cancel</button>
-            </div>
+      {showFooter && (
+        <div className="flex items-center justify-end gap-3 mt-1.5">
+          {charCount > 0 && (
+            <span
+              className={cn(
+                'text-[10px]',
+                charCount > MAX_CHARS ? 'text-accent' : 'text-muted',
+              )}
+            >
+              {charCount}/{MAX_CHARS}
+            </span>
           )}
-
-          <div className="flex items-center justify-between mt-1.5">
-            <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }}
-                aria-label="Bold"
-                className={cn(
-                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-                  editor?.isActive('bold') && 'text-primary',
-                )}
-              >
-                <TextBolderIcon size={16} />
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBlockquote().run(); }}
-                aria-label="Quote"
-                className={cn(
-                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-                  editor?.isActive('blockquote') && 'text-primary',
-                )}
-              >
-                <QuotesIcon size={16} />
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleMark('spoiler').run(); }}
-                aria-label="Spoiler"
-                className={cn(
-                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-                  editor?.isActive('spoiler') && 'text-primary',
-                )}
-              >
-                <EyeSlashIcon size={16} />
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); setShowImageInput(!showImageInput); }}
-                aria-label="Add image"
-                className={cn(
-                  'p-1.5 rounded text-secondary hover:text-primary transition-colors',
-                  showImageInput && 'text-primary',
-                )}
-              >
-                <ImageIcon size={16} />
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              {charCount > 0 && (
-                <span className={cn('text-[10px]', charCount > MAX_CHARS ? 'text-accent' : 'text-muted')}>
-                  {charCount}/{MAX_CHARS}
-                </span>
-              )}
-              {onCancel && (
-                <button onClick={onCancel} disabled={submitting} className="text-xs text-secondary hover:text-primary transition-colors">
-                  Cancel
-                </button>
-              )}
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || charCount === 0 || charCount > MAX_CHARS}
-                className="px-4 py-1 rounded bg-accent hover:bg-accent-hover text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-40 transition-colors"
-              >
-                {submitting ? '...' : initialContent ? 'Save' : 'Send'}
-              </button>
-            </div>
-          </div>
-        </>
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              disabled={submitting}
+              className="text-xs text-secondary hover:text-primary transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || charCount === 0 || charCount > MAX_CHARS}
+            className="px-4 py-1 rounded bg-accent hover:bg-accent-hover text-white text-xs font-semibold uppercase tracking-wide disabled:opacity-40 transition-colors"
+          >
+            {submitting ? '...' : initialContent ? 'Save' : 'Send'}
+          </button>
+        </div>
       )}
     </div>
   );

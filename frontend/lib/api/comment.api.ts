@@ -1,5 +1,12 @@
 import { apiClient } from '@/lib/api-client';
-import type { Comment, PaginatedComments, CommentQueryParams } from '@/types/comment.types';
+import type {
+  Comment,
+  PaginatedComments,
+  CommentQueryParams,
+  CommentRevision,
+  CommentReportPayload,
+  MentionUserSuggestion,
+} from '@/types/comment.types';
 
 export interface RecentComment {
   id: number;
@@ -40,4 +47,59 @@ export const commentApi = {
 
   toggleDislike: (id: number) =>
     apiClient.post<{ liked: boolean; disliked: boolean; likesCount: number; dislikesCount: number }>(`/comments/${id}/dislike`).then((r) => r.data),
+
+  // Phase 4: pin/unpin (admin) + revisions (public)
+  pin: (id: number) =>
+    apiClient.post<Comment>(`/comments/${id}/pin`).then((r) => r.data),
+
+  unpin: (id: number) =>
+    apiClient.delete<Comment>(`/comments/${id}/pin`).then((r) => r.data),
+
+  getRevisions: (id: number) =>
+    apiClient.get<CommentRevision[]>(`/comments/${id}/revisions`).then((r) => r.data),
+
+  // Phase 3: user reports
+  report: (id: number, payload: CommentReportPayload) =>
+    apiClient.post(`/comments/${id}/report`, payload).then((r) => r.data),
+
+  // Phase 2: user search (mention autocomplete)
+  searchUsers: (q: string, limit = 10) =>
+    apiClient
+      .get<MentionUserSuggestion[]>('/users/search', { params: { q, limit } })
+      .then((r) => r.data),
+};
+
+// Phase 3: admin queue API
+export interface AdminCommentReportRow {
+  id: number;
+  commentId: number;
+  reason: string;
+  details: string | null;
+  status: 'pending' | 'resolved' | 'dismissed';
+  createdAt: string;
+  resolvedAt: string | null;
+  reporterId: number;
+  reporterName: string | null;
+  reporterAvatar: string | null;
+  commentContent: string | null;
+  commentAuthorId: number | null;
+  commentDeletedAt: string | null;
+}
+
+export const adminCommentReportsApi = {
+  list: (params?: { page?: number; limit?: number; status?: string }) =>
+    apiClient
+      .get<{ data: AdminCommentReportRow[]; total: number; page: number; limit: number }>(
+        '/admin/comment-reports',
+        { params },
+      )
+      .then((r) => r.data),
+  resolve: (
+    id: number,
+    action: 'dismiss' | 'delete_comment' | 'warn_user',
+    resolutionNote?: string,
+  ) =>
+    apiClient
+      .patch(`/admin/comment-reports/${id}`, { action, resolutionNote })
+      .then((r) => r.data),
 };

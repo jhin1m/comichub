@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CommentService } from './comment.service.js';
+import { CommentMentionService } from './comment-mention.service.js';
+import { ModerationService } from './moderation.service.js';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 
 function buildChain(resolvedValue: any = []) {
@@ -50,11 +52,20 @@ describe('CommentService', () => {
 
   beforeEach(async () => {
     mockDb = {
-      select: vi.fn(),
-      insert: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
+      select: vi.fn().mockReturnValue(buildChain()),
+      insert: vi.fn().mockReturnValue(buildChain()),
+      update: vi.fn().mockReturnValue(buildChain()),
+      delete: vi.fn().mockReturnValue(buildChain()),
       transaction: vi.fn((cb: (tx: any) => Promise<any>) => cb(mockDb)),
+    };
+
+    const mockMentionService = {
+      parseAndValidate: vi.fn().mockResolvedValue([]),
+    };
+
+    const mockModerationService = {
+      moderate: vi.fn().mockResolvedValue({ status: 'approved', score: null }),
+      isEnabled: vi.fn().mockReturnValue(false),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,6 +73,8 @@ describe('CommentService', () => {
         CommentService,
         { provide: DRIZZLE, useValue: mockDb },
         { provide: EventEmitter2, useValue: { emit: vi.fn() } },
+        { provide: CommentMentionService, useValue: mockMentionService },
+        { provide: ModerationService, useValue: mockModerationService },
       ],
     }).compile();
 
