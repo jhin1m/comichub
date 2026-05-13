@@ -85,6 +85,14 @@ API prefix: `/api/v1`. All routes require auth by default.
 - **Report rate limit (C3):** `@Throttle({ limit: 3, ttl: 60000 })` per-user on `POST /chapters/:id/report`.
 - **Report dedupe:** partial unique index `(user_id, chapter_id, type) WHERE status='pending'` + app-level pre-check → 409 on retry.
 
+**Comment Moderation (v2.0):**
+- **Tables**: `comment_revisions` (edit history snapshots, max 10/comment), `comment_reports` (user reports with auto-flag at ≥3), `comments.moderationStatus` enum (pending|approved|flagged|rejected).
+- **AI moderation**: OpenAI omni-moderation async flow. Thresholds: >0.85 rejected (auto-hidden), 0.4-0.85 flagged (admin review), <0.4 approved. Graceful fallback: no `OPENAI_API_KEY` → auto-approve.
+- **Report workflow**: User throttle 3/hr, dedupe via UNIQUE(commentId, reporterId), auto-flag comment at ≥3 pending reports → hidden from public, visible to author + admin.
+- **Real-time**: SSE stream `GET /api/v1/comments/stream?type=manga&id=:id` (auth optional) broadcasts comment.created events with badge "N comments mới" + Page Visibility API integration.
+- **Edit transparency**: Revisions public, edit re-triggers moderation (resets to pending), mention regex declared per-call (no `lastIndex` race).
+- **Pin enforcement**: Admin-only, max 3 per manga FIFO with `pg_advisory_xact_lock` serialization.
+
 ### Content-Rating Filters: Preference ≠ Access Control
 Invariant: the `NSFW_RATINGS` filter is a **discovery preference**, not an access gate.
 - Applies to list/discovery endpoints (`GET /manga` default, `GET /manga/random`) so unauthenticated browsing doesn't surface adult covers.

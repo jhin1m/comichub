@@ -4,6 +4,18 @@ All notable changes to the ComicHub project are documented here. Format follows 
 
 ## [Unreleased]
 
+### Added - Comment System 2.0: @Mention, Report, Pin, Edit History, AI Moderation, SSE (2026-05-13)
+- **Phase 1 — Schema**: Extended `comments` table with 7 columns (`isPinned`, `pinnedAt`, `pinnedBy`, `editedAt`, `mentionedUserIds`, `moderationStatus`, `moderationScore`). New tables: `comment_revisions`, `comment_reports`. Migrations 0022/0023.
+- **Phase 2 — @Mention**: BE parser extracts and validates mentions from HTML, emits notifications. User search endpoint `/api/v1/users/search?q=` (throttle 30/min). FE mention rendering with link to profile.
+- **Phase 3 — Report + Admin Queue**: User report endpoint with 3/hr throttle, auto-flag at ≥3 reports, admin queue with dismiss/delete/warn actions. Role-gated admin endpoints.
+- **Phase 4 — Pin + Edit History**: Admin pin (max 3 per manga FIFO), edit revisions snapshot to `comment_revisions` (max 10), edit re-triggers moderation. Public revision history modal.
+- **Phase 5 — OpenAI Moderation**: Async moderation with 3 thresholds (rejected >0.85, flagged 0.4-0.85, approved <0.4). Graceful fallback: no API key → auto-approve.
+- **Phase 6 — SSE Real-time**: Comment stream per manga/chapter via `GET /api/v1/comments/stream`, badge "N comments mới", Page Visibility API integration, auto-reconnect.
+- **Phase 7 — FE Polish**: Removed image button from comment editor, added Write/Preview tabs with Radix Tabs, shared sanitize utility.
+- **Tests**: 537 backend + 166 frontend passing. TS clean, lint clean.
+- **Code Review**: 3 HIGH issues caught + fixed: (1) edit re-triggers moderation, (2) pin uses `pg_advisory_xact_lock` for concurrency, (3) mention regex per-call to avoid `lastIndex` race.
+- **Deferral**: `@tiptap/extension-mention` + `tippy.js` package install deferred to v2.1 (backend mention system fully operational).
+
 ### Fixed - Comix.to Import After Vite Bundle Migration (2026-05-08)
 - **Root Cause**: Comix.to migrated frontend from Next.js/Turbopack to Vite/rolldown ~2026-05-07 06:00 UTC. Old `comix-sign.ts` looked for Turbopack `push` module factories registering ID 9165 — new bundle uses static ESM `import{n,r,t} from "./secure-*.js"`. Eight consecutive hourly cron failures with `"Could not find Comix.to API chunk with signing module"` produced zero new chapters for ~7+ hours.
 - **Signer rewrite (`comix-sign.ts`)**: Discover bundle URL from homepage `<script type="module">`, parse main bundle for sibling `secure-*.js` import, vm-eval the secure module with browser-shim sandbox, capture exported `ki[2]` (the URL hash function used by the request interceptor). Anti-tamper bypass: spoof `document.querySelector.toString()` to match native-code regex `/function\s+querySelector\(\)\s+\{\s+\[native\s+code\]\s+\}/` so internal cipher keys aren't silently scrambled. Cache TTL 1h; auto-reset on 403 to handle bundle hash rotation.
