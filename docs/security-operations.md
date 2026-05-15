@@ -239,6 +239,18 @@ Watch these logs / metrics. Thresholds are starting points — tune after baseli
 - [Deployment Guide](./deployment-guide.md) — env var setup, cert creation
 - Audit reports: `plans/reports/ck-security-*.md`
 
+## Automated Dependency Monitoring (Dependabot — 2026-05-15)
+
+- **Config:** `.github/dependabot.yml` — npm (frontend + backend), docker (both Dockerfiles), github-actions.
+- **Schedule:** weekly Monday 03:00 ICT for non-security updates; **security updates fire immediately** regardless.
+- **Grouping:** patch + minor versions bundled into 1 PR/week per ecosystem to reduce noise.
+- **Ignored majors:** `react`, `react-dom`, `next`, `@nestjs/*`, `drizzle-orm` — coordinated upgrades only (manual).
+- **Repo features enabled:** `dependabot_security_updates`, `secret_scanning`, `secret_scanning_push_protection`.
+- **Review SLA:** triage security PRs within 24h, critical/high within 4h.
+- **Dashboard:** https://github.com/jhin1m/comichub/security/dependabot
+
+Rationale: Next.js had ~17 CVEs in 6 months (Dec 2025 – May 2026). CVE-2026-44578 exposure window was 8 days (07/05 → 15/05) because tracking was manual. Dependabot auto-PRs reduce response window to hours.
+
 ## SSH Server Hardening (2026-05-15)
 
 - **Root password auth: DISABLED.** `/etc/ssh/sshd_config` → `PermitRootLogin prohibit-password`
