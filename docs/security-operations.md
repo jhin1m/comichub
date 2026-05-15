@@ -239,8 +239,25 @@ Watch these logs / metrics. Thresholds are starting points — tune after baseli
 - [Deployment Guide](./deployment-guide.md) — env var setup, cert creation
 - Audit reports: `plans/reports/ck-security-*.md`
 
+## Security Advisories Applied
+
+### CVE-2026-44578 — Next.js WebSocket Upgrade SSRF (CVSS 8.6, High)
+
+- **Disclosed:** 2026-05-07 (Vercel coordinated release — 13 CVEs total)
+- **Patched on prod:** 2026-05-15 (commit `8e7e414d`)
+- **Affected range:** `>=13.4.13 <15.5.16` and `>=16.0.0 <16.2.5`
+- **Our version pre-patch:** `next@16.2.3` → DÍNH
+- **Our version post-patch:** `next@16.2.6` (covers 13 CVEs + Turbopack incomplete-fix)
+- **Impact:** Unauthenticated attacker could trigger Next.js process to issue internal HTTP GET to any reachable host (cloud metadata, internal admin, etc.) via crafted WebSocket upgrade request.
+- **Window of exposure:** 8 days (07/05 → 15/05).
+- **Intrusion check:** Caddy logs, frontend container logs, outbound connections, cron, SSH auth, file integrity — ALL CLEAN. No exploit observed.
+- **Defense-in-depth added:** Caddyfile blocks WebSocket Upgrade at edge (frontend uses SSE only, no real WS traffic). See `deploy/Caddyfile` NC2 block.
+
+References: [GHSA-c4j6-fc7j-m34r](https://github.com/advisories/GHSA-c4j6-fc7j-m34r), [Vercel changelog](https://vercel.com/changelog/next-js-may-2026-security-release).
+
 ## Change Log
 
 | Date | Change |
 |---|---|
 | 2026-04-20 | Initial version — Sprint B baseline (15 items remediated) |
+| 2026-05-15 | CVE-2026-44578 patched (next 16.2.3 → 16.2.6) + Caddy WS upgrade block (NC2) |

@@ -23,6 +23,14 @@
 	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
 	encode zstd gzip
 
+	# NC2: defense-in-depth against CVE-2026-44578 (Next.js WebSocket upgrade SSRF).
+	# Frontend uses SSE (@microsoft/fetch-event-source) — NO real WebSocket traffic.
+	# Block any WS upgrade attempt at the edge so SSRF gadget cannot reach Next.js.
+	@ws_upgrade header Upgrade *websocket*
+	respond @ws_upgrade 426 "WebSocket not supported" {
+		close
+	}
+
 	# NC1: real client IP must come from CF-Connecting-IP (single-hop, trusted by CF).
 	# Strip inbound X-Forwarded-For so a client-spoofed header cannot poison downstream
 	# rate-limit / view-count / Turnstile remoteip buckets. Fallback to {remote_host}
