@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { DRIZZLE } from '../../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../../database/drizzle.provider.js';
 import { normalizeContentRating } from '../../../common/utils/content-rating.util.js';
