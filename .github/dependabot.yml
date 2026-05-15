@@ -1,0 +1,123 @@
+# Dependabot config — security-first, low-noise.
+#
+# Strategy:
+# - Security updates: shipped IMMEDIATELY by Dependabot regardless of schedule.
+# - Non-security updates: weekly, grouped to reduce PR noise.
+# - Major versions: kept as separate PRs (always need human review for breaking changes).
+#
+# Reload after edit: GitHub auto-applies on push to default branch.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # ─── Frontend (Next.js + React) ──────────────────────────────
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: "fix(frontend-deps)"
+      include: scope
+    groups:
+      # Group all non-major patches → 1 PR/week instead of dozens.
+      patch-and-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+      # Security patches still come as separate PRs so each is auditable.
+      security-patches:
+        applies-to: security-updates
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # React/Next majors are coordinated upgrades — handle manually.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+
+  # ─── Backend (NestJS + Drizzle) ───────────────────────────────
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: "fix(backend-deps)"
+      include: scope
+    groups:
+      patch-and-minor:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+      security-patches:
+        applies-to: security-updates
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # NestJS majors require coordinated upgrade (peer deps).
+      - dependency-name: "@nestjs/*"
+        update-types: [version-update:semver-major]
+      - dependency-name: drizzle-orm
+        update-types: [version-update:semver-major]
+
+  # ─── Docker base images (frontend) ────────────────────────────
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Ho_Chi_Minh
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "fix(frontend-docker)"
+
+  # ─── Docker base images (backend) ─────────────────────────────
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Ho_Chi_Minh
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "fix(backend-docker)"
+
+  # ─── GitHub Actions (ready for when we add workflows) ────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Ho_Chi_Minh
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "fix(ci-deps)"
