@@ -73,7 +73,7 @@ describe('useNotificationStream', () => {
     const onEvent = vi.fn();
     let capturedOnMessage: ((ev: { data: string }) => void) | undefined;
 
-    mockedFetch.mockImplementation((_url, opts: Record<string, unknown>) => {
+    mockedFetch.mockImplementation((_url, opts) => {
       capturedOnMessage = opts?.onmessage as (ev: { data: string }) => void;
       return Promise.resolve();
     });

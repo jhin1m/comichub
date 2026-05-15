@@ -11,6 +11,7 @@ const makeChapter = (id: number, number: string, overrides?: Partial<ChapterList
   title: `Chapter ${number} Title`,
   slug: `ch-${number}`,
   language: 'en',
+  volume: null,
   viewCount: id * 100,
   order: id,
   createdAt: new Date(2026, 0, id).toISOString(),
@@ -25,20 +26,20 @@ const chapters: ChapterListItem[] = [
 
 describe('ChapterList', () => {
   it('renders all chapter rows', () => {
-    render(<ChapterList chapters={chapters} mangaSlug="test-manga" />);
+    render(<ChapterList chapters={chapters} mangaSlug="test-manga" mangaId={1} />);
     expect(screen.getByText('Ch. 1')).toBeInTheDocument();
     expect(screen.getByText('Ch. 2')).toBeInTheDocument();
     expect(screen.getByText('Ch. 10')).toBeInTheDocument();
   });
 
   it('shows chapter count in header', () => {
-    render(<ChapterList chapters={chapters} mangaSlug="test-manga" />);
+    render(<ChapterList chapters={chapters} mangaSlug="test-manga" mangaId={1} />);
     expect(screen.getByText(`(${chapters.length})`)).toBeInTheDocument();
   });
 
   it('filters chapters by search query — smart numeric match', async () => {
     const user = userEvent.setup();
-    render(<ChapterList chapters={chapters} mangaSlug="test-manga" />);
+    render(<ChapterList chapters={chapters} mangaSlug="test-manga" mangaId={1} />);
 
     const input = screen.getByPlaceholderText(/search chapter/i);
     await user.type(input, '1');
@@ -51,7 +52,7 @@ describe('ChapterList', () => {
 
   it('shows "No chapters found" when search has no results', async () => {
     const user = userEvent.setup();
-    render(<ChapterList chapters={chapters} mangaSlug="test-manga" />);
+    render(<ChapterList chapters={chapters} mangaSlug="test-manga" mangaId={1} />);
 
     await user.type(screen.getByPlaceholderText(/search chapter/i), '999');
     expect(screen.getByText(/no chapters found/i)).toBeInTheDocument();
@@ -59,7 +60,7 @@ describe('ChapterList', () => {
 
   it('toggles sort direction when clicking sort button twice', async () => {
     const user = userEvent.setup();
-    render(<ChapterList chapters={chapters} mangaSlug="test-manga" />);
+    render(<ChapterList chapters={chapters} mangaSlug="test-manga" mangaId={1} />);
 
     const sortBtn = screen.getByRole('button', { name: /sort by chapter number/i });
 
