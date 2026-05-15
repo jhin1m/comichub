@@ -466,8 +466,6 @@ describe('WeebDexAdapter', () => {
         json: () => Promise.resolve({ id: '1', title: 'Title' }),
       });
 
-      const start = Date.now();
-
       // First request should not throttle
       await adapter.fetchManga('manga-1');
       const after1st = Date.now();

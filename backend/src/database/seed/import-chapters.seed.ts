@@ -25,16 +25,6 @@ interface WDChapter {
   language: string;
 }
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 500);
-}
-
 async function throttledFetch<T>(path: string): Promise<T> {
   const now = Date.now();
   if (now - lastReq < 210)
@@ -141,7 +131,7 @@ async function importChaptersForManga(
         .onConflictDoNothing();
 
       inserted++;
-    } catch (err) {
+    } catch (_err) {
       // Skip duplicates silently
     }
   }

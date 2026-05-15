@@ -43,10 +43,6 @@ const MAIN_BUNDLE_RE =
   /<script[^>]+src="(https:\/\/comix\.to\/assets\/[^"]+main-[^"]+\.js)"/;
 // Main bundle imports signer from sibling: import{...} from "./secure-<id>.js"
 const SECURE_IMPORT_RE = /from\s*["'](\.\/secure-[^"']+\.js)["']/;
-// Anti-tamper probe in secure module — must match exactly or cipher keys
-// get scrambled. Spoof `document.querySelector.toString()` against this.
-const NATIVE_QS_RE =
-  /function\s+querySelector\(\)\s+\{\s+\[native\s+code\]\s+\}/;
 
 async function fetchText(url: string): Promise<string> {
   const res = await fetch(url, { headers: { 'User-Agent': UA } });

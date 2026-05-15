@@ -143,7 +143,7 @@ describe('ImportMappingService', () => {
       const insertChain = buildChain([]); // No result on conflict
       mockDb.insert.mockReturnValue(insertChain);
 
-      const result = await service.resolveGenres(['Action']);
+      await service.resolveGenres(['Action']);
 
       expect(mockDb.insert).toHaveBeenCalled();
     });

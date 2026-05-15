@@ -16,7 +16,6 @@ import {
   flag,
   hasFlag,
   upsertManga,
-  resolveByName,
   bumpMangaOnChapterRelease,
   invalidateMangaListCache,
   eq,
