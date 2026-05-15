@@ -309,3 +309,4 @@ References: [GHSA-c4j6-fc7j-m34r](https://github.com/advisories/GHSA-c4j6-fc7j-m
 |---|---|
 | 2026-04-20 | Initial version — Sprint B baseline (15 items remediated) |
 | 2026-05-15 | CVE-2026-44578 patched (next 16.2.3 → 16.2.6) + Caddy strip Upgrade (NC2) + SSH root password auth disabled (key-only) + bumped axios/sanitize-html/fast-xml-parser + Dependabot + CI + branch protection + auto-merge |
+| 2026-05-15 | Backend lint re-enabled in CI (cleaned 9 errors + reduced warnings 515 → 36 by scoping `no-unsafe-*` to CLI scripts / DB seeds) |
