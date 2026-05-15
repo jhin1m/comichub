@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@10 --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
@@ -29,7 +29,7 @@ ENV INTERNAL_API_URL=${INTERNAL_API_URL}
 RUN pnpm run build
 
 # Stage 3: Production
-FROM node:20-alpine AS production
+FROM node:26-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/.next/standalone ./
