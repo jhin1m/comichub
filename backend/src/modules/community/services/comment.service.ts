@@ -581,7 +581,7 @@ export class CommentService {
         userAvatar,
         mangaSlug,
         mangaId:
-          comment.commentableType === CommentableType.MANGA
+          (comment.commentableType as CommentableType) === CommentableType.MANGA
             ? comment.commentableId
             : null,
         mentionedUserIds: freshlyMentioned,
