@@ -463,8 +463,7 @@ describe('WeebDexAdapter', () => {
     it('should enforce minimum interval between requests', async () => {
       (fetch as any).mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve({ id: '1', title: 'Title' }),
+        json: () => Promise.resolve({ id: '1', title: 'Title' }),
       });
 
       const start = Date.now();

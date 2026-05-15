@@ -44,7 +44,10 @@ export async function safeHttpsFetch(
   initialUrl: string,
   opts: SafeHttpsFetchOptions = {},
 ): Promise<Response> {
-  const { maxHops, timeoutMs, userAgent, headers } = { ...DEFAULT_OPTS, ...opts };
+  const { maxHops, timeoutMs, userAgent, headers } = {
+    ...DEFAULT_OPTS,
+    ...opts,
+  };
   let currentUrl = initialUrl;
 
   for (let hop = 0; hop <= maxHops; hop++) {
@@ -59,7 +62,8 @@ export async function safeHttpsFetch(
 
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
-      if (!location) throw new Error(`SSRF blocked: ${res.status} with no Location`);
+      if (!location)
+        throw new Error(`SSRF blocked: ${res.status} with no Location`);
       if (hop === maxHops) {
         throw new Error(`SSRF blocked: exceeded max ${maxHops} redirect hops`);
       }

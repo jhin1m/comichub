@@ -89,11 +89,14 @@ export class ModerationService implements OnModuleInit {
       if (maxScore > REJECT_THRESHOLD) {
         return { status: 'rejected', score: scores };
       }
-      if (maxScore > FLAG_THRESHOLD) return { status: 'flagged', score: scores };
+      if (maxScore > FLAG_THRESHOLD)
+        return { status: 'flagged', score: scores };
       return { status: 'approved', score: scores };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Moderation API failed: ${msg} — defaulting to approved.`);
+      this.logger.warn(
+        `Moderation API failed: ${msg} — defaulting to approved.`,
+      );
       return { status: 'approved', score: null, reason: 'api_error' };
     } finally {
       clearTimeout(timer);

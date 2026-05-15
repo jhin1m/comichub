@@ -48,7 +48,13 @@ export interface ChapterWithImages extends ChapterListItem {
   mangaId: number;
   mangaTitle: string;
   contentRating: 'safe' | 'suggestive' | 'erotica' | 'pornographic';
-  images: { id: number; imageUrl: string; pageNumber: number; order: number; groupId: number | null }[];
+  images: {
+    id: number;
+    imageUrl: string;
+    pageNumber: number;
+    order: number;
+    groupId: number | null;
+  }[];
 }
 
 export interface ChapterNavigation {

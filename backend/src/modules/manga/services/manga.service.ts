@@ -38,7 +38,10 @@ import {
   chapterGroups,
 } from '../../../database/schema/index.js';
 import { slugify } from '../../../common/utils/slug.util.js';
-import { encodeId, parseIdentifier } from '../../../common/utils/short-id.util.js';
+import {
+  encodeId,
+  parseIdentifier,
+} from '../../../common/utils/short-id.util.js';
 import { NSFW_RATINGS } from '../../../common/utils/content-rating.util.js';
 import { MemoryCache } from '../../../common/utils/memory-cache.util.js';
 import { CreateMangaDto, MangaType } from '../dto/create-manga.dto.js';
@@ -60,7 +63,10 @@ const CACHE_MAX = 200;
 @Injectable()
 export class MangaService {
   private slugCache = new MemoryCache<MangaDetail>(CACHE_TTL, CACHE_MAX);
-  private listCache = new MemoryCache<PaginatedResult<MangaListItem>>(CACHE_TTL, CACHE_MAX);
+  private listCache = new MemoryCache<PaginatedResult<MangaListItem>>(
+    CACHE_TTL,
+    CACHE_MAX,
+  );
 
   constructor(
     @Inject(DRIZZLE) private db: DrizzleDB,
@@ -269,14 +275,24 @@ export class MangaService {
       this.db.$count(manga, where),
     ]);
 
-    const result = { data: this.enrichWithShortId(rows), total: countResult, page, limit };
+    const result = {
+      data: this.enrichWithShortId(rows),
+      total: countResult,
+      page,
+      limit,
+    };
     this.listCache.set(cacheKey, result);
     return result;
   }
 
   /** Add computed shortId to raw manga rows */
-  private enrichWithShortId(rows: Omit<MangaListItem, 'shortId'>[]): MangaListItem[] {
-    return rows.map((r) => ({ ...r, shortId: encodeId(r.id) })) as MangaListItem[];
+  private enrichWithShortId(
+    rows: Omit<MangaListItem, 'shortId'>[],
+  ): MangaListItem[] {
+    return rows.map((r) => ({
+      ...r,
+      shortId: encodeId(r.id),
+    })) as MangaListItem[];
   }
 
   async findMangaByGroup(
@@ -284,7 +300,13 @@ export class MangaService {
     page: number,
     limit: number,
   ): Promise<{
-    group: { id: number; name: string; slug: string; titleCount: number; releaseCount: number };
+    group: {
+      id: number;
+      name: string;
+      slug: string;
+      titleCount: number;
+      releaseCount: number;
+    };
     manga: PaginatedResult<MangaListItem>;
   }> {
     limit = Math.min(Math.max(limit, 1), 100);
@@ -333,9 +355,7 @@ export class MangaService {
             })
             .from(manga)
             .leftJoin(chapters, eq(manga.lastChapterId, chapters.id))
-            .where(
-              and(inArray(manga.id, mangaIds), isNull(manga.deletedAt)),
-            )
+            .where(and(inArray(manga.id, mangaIds), isNull(manga.deletedAt)))
             .orderBy(desc(manga.updatedAt))
             .limit(limit)
             .offset(offset)
@@ -343,7 +363,12 @@ export class MangaService {
 
     return {
       group: { ...groupRow, titleCount, releaseCount },
-      manga: { data: this.enrichWithShortId(rows), total: titleCount, page, limit },
+      manga: {
+        data: this.enrichWithShortId(rows),
+        total: titleCount,
+        page,
+        limit,
+      },
     };
   }
 
@@ -352,7 +377,10 @@ export class MangaService {
       .select({ id: manga.id, slug: manga.slug })
       .from(manga)
       .where(
-        and(isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS)),
+        and(
+          isNull(manga.deletedAt),
+          notInArray(manga.contentRating, NSFW_RATINGS),
+        ),
       )
       .orderBy(sql`RANDOM()`)
       .limit(1);
@@ -558,7 +586,8 @@ export class MangaService {
     if (dto.status !== undefined) updates.status = dto.status;
     if (dto.type !== undefined) updates.type = dto.type;
     if (dto.slug !== undefined) updates.slug = dto.slug;
-    if (dto.contentRating !== undefined) updates.contentRating = dto.contentRating;
+    if (dto.contentRating !== undefined)
+      updates.contentRating = dto.contentRating;
     if (dto.demographic !== undefined) updates.demographic = dto.demographic;
     if (dto.year !== undefined) updates.year = dto.year;
 
@@ -573,7 +602,10 @@ export class MangaService {
     if (existing.slug !== updated.slug) {
       this.invalidateCaches(existing.slug);
     }
-    this.eventEmitter.emit('manga.updated', { id: updated.id, slug: updated.slug });
+    this.eventEmitter.emit('manga.updated', {
+      id: updated.id,
+      slug: updated.slug,
+    });
     return this.findByIdentifier(updated.slug);
   }
 
@@ -590,7 +622,10 @@ export class MangaService {
       .set({ deletedAt: new Date() })
       .where(eq(manga.id, id));
 
-    this.eventEmitter.emit('manga.updated', { id: existing.id, slug: existing.slug });
+    this.eventEmitter.emit('manga.updated', {
+      id: existing.id,
+      slug: existing.slug,
+    });
   }
 
   private async syncPivots(

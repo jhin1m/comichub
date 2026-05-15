@@ -15,10 +15,16 @@ export class MailService {
     const port = this.configService.get<number>('mail.port', 465);
     const user = this.configService.get<string>('mail.user', '');
     const pass = this.configService.get<string>('mail.pass', '');
-    this.from = this.configService.get<string>('mail.from', 'noreply@comichub.com');
+    this.from = this.configService.get<string>(
+      'mail.from',
+      'noreply@comichub.com',
+    );
     // Escape HTML entities to prevent injection in email templates
     const rawName = this.configService.get<string>('app.name', 'ComicHub');
-    this.appName = rawName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    this.appName = rawName
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 
     if (user && pass) {
       this.transporter = nodemailer.createTransport({

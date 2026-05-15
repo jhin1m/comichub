@@ -15,10 +15,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({}),
-  ],
+  imports: [PassportModule, JwtModule.register({})],
   providers: [
     AuthService,
     MailService,

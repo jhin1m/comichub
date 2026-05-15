@@ -16,8 +16,15 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'node:crypto';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
-import { users, refreshTokens, type User } from '../../database/schema/index.js';
-import { readingHistory, follows } from '../../database/schema/community.schema.js';
+import {
+  users,
+  refreshTokens,
+  type User,
+} from '../../database/schema/index.js';
+import {
+  readingHistory,
+  follows,
+} from '../../database/schema/community.schema.js';
 import { MailService } from '../../common/services/mail.service.js';
 import {
   REDIS_AVAILABLE,
@@ -26,7 +33,10 @@ import {
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { TokenResponseDto } from './dto/token-response.dto.js';
-import type { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.type.js';
+import type {
+  JwtPayload,
+  JwtRefreshPayload,
+} from './types/jwt-payload.type.js';
 
 const RESET_TTL = 60 * 15;
 // H5 login lockout — 15-minute window, hard lock at 10 failed attempts per email.
@@ -40,12 +50,18 @@ function parseDurationToSeconds(duration: string): number {
   if (!match) return 60 * 60 * 24 * 7;
   const n = Number(match[1]);
   switch (match[2]) {
-    case 's': return n;
-    case 'm': return n * 60;
-    case 'h': return n * 3600;
-    case 'd': return n * 86400;
-    case 'w': return n * 604800;
-    default: return n;
+    case 's':
+      return n;
+    case 'm':
+      return n * 60;
+    case 'h':
+      return n * 3600;
+    case 'd':
+      return n * 86400;
+    case 'w':
+      return n * 604800;
+    default:
+      return n;
   }
 }
 
@@ -55,7 +71,10 @@ function hashToken(token: string): string {
 
 // H5: key emails by hash so we don't keep raw PII in Redis.
 function emailKey(email: string): string {
-  const h = crypto.createHash('sha256').update(email.toLowerCase()).digest('hex');
+  const h = crypto
+    .createHash('sha256')
+    .update(email.toLowerCase())
+    .digest('hex');
   return `login-fail:${h}`;
 }
 
@@ -251,7 +270,11 @@ export class AuthService {
       );
     }
     const code = crypto.randomBytes(32).toString('hex');
-    await this.redis.setex(`oauth-code:${code}`, OAUTH_CODE_TTL_SEC, String(userId));
+    await this.redis.setex(
+      `oauth-code:${code}`,
+      OAUTH_CODE_TTL_SEC,
+      String(userId),
+    );
     return code;
   }
 

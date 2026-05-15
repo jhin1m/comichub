@@ -115,10 +115,18 @@ describe('ChapterImageService', () => {
     // a non-array (e.g. an object/string) instead of Multer's expected array.
     it('should throw BadRequestException when files is not an array', async () => {
       await expect(
-        service.uploadImages(1, 1, 'malicious' as unknown as Express.Multer.File[]),
+        service.uploadImages(
+          1,
+          1,
+          'malicious' as unknown as Express.Multer.File[],
+        ),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.uploadImages(1, 1, undefined as unknown as Express.Multer.File[]),
+        service.uploadImages(
+          1,
+          1,
+          undefined as unknown as Express.Multer.File[],
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 

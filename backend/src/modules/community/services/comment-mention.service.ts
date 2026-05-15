@@ -53,7 +53,10 @@ export class CommentMentionService {
   /**
    * One-shot helper: parse + validate from sanitized HTML.
    */
-  async parseAndValidate(html: string, authorId: number | null): Promise<number[]> {
+  async parseAndValidate(
+    html: string,
+    authorId: number | null,
+  ): Promise<number[]> {
     const ids = this.parseMentionIds(html);
     return this.validateMentions(ids, authorId);
   }

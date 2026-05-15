@@ -263,9 +263,7 @@ describe('SearchService', () => {
     });
 
     it('should wrap suggest in transaction when q > 3 chars (fuzzy path)', async () => {
-      const rows = [
-        { id: 1, title: 'Naruto', slug: 'naruto', cover: null },
-      ];
+      const rows = [{ id: 1, title: 'Naruto', slug: 'naruto', cover: null }];
       mockDb.select.mockReturnValue(buildSelectChain(rows));
 
       await service.suggest('naruto');

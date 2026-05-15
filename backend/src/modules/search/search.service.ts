@@ -13,7 +13,12 @@ import {
 import type Redis from 'ioredis';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
-import { manga, genres, mangaGenres, chapters } from '../../database/schema/index.js';
+import {
+  manga,
+  genres,
+  mangaGenres,
+  chapters,
+} from '../../database/schema/index.js';
 import type {
   MangaListItem,
   PaginatedResult,
@@ -97,13 +102,20 @@ export class SearchService {
   //      them whole. A small static map covers the common cases unaccent
   //      handles via dictionary lookup.
   private static readonly STROKE_LETTER_MAP: Record<string, string> = {
-    Đ: 'D', đ: 'd',
-    Ø: 'O', ø: 'o',
-    Ł: 'L', ł: 'l',
-    Æ: 'AE', æ: 'ae',
-    Œ: 'OE', œ: 'oe',
-    Ð: 'D', ð: 'd',
-    Þ: 'Th', þ: 'th',
+    Đ: 'D',
+    đ: 'd',
+    Ø: 'O',
+    ø: 'o',
+    Ł: 'L',
+    ł: 'l',
+    Æ: 'AE',
+    æ: 'ae',
+    Œ: 'OE',
+    œ: 'oe',
+    Ð: 'D',
+    ð: 'd',
+    Þ: 'Th',
+    þ: 'th',
     ß: 'ss',
   };
   private static readonly STROKE_LETTER_RE = new RegExp(

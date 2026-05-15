@@ -141,7 +141,10 @@ export class BookmarkService {
         .returning({ id: follows.id });
 
       if (deleted.length === 0) {
-        return { bookmarked: false as const, followersCount: mangaRow.followersCount };
+        return {
+          bookmarked: false as const,
+          followersCount: mangaRow.followersCount,
+        };
       }
 
       const [updated] = await tx

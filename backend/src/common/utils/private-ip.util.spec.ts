@@ -16,12 +16,15 @@ describe('isPrivateIp', () => {
     expect(isPrivateIp(ip)).toBe(true);
   });
 
-  it.each(['8.8.8.8', '1.1.1.1', '140.82.121.4', '172.15.255.255', '172.32.0.0'])(
-    'allows public IPv4 %s',
-    (ip) => {
-      expect(isPrivateIp(ip)).toBe(false);
-    },
-  );
+  it.each([
+    '8.8.8.8',
+    '1.1.1.1',
+    '140.82.121.4',
+    '172.15.255.255',
+    '172.32.0.0',
+  ])('allows public IPv4 %s', (ip) => {
+    expect(isPrivateIp(ip)).toBe(false);
+  });
 
   it.each(['::1', '::', 'fe80::1', 'fc00::1', 'fdff::1', '::ffff:127.0.0.1'])(
     'rejects private IPv6 %s',

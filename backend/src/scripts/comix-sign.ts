@@ -72,7 +72,8 @@ async function discoverSecureBundleUrl(): Promise<string> {
       return new URL(secMatch[1], mainMatch[1]).toString();
     } catch (err: any) {
       lastErr = err;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      if (attempt < 2)
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
     }
   }
   throw lastErr!;
@@ -110,7 +111,12 @@ function makeBrowserSandbox(): vm.Context {
       innerText: '',
       __defineGetter__: noop,
     }),
-    body: { appendChild: noop, removeChild: noop, innerHTML: '', innerText: '' },
+    body: {
+      appendChild: noop,
+      removeChild: noop,
+      innerHTML: '',
+      innerText: '',
+    },
     documentElement: { innerHTML: '', innerText: '' },
     currentScript: null,
     cookie: '',
@@ -247,7 +253,9 @@ async function loadSigner(): Promise<SignerFn> {
     | ((axios: any) => void)
     | undefined;
   if (typeof install !== 'function')
-    throw new Error('Comix interceptor installer not captured from secure module');
+    throw new Error(
+      'Comix interceptor installer not captured from secure module',
+    );
 
   // Mock just enough of axios for the interceptor to register itself, then
   // capture the handler so we can invoke it directly to sign URLs.

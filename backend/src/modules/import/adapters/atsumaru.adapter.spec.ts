@@ -61,7 +61,13 @@ describe('AtsumaruAdapter', () => {
             page: 0,
             found: 2,
             hits: [
-              { document: { id: 'solo-leveling', title: 'Solo Leveling', tags: [{ name: 'Action' }] } },
+              {
+                document: {
+                  id: 'solo-leveling',
+                  title: 'Solo Leveling',
+                  tags: [{ name: 'Action' }],
+                },
+              },
               { document: { id: 'one-piece', title: 'One Piece', tags: [] } },
             ],
           }),
@@ -121,7 +127,9 @@ describe('AtsumaruAdapter', () => {
 
       expect(result.externalId).toBe('tower-of-god');
       expect(result.title).toBe('Tower of God');
-      expect(result.coverUrl).toBe('https://atsu.moe/static/covers/tower-of-god.jpg');
+      expect(result.coverUrl).toBe(
+        'https://atsu.moe/static/covers/tower-of-god.jpg',
+      );
       expect(result.description).toBe('A boy enters the tower');
       expect(result.status).toBe('ongoing');
       expect(result.type).toBe('manhwa');
@@ -190,7 +198,11 @@ describe('AtsumaruAdapter', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            mangaPage: { id: 'x', title: 'T', tags: [{ name: 'Adult' }, { name: 'Action' }] },
+            mangaPage: {
+              id: 'x',
+              title: 'T',
+              tags: [{ name: 'Adult' }, { name: 'Action' }],
+            },
           }),
       });
 
@@ -203,7 +215,11 @@ describe('AtsumaruAdapter', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            mangaPage: { id: 'x', title: 'T', tags: [{ name: 'Ecchi' }, { name: 'Hentai' }] },
+            mangaPage: {
+              id: 'x',
+              title: 'T',
+              tags: [{ name: 'Ecchi' }, { name: 'Hentai' }],
+            },
           }),
       });
 
@@ -249,8 +265,18 @@ describe('AtsumaruAdapter', () => {
         json: () =>
           Promise.resolve({
             chapters: [
-              { id: 'ch-1', number: 1, title: 'Chapter 1', createdAt: '2025-01-01T00:00:00Z' },
-              { id: 'ch-2', number: 2, title: 'Chapter 2', createdAt: 1704067200000 },
+              {
+                id: 'ch-1',
+                number: 1,
+                title: 'Chapter 1',
+                createdAt: '2025-01-01T00:00:00Z',
+              },
+              {
+                id: 'ch-2',
+                number: 2,
+                title: 'Chapter 2',
+                createdAt: 1704067200000,
+              },
             ],
           }),
       });
@@ -276,7 +302,12 @@ describe('AtsumaruAdapter', () => {
         json: () =>
           Promise.resolve({
             chapters: [
-              { id: 'ch-1', number: 1, title: 'C1', scanlationMangaId: 'group-abc' },
+              {
+                id: 'ch-1',
+                number: 1,
+                title: 'C1',
+                scanlationMangaId: 'group-abc',
+              },
             ],
           }),
       });
@@ -327,8 +358,14 @@ describe('AtsumaruAdapter', () => {
         expect.any(Object),
       );
       expect(results).toHaveLength(2);
-      expect(results[0]).toEqual({ url: 'https://cdn.example.com/page1.webp', pageNumber: 1 });
-      expect(results[1]).toEqual({ url: 'https://cdn.example.com/page2.webp', pageNumber: 2 });
+      expect(results[0]).toEqual({
+        url: 'https://cdn.example.com/page1.webp',
+        pageNumber: 1,
+      });
+      expect(results[1]).toEqual({
+        url: 'https://cdn.example.com/page2.webp',
+        pageNumber: 2,
+      });
     });
 
     it('should throw on missing separator in compound ID', async () => {
@@ -395,10 +432,17 @@ describe('AtsumaruAdapter', () => {
 
     it('should retry on 503 and succeed on second attempt', async () => {
       (fetch as any)
-        .mockResolvedValueOnce({ ok: false, status: 503, statusText: 'Service Unavailable' })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable',
+        })
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ mangaPage: { id: 'test', title: 'T', tags: [] } }),
+          json: () =>
+            Promise.resolve({
+              mangaPage: { id: 'test', title: 'T', tags: [] },
+            }),
         });
 
       const result = await adapter.fetchManga('test');
@@ -413,7 +457,9 @@ describe('AtsumaruAdapter', () => {
         statusText: 'Forbidden',
       });
 
-      await expect(adapter.fetchManga('test')).rejects.toThrow(BadRequestException);
+      await expect(adapter.fetchManga('test')).rejects.toThrow(
+        BadRequestException,
+      );
       expect(fetch).toHaveBeenCalledTimes(3);
     });
   });
@@ -426,7 +472,8 @@ describe('AtsumaruAdapter', () => {
     it('should enforce 500ms minimum interval between requests', async () => {
       (fetch as any).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ mangaPage: { id: 'x', title: 'T', tags: [] } }),
+        json: () =>
+          Promise.resolve({ mangaPage: { id: 'x', title: 'T', tags: [] } }),
       });
 
       const start = Date.now();

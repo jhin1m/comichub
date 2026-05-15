@@ -93,10 +93,7 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
     };
   }
 
-  private async request<T>(
-    path: string,
-    options?: RequestInit,
-  ): Promise<T> {
+  private async request<T>(path: string, options?: RequestInit): Promise<T> {
     await this.throttle();
     const url = `${this.baseUrl}${path}`;
 
@@ -108,7 +105,10 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
 
       if (res.ok) return res.json() as Promise<T>;
 
-      if ((res.status === 403 || res.status === 503) && attempt < this.MAX_RETRIES) {
+      if (
+        (res.status === 403 || res.status === 503) &&
+        attempt < this.MAX_RETRIES
+      ) {
         const delay = 1000 * Math.pow(2, attempt - 1);
         this.logger.warn(
           `Atsumaru ${res.status} on ${path}, retry ${attempt}/${this.MAX_RETRIES} in ${delay}ms`,
@@ -123,7 +123,9 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
       throw new BadRequestException(`Atsumaru API error: ${res.status}`);
     }
 
-    throw new BadRequestException(`Atsumaru API failed after ${this.MAX_RETRIES} retries`);
+    throw new BadRequestException(
+      `Atsumaru API failed after ${this.MAX_RETRIES} retries`,
+    );
   }
 
   /* ── SourceAdapter methods ──────────────────────────── */
@@ -146,7 +148,7 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
     // Search returns hits[]; fallback to items[] (browse format)
     const mangas = data.hits
       ? data.hits.map((h) => h.document)
-      : data.items ?? [];
+      : (data.items ?? []);
 
     return mangas.map((m) => this.normalizeManga(m));
   }
@@ -177,9 +179,7 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
       language: 'en',
       publishedAt: ch.createdAt
         ? new Date(
-            typeof ch.createdAt === 'number'
-              ? ch.createdAt
-              : ch.createdAt,
+            typeof ch.createdAt === 'number' ? ch.createdAt : ch.createdAt,
           ).toISOString()
         : undefined,
       groups: ch.scanlationMangaId
@@ -234,9 +234,7 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
     };
   }
 
-  private inferContentRating(
-    tags: string[],
-  ): ExternalManga['contentRating'] {
+  private inferContentRating(tags: string[]): ExternalManga['contentRating'] {
     let rating: ExternalManga['contentRating'] = 'safe';
     const severity: Record<string, number> = {
       safe: 0,
@@ -247,7 +245,7 @@ export class AtsumaruAdapter implements SourceAdapter, OnModuleInit {
 
     for (const tag of tags) {
       const mapped = NSFW_GENRE_MAP[tag.toLowerCase()];
-      if (mapped && severity[mapped] > severity[rating!]) {
+      if (mapped && severity[mapped] > severity[rating]) {
         rating = mapped;
       }
     }

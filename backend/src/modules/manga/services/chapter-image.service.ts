@@ -32,8 +32,9 @@ export class ChapterImageService {
   ) {
     const region = this.config.getOrThrow<string>('s3.region');
     this.bucket = this.config.getOrThrow<string>('s3.bucket');
-    this.publicUrl = this.config.get<string>('s3.publicUrl', '')
-      || `https://${this.bucket}.s3.${region}.amazonaws.com`;
+    this.publicUrl =
+      this.config.get<string>('s3.publicUrl', '') ||
+      `https://${this.bucket}.s3.${region}.amazonaws.com`;
     this.s3 = new S3Client({
       region,
       endpoint: this.config.get<string>('s3.endpoint') || undefined,

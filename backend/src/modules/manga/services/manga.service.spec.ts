@@ -197,9 +197,9 @@ describe('MangaService', () => {
       // First select returns empty array (manga not found)
       mockDb.select.mockReturnValue(buildChain([]));
 
-      await expect(service.findByIdentifier('nonexistent-slug')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findByIdentifier('nonexistent-slug'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return manga with relations when found by slug', async () => {
@@ -302,7 +302,9 @@ describe('MangaService', () => {
     });
 
     it('should soft-delete manga when it exists', async () => {
-      mockDb.select.mockReturnValue(buildChain([{ id: 1, slug: 'test-manga' }]));
+      mockDb.select.mockReturnValue(
+        buildChain([{ id: 1, slug: 'test-manga' }]),
+      );
 
       const updateChain = buildChain([]);
       mockDb.update.mockReturnValue(updateChain);

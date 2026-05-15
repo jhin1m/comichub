@@ -90,7 +90,9 @@ export const comments = pgTable(
       .default('approved')
       .notNull(),
     moderationScore: jsonb('moderation_score'),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .notNull()
@@ -126,7 +128,9 @@ export const commentRevisions = pgTable(
       .notNull()
       .references(() => comments.id, { onDelete: 'cascade' }),
     content: text('content').notNull(),
-    editedAt: timestamp('edited_at', { withTimezone: true }).defaultNow().notNull(),
+    editedAt: timestamp('edited_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     // Editor preserved as SET NULL on user delete — anonymize, keep revision content.
     editorId: integer('editor_id').references(() => users.id, {
       onDelete: 'set null',
@@ -155,7 +159,9 @@ export const commentReports = pgTable(
       onDelete: 'set null',
     }),
     resolvedAt: timestamp('resolved_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     // Prevent spam: one report per (comment, reporter) regardless of status.

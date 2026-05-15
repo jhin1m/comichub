@@ -36,7 +36,9 @@ describe('safeHttpsFetch', () => {
 
   it('succeeds for public host + 200 response', async () => {
     lookupSpy.mockResolvedValue({ address: '8.8.8.8', family: 4 } as never);
-    fetchMock.mockResolvedValue(mockResponse(200, { 'content-type': 'image/png' }));
+    fetchMock.mockResolvedValue(
+      mockResponse(200, { 'content-type': 'image/png' }),
+    );
     const res = await safeHttpsFetch('https://cdn.example/x.png');
     expect(res.status).toBe(200);
   });

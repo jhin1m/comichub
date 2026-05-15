@@ -37,7 +37,8 @@ export const drizzleProvider: Provider = {
   provide: DRIZZLE,
   inject: [POSTGRES_CLIENT, ConfigService],
   useFactory: (client: Sql, config: ConfigService): DrizzleDB => {
-    const isDev = config.get<string>('app.nodeEnv', 'development') !== 'production';
+    const isDev =
+      config.get<string>('app.nodeEnv', 'development') !== 'production';
     return drizzle(client, {
       schema,
       logger: isDev ? new DevQueryLogger() : false,

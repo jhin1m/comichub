@@ -35,13 +35,16 @@ export function createResilientRedis(
   const originals = saveOriginalMethods(client);
 
   // Try connecting; if it fails, swap to no-op stub
-  client.connect().then(() => {
-    if (status) status.available = true;
-  }).catch(() => {
-    logger.warn('Redis unavailable — running without cache');
-    if (status) status.available = false;
-    stubRedisClient(client);
-  });
+  client
+    .connect()
+    .then(() => {
+      if (status) status.available = true;
+    })
+    .catch(() => {
+      logger.warn('Redis unavailable — running without cache');
+      if (status) status.available = false;
+      stubRedisClient(client);
+    });
 
   client.on('error', () => {
     // suppress repeated connection errors
@@ -60,8 +63,19 @@ export function createResilientRedis(
 }
 
 const STUBBED_METHODS = [
-  'get', 'getdel', 'set', 'setex', 'del', 'keys', 'incr', 'incrby',
-  'expire', 'ttl', 'exists', 'scan', 'pipeline',
+  'get',
+  'getdel',
+  'set',
+  'setex',
+  'del',
+  'keys',
+  'incr',
+  'incrby',
+  'expire',
+  'ttl',
+  'exists',
+  'scan',
+  'pipeline',
 ] as const;
 
 type MethodBackup = Map<string, (...args: never[]) => unknown>;

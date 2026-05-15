@@ -27,7 +27,10 @@ export enum SortOrder {
 }
 
 export class MangaQueryDto extends PaginationDto {
-  @ApiPropertyOptional({ description: 'Search by title (ILIKE)', maxLength: 200 })
+  @ApiPropertyOptional({
+    description: 'Search by title (ILIKE)',
+    maxLength: 200,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)

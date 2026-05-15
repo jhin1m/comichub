@@ -39,8 +39,9 @@ export class UserService {
   ) {
     const region = config.get<string>('s3.region', 'ap-southeast-1');
     this.bucket = config.get<string>('s3.bucket', '');
-    this.publicUrl = config.get<string>('s3.publicUrl', '')
-      || `https://${this.bucket}.s3.${region}.amazonaws.com`;
+    this.publicUrl =
+      config.get<string>('s3.publicUrl', '') ||
+      `https://${this.bucket}.s3.${region}.amazonaws.com`;
     this.s3 = new S3Client({
       region,
       endpoint: config.get<string>('s3.endpoint') || undefined,
@@ -265,9 +266,7 @@ export class UserService {
         avatar: users.avatar,
       })
       .from(users)
-      .where(
-        and(ilike(users.name, `${safe}%`), isNull(users.deletedAt)),
-      )
+      .where(and(ilike(users.name, `${safe}%`), isNull(users.deletedAt)))
       .orderBy(users.name)
       .limit(Math.min(Math.max(limit, 1), 20));
   }

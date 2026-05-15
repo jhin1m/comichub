@@ -16,7 +16,9 @@ describe('jwtConfig', () => {
     delete process.env.JWT_ACCESS_SECRET;
     delete process.env.JWT_REFRESH_SECRET;
     const { jwtConfig } = await import('./jwt.config.js');
-    expect(() => jwtConfig()).toThrow(/JWT_ACCESS_SECRET and JWT_REFRESH_SECRET/);
+    expect(() => jwtConfig()).toThrow(
+      /JWT_ACCESS_SECRET and JWT_REFRESH_SECRET/,
+    );
   });
 
   it('throws when secrets missing in development (no silent fallback)', async () => {
@@ -24,7 +26,9 @@ describe('jwtConfig', () => {
     delete process.env.JWT_ACCESS_SECRET;
     delete process.env.JWT_REFRESH_SECRET;
     const { jwtConfig } = await import('./jwt.config.js');
-    expect(() => jwtConfig()).toThrow(/JWT_ACCESS_SECRET and JWT_REFRESH_SECRET/);
+    expect(() => jwtConfig()).toThrow(
+      /JWT_ACCESS_SECRET and JWT_REFRESH_SECRET/,
+    );
   });
 
   it('throws when secret < 32 bytes', async () => {

@@ -7,8 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-const VERIFY_URL =
-  'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 @Injectable()
 export class TurnstileGuard implements CanActivate {
@@ -17,10 +16,7 @@ export class TurnstileGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const secretKey = this.configService.get<string>(
-      'turnstile.secretKey',
-      '',
-    );
+    const secretKey = this.configService.get<string>('turnstile.secretKey', '');
     if (!secretKey) return true; // Dev bypass — no key configured
 
     const request = context.switchToHttp().getRequest();

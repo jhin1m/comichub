@@ -31,8 +31,12 @@ function buildChain(resolvedValue: any = []) {
 const mangaFixture = { id: 1, followersCount: 10 };
 
 const mockBookmarkService = {
-  addBookmark: vi.fn().mockResolvedValue({ bookmarked: true, folderId: 1, followersCount: 11 }),
-  removeBookmark: vi.fn().mockResolvedValue({ bookmarked: false, followersCount: 9 }),
+  addBookmark: vi
+    .fn()
+    .mockResolvedValue({ bookmarked: true, folderId: 1, followersCount: 11 }),
+  removeBookmark: vi
+    .fn()
+    .mockResolvedValue({ bookmarked: false, followersCount: 9 }),
 };
 
 describe('FollowService', () => {
@@ -51,8 +55,15 @@ describe('FollowService', () => {
       transaction: vi.fn((cb: (tx: any) => Promise<any>) => cb(mockDb)),
     };
 
-    vi.mocked(mockBookmarkService.addBookmark).mockResolvedValue({ bookmarked: true, folderId: 1, followersCount: 11 });
-    vi.mocked(mockBookmarkService.removeBookmark).mockResolvedValue({ bookmarked: false, followersCount: 9 });
+    vi.mocked(mockBookmarkService.addBookmark).mockResolvedValue({
+      bookmarked: true,
+      folderId: 1,
+      followersCount: 11,
+    });
+    vi.mocked(mockBookmarkService.removeBookmark).mockResolvedValue({
+      bookmarked: false,
+      followersCount: 9,
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

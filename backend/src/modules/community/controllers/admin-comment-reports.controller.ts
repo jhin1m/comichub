@@ -34,7 +34,11 @@ export class AdminCommentReportsController {
   @Get()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List comment reports (admin)' })
-  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'resolved', 'dismissed'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['pending', 'resolved', 'dismissed'],
+  })
   list(
     @Query() pagination: PaginationDto,
     @Query('status') status?: 'pending' | 'resolved' | 'dismissed',

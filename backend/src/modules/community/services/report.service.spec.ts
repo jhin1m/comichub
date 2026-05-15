@@ -100,7 +100,8 @@ describe('ReportService', () => {
     });
 
     it('maps Postgres 23505 unique violation to 409 ConflictException', async () => {
-      mockDb.select.mockImplementation(() => buildChain([{ id: 1 }]))
+      mockDb.select
+        .mockImplementation(() => buildChain([{ id: 1 }]))
         .mockImplementationOnce(() => buildChain([{ id: 1 }]))
         .mockImplementationOnce(() => buildChain([])); // no pre-check dupe
       const raceError = Object.assign(new Error('dup'), { code: '23505' });

@@ -39,7 +39,11 @@ export class RankingService {
     const cached = await this.redis.get(cacheKey);
     if (cached) return JSON.parse(cached) as PaginatedResult<MangaListItem>;
 
-    const where = and(eq(manga.isHot, true), isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS));
+    const where = and(
+      eq(manga.isHot, true),
+      isNull(manga.deletedAt),
+      notInArray(manga.contentRating, NSFW_RATINGS),
+    );
     const [rows, total] = await Promise.all([
       this.db
         .select({
@@ -124,11 +128,18 @@ export class RankingService {
     return keys;
   }
 
-  private enrichWithShortId(rows: Omit<MangaListItem, 'shortId'>[]): MangaListItem[] {
-    return rows.map((r) => ({ ...r, shortId: encodeId(r.id) })) as MangaListItem[];
+  private enrichWithShortId(
+    rows: Omit<MangaListItem, 'shortId'>[],
+  ): MangaListItem[] {
+    return rows.map((r) => ({
+      ...r,
+      shortId: encodeId(r.id),
+    })) as MangaListItem[];
   }
 
-  private async queryRanking(type: RankingType): Promise<Omit<MangaListItem, 'shortId'>[]> {
+  private async queryRanking(
+    type: RankingType,
+  ): Promise<Omit<MangaListItem, 'shortId'>[]> {
     const base = {
       id: manga.id,
       title: manga.title,
@@ -151,7 +162,10 @@ export class RankingService {
         .from(manga)
         .leftJoin(chapters, eq(manga.lastChapterId, chapters.id));
 
-    const safe = and(isNull(manga.deletedAt), notInArray(manga.contentRating, NSFW_RATINGS));
+    const safe = and(
+      isNull(manga.deletedAt),
+      notInArray(manga.contentRating, NSFW_RATINGS),
+    );
 
     switch (type) {
       case 'daily':

@@ -39,9 +39,7 @@ function buildService(overrides: {
         }),
       }),
     }),
-    delete: vi
-      .fn()
-      .mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
+    delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
@@ -64,10 +62,11 @@ function buildService(overrides: {
     signAsync: vi.fn().mockResolvedValue('signed-token'),
   };
   const mockConfig = {
-    getOrThrow: (k: string) => ({
-      'jwt.accessSecret': 'a'.repeat(32),
-      'jwt.refreshSecret': 'b'.repeat(32),
-    })[k],
+    getOrThrow: (k: string) =>
+      ({
+        'jwt.accessSecret': 'a'.repeat(32),
+        'jwt.refreshSecret': 'b'.repeat(32),
+      })[k],
     get: (k: string, d?: string) =>
       ({ 'jwt.accessExpiry': '15m', 'jwt.refreshExpiry': '7d' })[k] ?? d,
   };
@@ -114,7 +113,13 @@ describe('AuthService hardening (Phase 03)', () => {
     const bcrypt = await import('bcryptjs');
     (bcrypt.compare as any).mockResolvedValueOnce(false);
     const { service, mockRedis } = await buildService({
-      findUser: { id: 1, email: 'a@b.com', password: 'stored', role: 'user', uuid: 'u' },
+      findUser: {
+        id: 1,
+        email: 'a@b.com',
+        password: 'stored',
+        role: 'user',
+        uuid: 'u',
+      },
       redisGet: null,
     });
     mockRedis.get.mockResolvedValueOnce(null);
@@ -130,7 +135,13 @@ describe('AuthService hardening (Phase 03)', () => {
 
   it('H5: clears counter on successful login', async () => {
     const { service, mockRedis } = await buildService({
-      findUser: { id: 1, email: 'a@b.com', password: 'x', role: 'user', uuid: 'u' },
+      findUser: {
+        id: 1,
+        email: 'a@b.com',
+        password: 'x',
+        role: 'user',
+        uuid: 'u',
+      },
       redisGet: null,
     });
     mockRedis.get.mockResolvedValueOnce(null);

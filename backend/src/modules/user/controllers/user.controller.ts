@@ -153,12 +153,16 @@ export class UserController {
 
   @Get('search')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Search users by name prefix (mention autocomplete)' })
+  @ApiOperation({
+    summary: 'Search users by name prefix (mention autocomplete)',
+  })
   @ApiQuery({ name: 'q', required: true, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   searchUsers(@Query('q') q: string, @Query('limit') limit?: string) {
-    const parsedLimit = limit ? Math.max(1, Math.min(20, parseInt(limit, 10) || 10)) : 10;
+    const parsedLimit = limit
+      ? Math.max(1, Math.min(20, parseInt(limit, 10) || 10))
+      : 10;
     return this.userService.searchByName(q ?? '', parsedLimit);
   }
 

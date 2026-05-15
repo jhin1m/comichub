@@ -63,7 +63,9 @@ export class ImportController {
   }
 
   @Post('manga/:id/chapters')
-  @ApiOperation({ summary: 'Import chapters for a manga from external source (admin only)' })
+  @ApiOperation({
+    summary: 'Import chapters for a manga from external source (admin only)',
+  })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, description: 'Chapters imported' })
   @ApiResponse({ status: 404, description: 'Manga or source not found' })

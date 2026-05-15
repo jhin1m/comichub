@@ -130,9 +130,7 @@ describe('CommentService', () => {
     };
 
     it('keeps whitelisted span classes (spoiler/highlight/mention)', async () => {
-      const out = await captureContent(
-        '<span class="spoiler">hidden</span>',
-      );
+      const out = await captureContent('<span class="spoiler">hidden</span>');
       expect(out).toContain('<span class="spoiler">hidden</span>');
     });
 

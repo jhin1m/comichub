@@ -29,7 +29,11 @@ import type {
 } from '../types/external-manga.types.js';
 import type { ImportSource } from '../types/import-source.enum.js';
 
-type TaxonomyTable = typeof genres | typeof artists | typeof authors | typeof groups;
+type TaxonomyTable =
+  | typeof genres
+  | typeof artists
+  | typeof authors
+  | typeof groups;
 
 @Injectable()
 export class ImportMappingService {
@@ -165,7 +169,9 @@ export class ImportMappingService {
       status: (external.status ??
         'ongoing') as (typeof manga.$inferInsert)['status'],
       type: (external.type ?? 'manga') as (typeof manga.$inferInsert)['type'],
-      contentRating: normalizeContentRating(external.contentRating) as (typeof manga.$inferInsert)['contentRating'],
+      contentRating: normalizeContentRating(
+        external.contentRating,
+      ) as (typeof manga.$inferInsert)['contentRating'],
       demographic: external.demographic ?? null,
       year: external.year ?? null,
     };
@@ -241,7 +247,8 @@ export class ImportMappingService {
     externalChapters: ExternalChapter[],
     source: ImportSource,
   ): Promise<{ chapterId: number; externalId: string; isNew: boolean }[]> {
-    const results: { chapterId: number; externalId: string; isNew: boolean }[] = [];
+    const results: { chapterId: number; externalId: string; isNew: boolean }[] =
+      [];
 
     for (const ext of externalChapters) {
       const [existing] = await this.db
@@ -256,7 +263,11 @@ export class ImportMappingService {
         .limit(1);
 
       if (existing) {
-        results.push({ chapterId: existing.chapterId, externalId: ext.externalId, isNew: false });
+        results.push({
+          chapterId: existing.chapterId,
+          externalId: ext.externalId,
+          isNew: false,
+        });
         continue;
       }
 
@@ -323,7 +334,10 @@ export class ImportMappingService {
 
       // Link scanlation groups to chapter
       if (ext.groups?.length) {
-        const groupIds = await this.resolveByName(groups, ext.groups.map((g) => g.name));
+        const groupIds = await this.resolveByName(
+          groups,
+          ext.groups.map((g) => g.name),
+        );
         if (groupIds.length) {
           await this.db
             .insert(chapterGroups)
@@ -332,7 +346,11 @@ export class ImportMappingService {
         }
       }
 
-      results.push({ chapterId, externalId: ext.externalId, isNew: !existingChapter });
+      results.push({
+        chapterId,
+        externalId: ext.externalId,
+        isNew: !existingChapter,
+      });
     }
 
     return results;

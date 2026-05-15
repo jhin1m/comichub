@@ -507,8 +507,7 @@ async function healthCheck(): Promise<boolean> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const listRes = await fetch(`${BASE}/manga?limit=1&page=1`);
-      if (!listRes.ok)
-        throw new Error(`list endpoint API ${listRes.status}`);
+      if (!listRes.ok) throw new Error(`list endpoint API ${listRes.status}`);
       const list: any = await listRes.json();
       const sample = list?.result?.items?.[0];
       if (!sample?.hid) throw new Error('list returned no items');
@@ -659,9 +658,7 @@ async function main() {
 
           if (result === null) {
             cp.stats.skipped++;
-            console.log(
-              `${tag} ${raw.title} ⏭ (locked by another shard)`,
-            );
+            console.log(`${tag} ${raw.title} ⏭ (locked by another shard)`);
           }
         } catch (err: any) {
           cp.stats.failed++;
