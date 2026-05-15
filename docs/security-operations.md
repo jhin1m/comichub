@@ -239,6 +239,17 @@ Watch these logs / metrics. Thresholds are starting points — tune after baseli
 - [Deployment Guide](./deployment-guide.md) — env var setup, cert creation
 - Audit reports: `plans/reports/ck-security-*.md`
 
+## SSH Server Hardening (2026-05-15)
+
+- **Root password auth: DISABLED.** `/etc/ssh/sshd_config` → `PermitRootLogin prohibit-password`
+- **All password auth: DISABLED.** `/etc/ssh/sshd_config.d/50-cloud-init.conf` → `PasswordAuthentication no`
+- **Authorized key (root):** `ssh-ed25519 ...AAAAIKZC8r...` (fingerprint `SHA256:dWNtI3/UK/cXAuILnjceDTLv4sNBF1kIlsOqO3BAvEg`)
+- **Backups:** `/etc/ssh/sshd_config.bak.20260515-025322` + drop-in backup with same suffix.
+- **Future deploy/admin access:** `ssh -i ~/.ssh/id_ed25519 root@<host>` (no password fallback).
+- **Recovery if key lost:** Use Hetzner Cloud Console (VPS provider) to log in via web console and restore from backup files.
+
+⚠️ **`/remote-server` skill auth change:** `deploy/servers.json` now has `ssh_key` field pointing to `~/.ssh/id_ed25519`. Skill consumers must read this instead of `password` (set to empty string as deprecation signal).
+
 ## Security Advisories Applied
 
 ### CVE-2026-44578 — Next.js WebSocket Upgrade SSRF (CVSS 8.6, High)
@@ -260,4 +271,4 @@ References: [GHSA-c4j6-fc7j-m34r](https://github.com/advisories/GHSA-c4j6-fc7j-m
 | Date | Change |
 |---|---|
 | 2026-04-20 | Initial version — Sprint B baseline (15 items remediated) |
-| 2026-05-15 | CVE-2026-44578 patched (next 16.2.3 → 16.2.6) + Caddy WS upgrade block (NC2) |
+| 2026-05-15 | CVE-2026-44578 patched (next 16.2.3 → 16.2.6) + Caddy strip Upgrade (NC2) + SSH root password auth disabled (key-only) + bumped axios/sanitize-html/fast-xml-parser |
