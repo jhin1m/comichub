@@ -57,4 +57,18 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-argument': 'off',
     },
   },
+  // Relax strict type-safety rules for CLI scripts + DB seeds.
+  // These are best-effort tools consuming untyped external API data
+  // (WeebDex, MangaBaka, Comix.to, Atsumaru). Adding response interfaces
+  // for every upstream endpoint is high-cost / low-value for one-shot imports.
+  {
+    files: ['src/scripts/**/*.ts', 'src/database/seed/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
 );
