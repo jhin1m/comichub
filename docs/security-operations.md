@@ -241,15 +241,40 @@ Watch these logs / metrics. Thresholds are starting points — tune after baseli
 
 ## Automated Dependency Monitoring (Dependabot — 2026-05-15)
 
+### Dependabot config
 - **Config:** `.github/dependabot.yml` — npm (frontend + backend), docker (both Dockerfiles), github-actions.
 - **Schedule:** weekly Monday 03:00 ICT for non-security updates; **security updates fire immediately** regardless.
 - **Grouping:** patch + minor versions bundled into 1 PR/week per ecosystem to reduce noise.
 - **Ignored majors:** `react`, `react-dom`, `next`, `@nestjs/*`, `drizzle-orm` — coordinated upgrades only (manual).
-- **Repo features enabled:** `dependabot_security_updates`, `secret_scanning`, `secret_scanning_push_protection`.
-- **Review SLA:** triage security PRs within 24h, critical/high within 4h.
-- **Dashboard:** https://github.com/jhin1m/comichub/security/dependabot
 
-Rationale: Next.js had ~17 CVEs in 6 months (Dec 2025 – May 2026). CVE-2026-44578 exposure window was 8 days (07/05 → 15/05) because tracking was manual. Dependabot auto-PRs reduce response window to hours.
+### CI gate (`.github/workflows/ci.yml`)
+- Runs on every PR + push to main: pnpm install → tests → typecheck/build (frontend uses `tsc --noEmit`, backend uses `nest build`).
+- E2E (Playwright) + lint deferred — pre-existing tech debt; re-enable after cleanup.
+- Status checks `Frontend (Next.js)` + `Backend (NestJS)` are required by branch protection.
+
+### Auto-merge (`.github/workflows/dependabot-auto-merge.yml`)
+- **Patch updates** → auto-approve + auto-merge when CI green.
+- **Security minor updates** → auto-approve + auto-merge.
+- **Everything else** → bot comments and waits for human review.
+
+### Branch protection (main)
+- Required status checks: `Frontend (Next.js)`, `Backend (NestJS)`.
+- `strict: true` — branch must be up-to-date before merge.
+- `enforce_admins: false` — admin (jhin1m) can bypass for emergencies.
+- `allow_force_pushes: false`, `allow_deletions: false`.
+
+### Repo security features
+- `dependabot_security_updates`: enabled.
+- `secret_scanning`: enabled.
+- `secret_scanning_push_protection`: enabled.
+- `secret_scanning_non_provider_patterns`: **DISABLED** — enable manually at https://github.com/jhin1m/comichub/settings/security_analysis (gh CLI token lacks `admin:repo_security` scope).
+- `secret_scanning_validity_checks`: **DISABLED** — same as above.
+
+### Operational SLA
+- Triage security PRs within 24h, critical/high within 4h.
+- Dashboard: https://github.com/jhin1m/comichub/security/dependabot
+
+Rationale: Next.js had ~17 CVEs in 6 months (Dec 2025 – May 2026). CVE-2026-44578 exposure window was 8 days (07/05 → 15/05) because tracking was manual. Dependabot auto-PRs + CI gate reduce response window to hours.
 
 ## SSH Server Hardening (2026-05-15)
 
@@ -283,4 +308,4 @@ References: [GHSA-c4j6-fc7j-m34r](https://github.com/advisories/GHSA-c4j6-fc7j-m
 | Date | Change |
 |---|---|
 | 2026-04-20 | Initial version — Sprint B baseline (15 items remediated) |
-| 2026-05-15 | CVE-2026-44578 patched (next 16.2.3 → 16.2.6) + Caddy strip Upgrade (NC2) + SSH root password auth disabled (key-only) + bumped axios/sanitize-html/fast-xml-parser |
+| 2026-05-15 | CVE-2026-44578 patched (next 16.2.3 → 16.2.6) + Caddy strip Upgrade (NC2) + SSH root password auth disabled (key-only) + bumped axios/sanitize-html/fast-xml-parser + Dependabot + CI + branch protection + auto-merge |
